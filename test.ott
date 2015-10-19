@@ -5,40 +5,42 @@ indexvar i, j ::= {{ com Indicies }}
 
 grammar
 e :: 'e_' ::= {{ com Expressions (Computations) }}
-   |  x                :: :: var  {{ com free variable }}
-   |  ()               :: :: unit {{ com unit value }}
-   |  inj i e          :: :: inj {{ tex [[inj]]_{[[i]]}\,[[e]] }} {{ com injection of [[e]], indexed by [[i]] }}
-   |  ( e1 , e2 )      :: :: pair {{ com pair }}
-   |  split ( v, x . y . e ) :: :: split {{ com split components of a pair }}
+   |  split ( v, x . y . e )         :: :: split {{ com split components of a pair }}
    |  case ( v , x1 . e1 , x2 . e2 ) :: :: case {{ com case analysis of injection }}
-   |  \ x . e          :: :: lam {{ com function abstraction }}
-   |  e1 e2            :: :: app {{ com function application }}
 
-   |  let x = e1 in e2 :: :: let {{ com computation sequencing }}
-   |  fix f . e       :: :: fix  {{ com recursive computation [[e]] named by [[f]] }}
+   |  \ x . e              :: :: lam {{ com function abstraction }}
+   |  e v                  :: :: app {{ com function application }}
 
-   | roll e   :: :: roll
-   | unroll e :: :: unroll
+   |  ret v                :: :: ret {{ com computation termination }}
+   |  let x = e1 in e2     :: :: let {{ com computation sequencing }}
+
+   |  fix f . e            :: :: fix  {{ com recursive computation [[e]] named by [[f]] }}
+
+   | force v               :: :: force
+
+   | roll e                :: :: roll
+   | unroll e              :: :: unroll
+
+   | e1 || e2              :: :: par {{ tex [[e1]]~{\mathrel{||} }~[[e2]] }}
+   | e1 ++ e2              :: :: choice {{ tex [[e1]]~{\oplus}~[[e2]] }}
+   | rd v                  :: :: read
+   | v1 --> v2             :: :: write {{ tex [[v1]] \rightarrow [[v2]] }}
+   | nu x . e              :: :: nu {{ tex \nu [[x]] . [[e]] }}
+
+%   | e1 ; e2               :: :: seq 
+%   | x <--  v ;  e        :: :: read {{ tex [[x]] \leftarrow [[v]] ; [[e]] }}
 
    | ( e ) :: M :: paren {{ com parenthesized (syntactic sugar) }}
 
    | e [ v  / x ] :: M :: subst_val  {{ com [[e]] with [[x]] substituted with [[v]] }}
    | e [ e' / f ] :: M :: subst_fix  {{ com [[e]] with [[f]] substituted with [[e']] }}
 
-   | e1 || e2              :: :: par {{ tex [[e1]]~{\mathrel{||} }~[[e2]] }}
-   | e1 ++ e2              :: :: choice {{ tex [[e1]]~{\oplus}~[[e2]] }}
-%   | x <--  v ;  e        :: :: read {{ tex [[x]] \leftarrow [[v]] ; [[e]] }}
-   | rd v                  :: :: read
-   | v1 --> v2             :: :: write {{ tex [[v1]] \rightarrow [[v2]] }}
-   | nu x . e              :: :: nu {{ tex \nu [[x]] . [[e]] }}
-   | e1 ; e2               :: :: seq 
-
 v :: 'v_' ::= {{ com Values }}
    | ( v ) :: M :: paren
    | ()    :: :: unit
    | ( v1 , v2 ) :: :: pair {{ com Value pair. }}
    |  inj i v    :: :: inj {{ tex [[inj]]_{[[i]]}\,[[v]] }} {{ com Injected value. }}
-   | \ x . e     :: :: lambda {{ com Function abstraction. }}
+   | thunk e     :: :: thunk
 
 grammar
 A, B :: 'A_' ::= {{ com Value types }}
@@ -58,6 +60,7 @@ G {{ tex \Gamma }} :: 'G_' ::= {{ com Typing context }}
    | G , x : A  :: :: vartype
    | G , name   :: :: nametype
    | G1 , G2    :: M :: seq
+   | ( send G ) :: M :: send {{ tex \lfloor[[G]]\rfloor_{\textsf{send} } }}
 
 terminals :: 'terminals_' ::=
     | emp    :: :: emp            {{ tex \cdot }}
@@ -79,6 +82,7 @@ eps {{ tex \epsilon }} :: 'eps_' ::= {{ com Effects }}
    | W R     :: :: wr
 
 R :: 'R_' ::= {{ com Read sets }}
+   | emp          :: :: emp {{ tex \bullet }}
    | Rd name      :: :: singleton_rd
    | R1 _|_ R2    :: :: disjointunion_rd
    | R1 U R2      :: :: union_rd
@@ -90,12 +94,24 @@ J :: '' ::=
 
 
 defn
-A send :: :: Sendable :: 'S_' {{ com Sendable }} {{ tex [[A]]~send }}
+A send :: :: Sendable :: 'S_' {{ com Sendable }} {{ tex [[A]]~\textsf{send} }}
 by
 
---------- :: send_unit
+--------- :: unit
 Unit send
 
+A send
+B send
+---------- :: sum
+A + B send
+
+A send
+B send
+---------- :: prod
+A * B send
+
+------------------ :: thunk
+U C @ eps send
 
 defn
 G |- v : A
@@ -106,6 +122,22 @@ by
 ------------- :: unit
 G |- () : Unit 
 
+G |- v1 : A
+G |- v2 : B
+---------------------- :: prod
+G |- (v1, v2) : A * B
+
+G |- v : Ai
+---------------------- :: sum
+G |- inj i v : A1 + A2
+
+(send G) |- e : C @ eps
+------------------------- :: thunk
+G |- thunk e : U C @ eps
+
+G |- e : C @ eps
+------------------------- :: thunk_
+G |- thunk e : U_ C @ eps
 
 defn
 G |- e : C @ eps
@@ -113,6 +145,23 @@ G |- e : C @ eps
 {{ com Typing: Expression [[e]] has effect [[eps]] in env [[G]] }}
 {{ tex [[G]] [[|-]] [[e]] : [[C]]~@~[[eps]] }}
 by
+
+G |- v : U C @ eps
+----------------------- :: force
+G |- force v : C @ eps
+
+G |- v : U_ C @ eps
+----------------------- :: force_
+G |- force v : C @ eps
+
+G |- v : A
+G |- e : A -> C @ eps
+------------------------ :: app
+G |- e v : C @ eps
+
+G, x:A |- e : C @ eps
+-------------------------------- :: abs
+G |- \x.e : A -> C @ eps
 
 G |- v : A * B
 G, x:A, y:B |- e : C @ eps 
@@ -132,6 +181,10 @@ G |- e1 : C @ R11 ; R12
 G |- e2 : C @ R21 ; R22
 --------------------------------------------------- :: choice
 G |- e1 ++ e2 : C @ (R11 _|_ R12) ; (R12 U R22)
+
+G |- v : A
+-------------------------- :: free
+G |- ret v : F A @ emp
 
 G        |- e1 : F A @ R1
 G, x : A |- e2 : C   @ W R2

@@ -1,6 +1,6 @@
 embed {{ tex-preamble }}
 
-metavar a {{ tex \alpha }}, b {{ tex \beta }} ::=
+metavar a {{ tex \alpha }}, b {{ tex \beta }} ::= {{ com index variables }}
 metavar x, y, f, g ::= {{ com variables }}
 indexvar i, j ::= {{ com Indicies }}
 

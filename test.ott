@@ -94,7 +94,7 @@ J :: '' ::=
 
 
 defn
-A send :: :: Sendable :: 'S_' {{ com Sendable }} {{ tex [[A]]~\textsf{send} }}
+A send :: :: Sendable :: 'S_' {{ com [[A]] is sendable }} {{ tex [[A]]~\textsf{send} }}
 by
 
 --------- :: unit
@@ -116,7 +116,7 @@ U C @ eps send
 defn
 G |- v : A
 :: :: JVType :: 'TV_'
-{{ com Typing: Value [[v]] has type [[A]] in env [[G]] }}
+{{ com Typing: Under [[G]], value [[v]] has type [[A]]. }}
 by
 
 ------------- :: unit
@@ -142,7 +142,7 @@ G |- thunk e : U_ C @ eps
 defn
 G |- e : C @ eps
 :: :: JType :: 'T_'
-{{ com Typing: Expression [[e]] has effect [[eps]] in env [[G]] }}
+{{ com Typing: Under [[G]], expression [[e]] has type [[C]] and effect [[eps]]. }}
 {{ tex [[G]] [[|-]] [[e]] : [[C]]~@~[[eps]] }}
 by
 

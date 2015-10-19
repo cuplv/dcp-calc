@@ -1,6 +1,6 @@
 embed {{ tex-preamble }}
 
-metavar name, x, f ::= {{ com variables }}
+metavar name {{ tex n }} , x, y, f, g ::= {{ com variables }}
 indexvar i, j ::= {{ com Indicies }}
 
 grammar
@@ -9,9 +9,8 @@ e :: 'e_' ::= {{ com Expressions (Computations) }}
    |  ()               :: :: unit {{ com unit value }}
    |  inj i e          :: :: inj {{ tex [[inj]]_{[[i]]}\,[[e]] }} {{ com injection of [[e]], indexed by [[i]] }}
    |  ( e1 , e2 )      :: :: pair {{ com pair }}
-   |  fst e :: :: fst {{ com first component of a pair }}   
-   |  snd e :: :: snd {{ com second component of a pair }}
-   |  case ( e0 , x1 . e1 , x2 . e2 ) :: :: case {{ com case analysis of injection }}
+   |  split ( v, x . y . e ) :: :: split {{ com split components of a pair }}
+   |  case ( v , x1 . e1 , x2 . e2 ) :: :: case {{ com case analysis of injection }}
    |  \ x . e          :: :: lam {{ com function abstraction }}
    |  e1 e2            :: :: app {{ com function application }}
 
@@ -26,9 +25,11 @@ e :: 'e_' ::= {{ com Expressions (Computations) }}
    | e [ v  / x ] :: M :: subst_val  {{ com [[e]] with [[x]] substituted with [[v]] }}
    | e [ e' / f ] :: M :: subst_fix  {{ com [[e]] with [[f]] substituted with [[e']] }}
 
-   | e1 || e2              :: :: par
-   | x <--  v ;  e         :: :: read {{ tex [[x]] \leftarrow [[v]] ; [[e]] }}
-   | v1 --> v2 ; e         :: :: write {{ tex [[v1]] \rightarrow [[v2]] ; [[e]] }}
+   | e1 || e2              :: :: par {{ tex [[e1]]~{\mathrel{||} }~[[e2]] }}
+   | e1 ++ e2              :: :: choice {{ tex [[e1]]~{\oplus}~[[e2]] }}
+%   | x <--  v ;  e        :: :: read {{ tex [[x]] \leftarrow [[v]] ; [[e]] }}
+   | rd v                  :: :: read
+   | v1 --> v2             :: :: write {{ tex [[v1]] \rightarrow [[v2]] }}
    | nu x . e              :: :: nu {{ tex \nu [[x]] . [[e]] }}
    | e1 ; e2               :: :: seq 
 
@@ -40,10 +41,17 @@ v :: 'v_' ::= {{ com Values }}
    | \ x . e     :: :: lambda {{ com Function abstraction. }}
 
 grammar
-A, B :: 'A_' ::= {{ com Types }}
-      | Unit :: :: Unit
-      | Ch name A :: :: Chan
+A, B :: 'A_' ::= {{ com Value types }}
+      | Unit :: :: Unit {{ tex \textsf{Unit} }}
+      | A + B :: :: sum
+      | A * B :: :: prod
+      | Ch name A :: :: Chan  {{ tex \textsf{Ch}\,[[name]]\,[[A]] }}
+      | U C @ eps :: :: thunk {{ tex \textsf{U}\,[[C]]\,@\,[[eps]] }}
+      | U_ C @ eps :: :: thunk_ {{ tex \underbar{ \textsf{U} }{}~{[[C]]}~@~[[eps]] }}      
 
+C, D :: 'C_' ::= {{ com Computation types }}
+      | A -> C :: :: arrow
+      | F A  :: :: free {{ tex \textsf{F}\,[[A]] }}
 
 G {{ tex \Gamma }} :: 'G_' ::= {{ com Typing context }}
    | emp        :: :: emp
@@ -58,7 +66,7 @@ terminals :: 'terminals_' ::=
     | |-     :: :: turnstile      {{ tex \vdash }}
     | _|_    :: :: bottom      {{ tex \bot }}
     | ->     :: :: arrowright     {{ tex \rightarrow }}
-    | U      :: :: union          {{ tex \cup }}
+    | U      :: :: union          {{ tex {\cup} }}
     | -->    :: :: longarrowright {{ tex \longrightarrow }}
     | <--    :: :: longarrowleft {{ tex \longleftarrow }}
     | *      :: :: times          {{ tex \times }}
@@ -67,14 +75,15 @@ terminals :: 'terminals_' ::=
 
 
 eps {{ tex \epsilon }} :: 'eps_' ::= {{ com Effects }}
-   | R     :: :: read
-   | W R   :: :: write
-   | C A   :: :: compute
+   | R       :: :: r
+   | W R     :: :: wr
 
 R :: 'R_' ::= {{ com Read sets }}
    | Rd name      :: :: singleton_rd
    | R1 _|_ R2    :: :: disjointunion_rd
    | R1 U R2      :: :: union_rd
+   | R1 ; R2      :: :: seq
+   | ( R )        :: M :: paren
 
 defns
 J :: '' ::=
@@ -99,35 +108,46 @@ G |- () : Unit
 
 
 defn
-G |- e : eps
+G |- e : C @ eps
 :: :: JType :: 'T_'
 {{ com Typing: Expression [[e]] has effect [[eps]] in env [[G]] }}
+{{ tex [[G]] [[|-]] [[e]] : [[C]]~@~[[eps]] }}
 by
 
+G |- v : A * B
+G, x:A, y:B |- e : C @ eps 
+---------------------------------- :: split
+G |- split (v, x.y.e) : C @ eps
 
-
-G, name, x : Ch name A |- e : eps
+G, name, x : Ch name A |- e : C @ eps
 ---------------------------------- :: mkchan
-G |- nu x . e : eps
+G |- nu x . e : C @ eps
 
+G |- e1 : C @ R1
+G |- e2 : C @ R2
+------------------------------ :: par
+G |- e1 || e2 : C @ R1 _|_ R2
 
-G |- e1 : R1
-G |- e2 : R2
-------------- :: par
-G |- e1 || e2 : R1 _|_ R2
+G |- e1 : C @ R11 ; R12
+G |- e2 : C @ R21 ; R22
+--------------------------------------------------- :: choice
+G |- e1 ++ e2 : C @ (R11 _|_ R12) ; (R12 U R22)
 
-G |- v1 : Ch name A
-G |- v2 : A
-G |- e  : R
----------------- :: wrIntro
-G |- v1 --> v2 ; e : W R
+G        |- e1 : F A @ R1
+G, x : A |- e2 : C   @ W R2
+------------------------------------------ :: RWR
+G |- let x = e1 in e2 : C @ R1 ; R2
 
-G |- e1 : R1
-G |- e2 : W R2
----------------------- :: RWR
-G |- e1 ; e2 : R1 U R2
+G        |- e1 : F A @ W R1
+G, x : A |- e2 : C   @ R2
+---------------------------------------- :: WRR
+G |- let x = e1 in e2 : C @ W (R1 U R2)
 
 G |- v : Ch name A
-G, x : A |- e : W R
------------------------------- :: rdIntro
-G |- x <-- v ; e : Rd name U R
+------------------------------ :: R
+G |- rd v : F A @ Rd name
+
+G |- v1 : A
+G |- v2 : Ch name A
+------------------------------- :: W
+G |- v1 --> v2 : F Unit @ W R

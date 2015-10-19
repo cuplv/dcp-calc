@@ -1,6 +1,6 @@
 embed {{ tex-preamble }}
 
-metavar a {{ tex \alpha }}, b {{ tex \beta }} ::= {{ com index variables }}
+metavar a {{ tex \alpha }}, b {{ tex \beta }} ::= {{ com type variables }}
 metavar x, y, f, g ::= {{ com variables }}
 indexvar i, j ::= {{ com Indicies }}
 
@@ -23,8 +23,7 @@ e :: 'e_' ::= {{ com Expressions (Computations) }}
 
    | force v               :: :: force
 
-   | roll e                :: :: roll
-   | unroll e              :: :: unroll
+   | unroll ( v , x . e )  :: :: unroll
 
    | e1 || e2              :: :: par {{ tex [[e1]]~{\mathrel{||} }~[[e2]] }}
    | e1 ++ e2              :: :: choice {{ tex [[e1]]~{\oplus}~[[e2]] }}
@@ -46,6 +45,7 @@ v :: 'v_' ::= {{ com Values }}
    | ( v1 , v2 ) :: :: pair {{ com Value pair. }}
    |  inj i v    :: :: inj {{ tex [[inj]]_{[[i]]}\,[[v]] }} {{ com Injected value. }}
    | thunk e     :: :: thunk
+   | roll v      :: :: roll
 
 grammar
 A, B :: 'A_' ::= {{ com Value types }}
@@ -55,6 +55,9 @@ A, B :: 'A_' ::= {{ com Value types }}
       | Ch n A :: :: Chan  {{ tex \textsf{Ch}\,[[n]]\,[[A]] }}
       | U C @ eps :: :: thunk {{ tex \textsf{U}\,[[C]]\,@\,[[eps]] }}
       | U_ C @ eps :: :: thunk_ {{ tex \underline{\textsf{U} }\,{[[C]]}\,@\,[[eps]] }}
+      | mu a . A :: :: mu
+      | a :: :: var
+      | A [ B / a ] :: M :: subst
 
 C, D :: 'C_' ::= {{ com Computation types }}
       | forall a . C :: :: forall {{ tex \forall [[a]] . [[C]] }}
@@ -121,6 +124,13 @@ A * B send
 ------------------ :: thunk
 U C @ eps send
 
+A send
+-------------- :: mu
+mu a . A send
+
+-------- :: var
+a send
+
 defn
 G |- v : A
 :: :: JVType :: 'TV_'
@@ -147,12 +157,21 @@ G |- e : C @ eps
 ------------------------- :: thunk_
 G |- thunk e : U_ C @ eps
 
+G |- v : A [ mu a . A / a ]
+----------------------------- :: roll
+G |- roll v : mu a . A
+
 defn
 G |- e : C @ eps
 :: :: JType :: 'T_'
 {{ com Typing: Under [[G]], expression [[e]] has type [[C]] and effect [[eps]]. }}
 {{ tex [[G]] [[|-]] [[e]] : [[C]]~@~[[eps]] }}
 by
+
+G |- v : mu a . A
+G, x : A [ mu a . A / a ] |- e : C @ eps
+----------------------------------------- :: unroll
+G |- unroll ( v , x . e ) : C @ eps
 
 G , f : C @ eps |- e : C @ eps
 ------------------------------- :: fix

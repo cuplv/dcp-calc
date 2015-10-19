@@ -1,0 +1,132 @@
+embed {{ tex-preamble }}
+
+metavar name, x ::= {{ com variables }}
+
+grammar
+e :: 'e_' ::= {{ com Expressions (Computations) }}
+   |  x                :: :: var  {{ com free variable }}
+   |  ()               :: :: unit {{ com unit value }}
+   |  inj i e          :: :: inj {{ tex [[inj]]_{[[i]]}\,[[e]] }} {{ com injection of [[e]], indexed by [[i]] }}
+   |  ( e1 , e2 )      :: :: pair {{ com pair }}
+   |  fst e :: :: fst {{ com first component of a pair }}   
+   |  snd e :: :: snd {{ com second component of a pair }}
+   |  case ( e0 , x1 . e1 , x2 . e2 ) :: :: case {{ com case analysis of injection }}
+   |  \ x . e          :: :: lam {{ com function abstraction }}
+   |  e1 e2            :: :: app {{ com function application }}
+
+   |  let x = e1 in e2 :: :: let {{ com computation sequencing }}
+   |  fix f . e       :: :: fix  {{ com recursive computation [[e]] named by [[f]] }}
+
+   | roll e   :: :: roll
+   | unroll e :: :: unroll
+
+   | ( e ) :: M :: paren {{ com parenthesized (syntactic sugar) }}
+
+   | e [ v  / x ] :: M :: subst_val  {{ com [[e]] with [[x]] substituted with [[v]] }}
+   | e [ e' / f ] :: M :: subst_fix  {{ com [[e]] with [[f]] substituted with [[e']] }}
+
+   | e1 || e2              :: :: par
+   | x <--  v ;  e         :: :: read {{ tex [[x]] \leftarrow [[v]] ; [[e]] }}
+   | v1 --> v2 ; e         :: :: write {{ tex [[v1]] \rightarrow [[v2]] ; [[e]] }}
+   | nu x . e              :: :: nu {{ tex \nu [[x]] . [[e]] }}
+   | e1 ; e2               :: :: seq 
+
+v :: 'v_' ::= {{ com Values }}
+   | ( v ) :: M :: paren
+   | ()    :: :: unit
+   | ( v1 , v2 ) :: :: pair {{ com Value pair. }}
+   |  inj i v    :: :: inj {{ tex [[inj]]_{[[i]]}\,[[v]] }} {{ com Injected value. }}
+   | \ x . e     :: :: lambda {{ com Function abstraction. }}
+
+grammar
+A, B :: 'A_' ::= {{ com Types }}
+      | Unit :: :: Unit
+      | Ch name A :: :: Chan
+
+
+G {{ tex \Gamma }} :: 'G_' ::= {{ com Typing context }}
+   | emp        :: :: emp
+   | G , x : A  :: :: vartype
+   | G , name   :: :: nametype
+   | G1 , G2    :: M :: seq
+
+terminals :: 'terminals_' ::=
+    | emp    :: :: emp            {{ tex \cdot }}
+    | \      :: :: lambda         {{ tex \lambda }}
+    | !!     :: :: Downarrow      {{ tex \Downarrow }}
+    | |-     :: :: turnstile      {{ tex \vdash }}
+    | _|_    :: :: bottom      {{ tex \bot }}
+    | ->     :: :: arrowright     {{ tex \rightarrow }}
+    | U      :: :: union          {{ tex \cup }}
+    | -->    :: :: longarrowright {{ tex \longrightarrow }}
+    | <--    :: :: longarrowleft {{ tex \longleftarrow }}
+    | *      :: :: times          {{ tex \times }}
+    | mu     :: :: mu             {{ tex \mu }}
+
+
+
+eps {{ tex \epsilon }} :: 'eps_' ::= {{ com Effects }}
+   | R     :: :: read
+   | W R   :: :: write
+   | C A   :: :: compute
+
+R :: 'R_' ::= {{ com Read sets }}
+   | Rd name      :: :: singleton_rd
+   | R1 _|_ R2    :: :: disjointunion_rd
+   | R1 U R2      :: :: union_rd
+
+defns
+J :: '' ::=
+
+
+defn
+A send :: :: Sendable :: 'S_' {{ com Sendable }} {{ tex [[A]]~send }}
+by
+
+--------- :: send_unit
+Unit send
+
+
+defn
+G |- v : A
+:: :: JVType :: 'TV_'
+{{ com Typing: Value [[v]] has type [[A]] in env [[G]] }}
+by
+
+------------- :: unit
+G |- () : Unit 
+
+
+defn
+G |- e : eps
+:: :: JType :: 'T_'
+{{ com Typing: Expression [[e]] has effect [[eps]] in env [[G]] }}
+by
+
+
+
+G, name, x : Ch name A |- e : eps
+---------------------------------- :: mkchan
+G |- nu x . e : eps
+
+
+G |- e1 : R1
+G |- e2 : R2
+------------- :: par
+G |- e1 || e2 : R1 _|_ R2
+
+G |- v1 : Ch name A
+G |- v2 : A
+G |- e  : R
+---------------- :: wrIntro
+G |- v1 --> v2 ; e : W R
+
+G |- e1 : R1
+G |- e2 : W R2
+---------------------- :: RWR
+G |- e1 ; e2 : R1 U R2
+
+G |- v : Ch name A
+G, x : A |- e : W R
+------------------------------ :: rdIntro
+G |- x <-- v ; e : Rd name U R

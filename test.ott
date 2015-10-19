@@ -65,6 +65,7 @@ C, D :: 'C_' ::= {{ com Computation types }}
 G {{ tex \Gamma }} :: 'G_' ::= {{ com Typing context }}
    | emp        :: :: emp
    | G , x : A  :: :: vartype
+   | G , f : C @ eps :: :: comptype
    | G , n name :: :: nametype {{ tex [[G]] , [[n]]~\textsf{name} }}
    | G1 , G2    :: M :: seq
    | ( send G ) :: M :: send {{ tex \lfloor[[G]]\rfloor_{\textsf{send} } }}
@@ -152,6 +153,10 @@ G |- e : C @ eps
 {{ com Typing: Under [[G]], expression [[e]] has type [[C]] and effect [[eps]]. }}
 {{ tex [[G]] [[|-]] [[e]] : [[C]]~@~[[eps]] }}
 by
+
+G , f : C @ eps |- e : C @ eps
+------------------------------- :: fix
+G |- fix f . e : C @ eps
 
 G |- v : U C @ eps
 ----------------------- :: force

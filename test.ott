@@ -85,16 +85,41 @@ R :: 'R_' ::= {{ com Read sets }}
    | R1 ; R2      :: :: seq
    | ( R )        :: M :: paren
 
+
+funs 
+  GG ::= 
+
+fun  
+  |_ G _| send :: A :: Safe {{ com Sendable Environment }} {{ tex \lfloor [[G]] \rfloor_\textsf{send} }}
+by
+  |_ G, x : A _| send === |_ G _| send 
+%  |_ emp _| send === emp
+
 defns
 J :: '' ::=
 
-
 defn
-A send :: :: Sendable :: 'S_' {{ com Sendable }} {{ tex [[A]]~send }}
+A send :: :: Sendable :: 'S_' {{ com Sendable }} {{ tex [[A]]~\textsf{send} }}
 by
 
 --------- :: send_unit
 Unit send
+
+
+A1 send
+A2 send
+------------ :: send_sum
+A1 + A2 send
+
+A1 send
+A2 send
+------------ :: send_prod
+A1 * A2 send
+
+
+------------ :: send_thunk
+U C @ eps send
+% Note: No conclusion for U_ C @ eps
 
 
 defn

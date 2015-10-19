@@ -1,6 +1,7 @@
 embed {{ tex-preamble }}
 
-metavar name, x ::= {{ com variables }}
+metavar name, x, f ::= {{ com variables }}
+indexvar i, j ::= {{ com Indicies }}
 
 grammar
 e :: 'e_' ::= {{ com Expressions (Computations) }}

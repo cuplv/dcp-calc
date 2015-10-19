@@ -54,7 +54,7 @@ A, B :: 'A_' ::= {{ com Value types }}
       | A * B :: :: prod
       | Ch n A :: :: Chan  {{ tex \textsf{Ch}\,[[n]]\,[[A]] }}
       | U C @ eps :: :: thunk {{ tex \textsf{U}\,[[C]]\,@\,[[eps]] }}
-      | U_ C @ eps :: :: thunk_ {{ tex \underline{\textsf{U} }{}\,{[[C]]}\,@\,[[eps]] }}
+      | U_ C @ eps :: :: thunk_ {{ tex \underline{\textsf{U} }\,{[[C]]}\,@\,[[eps]] }}
 
 C, D :: 'C_' ::= {{ com Computation types }}
       | forall a . C :: :: forall {{ tex \forall [[a]] . [[C]] }}

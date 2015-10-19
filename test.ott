@@ -1,7 +1,12 @@
 embed {{ tex-preamble }}
 
-metavar name {{ tex n }} , x, y, f, g ::= {{ com variables }}
+metavar a {{ tex \alpha }}, b {{ tex \beta }} ::=
+metavar x, y, f, g ::= {{ com variables }}
 indexvar i, j ::= {{ com Indicies }}
+
+grammar
+n :: 'n_' ::= {{ com Names }}
+  | a :: :: var
 
 grammar
 e :: 'e_' ::= {{ com Expressions (Computations) }}
@@ -47,18 +52,20 @@ A, B :: 'A_' ::= {{ com Value types }}
       | Unit :: :: Unit {{ tex \textsf{Unit} }}
       | A + B :: :: sum
       | A * B :: :: prod
-      | Ch name A :: :: Chan  {{ tex \textsf{Ch}\,[[name]]\,[[A]] }}
+      | Ch n A :: :: Chan  {{ tex \textsf{Ch}\,[[n]]\,[[A]] }}
       | U C @ eps :: :: thunk {{ tex \textsf{U}\,[[C]]\,@\,[[eps]] }}
       | U_ C @ eps :: :: thunk_ {{ tex \underbar{ \textsf{U} }{}~{[[C]]}~@~[[eps]] }}      
 
 C, D :: 'C_' ::= {{ com Computation types }}
+      | forall a . C :: :: forall {{ tex \forall [[a]] . [[C]] }}
       | A -> C :: :: arrow
       | F A  :: :: free {{ tex \textsf{F}\,[[A]] }}
+      | C [ n / a ] :: M :: nameSubst 
 
 G {{ tex \Gamma }} :: 'G_' ::= {{ com Typing context }}
    | emp        :: :: emp
    | G , x : A  :: :: vartype
-   | G , name   :: :: nametype
+   | G , n name :: :: nametype {{ tex [[G]] , [[n]]~\textsf{name} }}
    | G1 , G2    :: M :: seq
    | ( send G ) :: M :: send {{ tex \lfloor[[G]]\rfloor_{\textsf{send} } }}
 
@@ -83,7 +90,7 @@ eps {{ tex \epsilon }} :: 'eps_' ::= {{ com Effects }}
 
 R :: 'R_' ::= {{ com Read sets }}
    | emp          :: :: emp {{ tex \bullet }}
-   | Rd name      :: :: singleton_rd
+   | Rd n         :: :: singleton_rd
    | R1 _|_ R2    :: :: disjointunion_rd
    | R1 U R2      :: :: union_rd
    | R1 ; R2      :: :: seq
@@ -168,7 +175,7 @@ G, x:A, y:B |- e : C @ eps
 ---------------------------------- :: split
 G |- split (v, x.y.e) : C @ eps
 
-G, name, x : Ch name A |- e : C @ eps
+G, n name, x : Ch n A |- e : C @ eps
 ---------------------------------- :: mkchan
 G |- nu x . e : C @ eps
 
@@ -186,6 +193,14 @@ G |- e : C @ R1 ; R2
 ------------------ :: forgetSeq
 G |- e : C @ R1 U R2
 
+G , a name |- e : C @ eps
+---------------------------- :: Iforall
+G |- e : forall a . C @ eps
+
+G1, G2 |- e : forall a . C @ eps
+---------------------------------------- :: Eforall
+G1, n name, G2 |- e : C [ n / a ] @ eps
+
 G |- v : A
 -------------------------- :: free
 G |- ret v : F A @ emp
@@ -200,11 +215,11 @@ G, x : A |- e2 : C   @ R2
 ---------------------------------------- :: WRR
 G |- let x = e1 in e2 : C @ W (R1 U R2)
 
-G |- v : Ch name A
+G |- v : Ch n A
 ------------------------------ :: R
-G |- rd v : F A @ Rd name
+G |- rd v : F A @ Rd n
 
 G |- v1 : A
-G |- v2 : Ch name A
+G |- v2 : Ch n A
 ------------------------------- :: W
 G |- v1 --> v2 : F Unit @ W R

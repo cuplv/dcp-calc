@@ -52,8 +52,8 @@
 \newcommand{\anote}[1]{{\color{magenta}[AM: #1]}}
 
 
-%\usepackage{url}
-\usepackage{hyperref}
+\usepackage{url}
+%\usepackage{hyperref}
 
 
 
@@ -82,5 +82,29 @@ Email: matthew.hammer@colorado.edu}
 
 
 \input{intro}
+
+\section{Metatheory}
+
+\paragraph{Theorem: Deterministic Semantics}
+
+\paragraph{Theorem: Equivalence with ITMs}
+
+We can describe, in the informal language of ITMs, how to compile an ITM to a term in this language, and what equivalence means.
+
+\paragraph{Lemma: Bisimilarity implies statistical }
+This is meant to justify the use of tools like Proverif which can do bisimilarity proofs.
+
+
+\section{Implementing UC in \lang}
+
+\anote{As this is the first technical report for SaUCy, we should include an explanation of how we model UC. This includes an implementation of Static Byzantine Corruptions, and a few theorems}
+
+\paragraph{Theorem: Dummy Lemma}
+
+
+\paragraph{Theorem: Protocol Substitution Theorem}
+
+\paragraph{Theorem: Bisimilarity implies UC emulation}
+This is meant to justify the use of tools like Proverif which can do bisimilarity proofs.
 
 \end{document}

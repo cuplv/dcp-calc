@@ -23,3 +23,37 @@ Our language is based on the following design constraints:
 \item Only the active process in a system can “write”... after writing, it must again become passive, only reactivated when it receives a message. Our effect system keeps track of whether a process is active $(W; R)$ or passive $(R)$.
 \item Channels are opaque -- they can be stored in data structures and reference cells, but can not be sent along other channels or converted to strings.
 \end{enumerate}
+
+
+
+Encoding of $F$ in \lang
+\begin{figure*}
+\begin{lstlisting} 
+def F (M : R) :=
+  nu inL inR randL randR. 
+  teeRandom rand randL randR
+  | M[ in: inL, rand:randL ]
+  | M[ in: inR, rand:randR ]
+  | !{ (b, m) $\leftarrow$ rd in;
+      m $\rightarrow$ $(inL,inR)_b$ }
+
+def teeRandom (getRand, rand) (getRandL, randL) (getRandR, randR) :=
+  let bits := newRef []
+  | stream getRandL randL
+  | stream getRandR randR
+     where
+        stream (getRand', rand') :=
+        let counter := newRef 0
+        !{ () $\leftarrow$ getRand';
+           if @counter < len (@bits):
+             @bits[@counter] $\rightarrow$ rand'
+                counter++
+           else
+              () $\rightarrow$ getRand; b $\leftarrow$ rand
+              bits[@counter] := b
+              counter++
+              b $\rightarrow$ rand'
+         }
+\end{lstlisting}
+\end{figure*}
+

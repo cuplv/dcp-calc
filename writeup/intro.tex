@@ -34,8 +34,8 @@ def F (M : R) :=
   teeRandom rand randL randR
   | M[ in: inL, rand:randL ]
   | M[ in: inR, rand:randR ]
-  | !{ (b, m) $\leftarrow$ rd in;
-      m $\rightarrow$ $(inL,inR)_b$ }
+  | !{ (b, m) <-- rd in;
+      m --> (inL,inR)[b] }
 
 def teeRandom (getRand, rand) (getRandL, randL) (getRandR, randR) :=
   let bits := newRef []
@@ -44,15 +44,16 @@ def teeRandom (getRand, rand) (getRandL, randL) (getRandR, randR) :=
      where
         stream (getRand', rand') :=
         let counter := newRef 0
-        !{ () $\leftarrow$ getRand';
+        !{ () <-- getRand';
            if @counter < len (@bits):
-             @bits[@counter] $\rightarrow$ rand'
+             @bits[@counter] --> rand'
                 counter++
            else
-              () $\rightarrow$ getRand; b $\leftarrow$ rand
+              () <-- getRand; 
+              b --> rand
               bits[@counter] := b
               counter++
-              b $\rightarrow$ rand'
+              b --> rand'
          }
 \end{lstlisting}
 \end{figure*}

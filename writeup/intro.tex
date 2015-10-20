@@ -1,0 +1,25 @@
+\section{Introduction}
+
+\paragraph{Illustrating example of ITMs}
+The following example illustrates several common idioms of programming with ITMs:
+
+\begin{quote}
+    The Interactive Turing Machine $M$ is parameterized by a machine $M'$. First we run two instances of $M'$, called $M'_0$ and $M'_1$, in a sandbox. The randomness tape of the two instances is tee’d, so that each machine draws exactly the same random bits. The subroutine input tape of F is multiplexed… incoming messages of the form $(b, m)$ result in sending message $m$ to the subroutine tape of instance $M_b$. If either sandbox instance writes a message to its subroutine output tape, this is forwarded to $M$'s subroutine output tape directly.
+\end{quote}
+
+    The most important composition operation is “sandboxed execution” --- where one machine, the host, executes an instance of another machine, the guest. The host has complete control of the guest’s I/O, i.e., it is able to inject and intercept messages involving those tapes, typically adding or removing layers of “routing” metadata and forwarding the messages along its other tapes. Interacting over tapes is the *only* way the host interacts with the guest --- machine composition is typically “black box”, as it’s not usually necessary to perform deep analysis of the guest’s code.
+
+    There’s a distinction between a machine (which is like a program) and an instance (which is like a running process).
+
+ It also doesn’t make sense for a machine to send a tape along a tape (the way channels are typically passed along channels in Pi calculus) -- tapes and the data that can be written on tapes are of different sorts.
+
+It would seem that running these two instances, $M'_0$ and $M'_1$, concurrently, may lead to race conditions. However, this is not the case --- the semantics of Interactive Turing Machines is deterministic, even for running programs. (Even random tapes are treated explicitly, achieve a probabilistic semantics only at the very end quantifying the uniform dist
+ribution of values on those tapes).
+
+\paragraph{Constraints}
+Our language is based on the following design constraints:
+\begin{enumerate}
+\item Each channel can only be “read” by a unique process. This is enforced by our effect system, which keeps track of “read sets”, and guarantees that each message can be handled by a unique process.
+\item Only the active process in a system can “write”... after writing, it must again become passive, only reactivated when it receives a message. Our effect system keeps track of whether a process is active $(W; R)$ or passive $(R)$.
+\item Channels are opaque -- they can be stored in data structures and reference cells, but can not be sent along other channels or converted to strings.
+\end{enumerate}

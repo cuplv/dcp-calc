@@ -1,0 +1,86 @@
+\newif\iftr\trfalse
+\documentclass[conference,compsoc]{IEEEtran}
+
+\ifCLASSOPTIONcompsoc
+  \usepackage[nocompress]{cite}
+\else
+  \usepackage{cite}
+\fi
+
+
+%\documentclass{article}
+\usepackage[mathletters]{ucs}
+\usepackage{stmaryrd}
+\usepackage[utf8x]{inputenc}
+\DeclareUnicodeCharacter {9679}{\bullet}
+\DeclareUnicodeCharacter {10214}{\llbracket }
+\DeclareUnicodeCharacter {10215}{\rrbracket }
+\DeclareUnicodeCharacter {8872}{\models}
+\DeclareUnicodeCharacter {8871}{\models}
+\usepackage{listings}
+\usepackage{amsmath,amsthm,amscd,amssymb}
+%\usepackage{theorem}
+\usepackage{framed}
+\usepackage{subfigure}
+\usepackage{graphicx}
+\newtheorem{proposition}{Proposition}
+\newtheorem{remark}{Remark}
+\newtheorem{definition}{Definition}
+\newtheorem{corollary}{Corollary}
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}{Theorem}
+\usepackage{mathpartir}
+\usepackage{color}
+\usepackage{xspace}
+\usepackage{balance}
+
+\newcommand{\etal}{{\it et. al.}\xspace}
+\newcommand{\lang}{$\lambda_{\tt ILC}$\xspace}
+\newcommand{\tn}{\textnormal}
+\newcommand{\codeb}[1]{\textsf{#1}}
+\newcommand{\kw}[1]{\codeb{\textbf{#1}}}
+\newcommand{\hash}{\ensuremath{\mathsf{hash}}}
+\newcommand{\auth}{\ensuremath{\mathit{auth}}}
+%\newcommand{\sproj}[2][X]{\ensuremath{[\![ {#2} ]\!]}^{#1}}
+\newcommand{\sproj}[1]{\ensuremath{(\![ {#1} ]\!)}}
+\newcommand{\concat}{\ensuremath{~@~}}
+\newcommand{\unauth}{\ensuremath{\mathit{unauth}}}
+\newcommand{\todo}[1]{{\bf TODO:#1}}
+\newcommand{\mwh}[1]{{\color{blue}[Mike: #1]}}
+\newcommand{\elaine}[1]{{\color{red}[elaine: #1]}}
+\newcommand{\jnote}[1]{{\color{green}[JK: #1]}}
+\newcommand{\anote}[1]{{\color{magenta}[AM: #1]}}
+
+
+%\usepackage{url}
+\usepackage{hyperref}
+
+
+
+\title{Interactive Lambda Calculus (\lang): A Core Semantics for Universally Composable Cryptography}
+
+\author{\IEEEauthorblockN{Andrew Miller}
+\IEEEauthorblockA{
+University of Maryland, College Park\\
+Email: {\texttt amiller@cs.umd.edu}}
+\and
+\IEEEauthorblockN{Matthew Hammer}
+\IEEEauthorblockA{
+Colorado University, Boulder\\
+Email: matthew.hammer@colorado.edu}
+}
+\begin{document}
+
+
+% \newdef{example}{Example}
+\lstset{language=Haskell}
+
+\maketitle
+
+\begin{abstract}
+\end{abstract}
+
+
+\input{intro}
+
+\end{document}

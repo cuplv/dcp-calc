@@ -1,0 +1,50 @@
+\begin{figure*}
+\begin{lstlisting} 
+def execUC Z pi F A =
+  nu ~z2p ~p2f ~f2a ~a2z ~exp2z default.
+  |rand  Z       [2p/z2p, 2f/z2f, 2a/z2a, z2exp]
+  |rand  Stc[pi] [2f/p2f, 2a/p2a, 2z/p2z]
+  |rand  F       [2p/f2p, 2a/f2a, 2z/f2z]
+  |rand  A       [2p/a2p, 2f/a2f, 2z/a2z]
+  |handleDefault 
+  | 
+    () --> exp2z;
+     b <-- z2exp;
+    return b
+
+def Stc crupt pi 2f 2a 2z :=
+  -- Create new instance of PID, multiplexed by PID
+  multiplex (2f, 2a, 2z) 
+     (2f' -> mapPid f 2f'),
+     (2a' -> mapPid a 2a'),
+     (2z' -> mapPid z 2z')
+     nu 2f' 2a' 2z'.
+     \pid -> pi pid [2f/2f', 2a/2a' 2z/2z']
+  ))
+  !{ x <-- z2f; 
+     case x of ()
+          y of ()
+
+def multiplex :=
+   
+
+def teeRandom (getRand, rand) (getRandL, randL) (getRandR, randR) :=
+  let bits := newRef []
+  | stream getRandL randL
+  | stream getRandR randR
+     where
+        stream (getRand', rand') :=
+        let counter := newRef 0
+        !{ () <-- getRand';
+           if @counter < len (@bits):
+             @bits[@counter] --> rand'
+                counter++
+           else
+              () <-- getRand; 
+              b --> rand
+              bits[@counter] := b
+              counter++
+              b --> rand'
+         }
+\end{lstlisting}
+\end{figure*}

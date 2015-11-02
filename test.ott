@@ -100,9 +100,18 @@ R :: 'R_' ::= {{ com Read sets }}
    | R1 ; R2      :: :: seq
    | ( R )        :: M :: paren
 
+
+funs 
+  GG ::= 
+
+fun  
+  |_ G _| send :: A :: Safe {{ com Sendable Environment }} {{ tex \lfloor [[G]] \rfloor_\textsf{send} }}
+by
+  |_ G, x : A _| send === |_ G _| send 
+%  |_ emp _| send === emp
+
 defns
 J :: '' ::=
-
 
 defn
 A send :: :: Sendable :: 'S_' {{ com [[A]] is sendable }} {{ tex [[A]]~\textsf{send} }}
@@ -124,12 +133,21 @@ A * B send
 ------------------ :: thunk
 U C @ eps send
 
-A send
--------------- :: mu
-mu a . A send
+A1 send
+A2 send
+------------ :: send_sum
+A1 + A2 send
 
--------- :: var
-a send
+A1 send
+A2 send
+------------ :: send_prod
+A1 * A2 send
+
+
+------------ :: send_thunk
+U C @ eps send
+% Note: No conclusion for U_ C @ eps
+
 
 defn
 G |- v : A
@@ -148,6 +166,58 @@ G |- (v1, v2) : A * B
 G |- v : Ai
 ---------------------- :: sum
 G |- inj i v : A1 + A2
+
+----------------------- :: var
+G1, x : A, G2 |- x : A
+
+G |- e : Ai
+----------------- :: inj
+G |- inj i e : A1 + A2
+
+G |- e1 : A
+G |- e2 : B
+----------------- :: pair
+G |- (e1,e2) : A * B
+
+G |- e : A * B
+---------------- :: fst
+G |- fst e : A
+
+G |- e : A * B
+---------------- :: snd
+G |- snd e : B
+
+G |- e0 : A1 + A2
+G, xi : Ai |- ei : B
+------------------------- :: case
+G |- case(e0,x1.e1,x2.e2) : B
+
+G |- e1 : A -> B
+G |- e2 : A
+------------------ :: app
+G |- e1 e2 : B
+
+G, x:A |- e : B
+---------------------- :: abs
+G |- \x. e : A -> B
+
+G |- e1 : A
+G , x : A |- e2 : B
+---------------------------- :: let
+G |- let x = e1 in e2 : B
+
+G , f : A |- e : A
+-------------------- :: fix
+G |- fix f. e : A
+
+G |- e : A [ mu a.A / a ]
+-------------------------- :: roll
+G |- roll e : mu a. A
+
+G |- e : mu a. A 
+-------------------------------- :: unroll
+G |- unroll e : A [ mu a.A / a ]
+
 
 (send G) |- e : C @ eps
 ------------------------- :: thunk

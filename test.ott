@@ -109,7 +109,8 @@ eps {{ tex \epsilon }} :: 'eps_' ::= {{ com Effects }}
 R :: 'R_' ::= {{ com Read sets }}
    | emp          :: :: emp {{ tex \bullet }}
    | Rd n         :: :: singleton_rd
-   | R1 _|_ R2    :: :: disjointunion_rd
+   | R1 || R2     :: :: par
+   | R1 _|_ R2    :: :: orthogonal_rd
    | R1 U R2      :: :: union_rd
    | R1 ; R2      :: :: seq
    | ( R )        :: M :: paren
@@ -220,7 +221,7 @@ G |- nu x . e : C @ eps
 G |- e1 : C @ R1
 G |- e2 : C @ R2
 ------------------------------ :: par
-G |- e1 || e2 : C @ R1 _|_ R2
+G |- e1 || e2 : C @ R1 || R2
 
 G |- e1 : C @ R11 ; R12
 G |- e2 : C @ R21 ; R22
@@ -230,6 +231,10 @@ G |- e1 ++ e2 : C @ (R11 _|_ R12) ; (R12 U R22)
 G |- e : C @ R1 ; R2
 ------------------ :: forgetSeq
 G |- e : C @ R1 U R2
+
+G |- e : C @ R1 || R2
+------------------------ :: forgetPar
+G |- e : C @ R1 _|_  R2
 
 G , a name |- e : C @ eps
 ---------------------------- :: Iforall
@@ -247,6 +252,11 @@ G        |- e1 : F A @ R1
 G, x : A |- e2 : C   @ W R2
 ------------------------------------------ :: RWR
 G |- let x = e1 in e2 : C @ R1 ; R2
+
+G        |- e1 : F A @ emp || R2
+G, x : A |- e2 : C   @ W R3
+------------------------------------------ :: RWR2
+G |- let x = e1 in e2 : C @ W (R1 || R2)
 
 G        |- e1 : F A @ W R1
 G, x : A |- e2 : C   @ R2

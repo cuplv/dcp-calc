@@ -1,8 +1,8 @@
 
-test.pdf: Makefile test.ott
-	ott -merge true -i test.ott -o test.tex
-	pdflatex test.tex
+ilc-calc.pdf: Makefile ilc-calc.ott
+	ott -merge true -i ilc-calc.ott -o ilc-calc.tex
+	pdflatex ilc-calc.tex
 
 clean:
 	rm -rf \
-		test.pdf test.tex \
+		ilc-calc.pdf ilc-calc.tex \

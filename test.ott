@@ -1,16 +1,28 @@
 embed {{ tex-preamble }}
 
-metavar a {{ tex \alpha }}, b {{ tex \beta }} ::= {{ com index variables }}
+metavar a {{ tex \alpha }}, b {{ tex \beta }} ::= {{ com type variables }}
 metavar x, y, f, g ::= {{ com variables }}
 indexvar i, j ::= {{ com Indicies }}
+metavar l ::= {{ com Channel labels }}
 
+grammar formula :: 'formula_' ::=
+  | judgement :: :: judgement
+  | false     :: :: false
+  
 grammar
 n :: 'n_' ::= {{ com Names }}
-  | a :: :: var
+  | a :: :: var {{ com Name index variables. }}
+
+grammar
+E :: 'E_' ::= {{ com Evaluation context }}
+   | E v :: :: app {{ com Evaluate consumer computation to a lambda term. }}
+   | let x = E in e :: :: let {{ com Evaluate producer computation to a return value. }}
+   | E || e :: :: parL {{ com Evaluate the left parallel term. }}
+   | e || E :: :: parR {{ com Evaluate the right parallel term. }}
 
 grammar
 e :: 'e_' ::= {{ com Expressions (Computations) }}
-   |  split ( v, x . y . e )         :: :: split {{ com split components of a pair }}
+   |  split ( v , x . y . e )        :: :: split {{ com split components of a pair }}
    |  case ( v , x1 . e1 , x2 . e2 ) :: :: case {{ com case analysis of injection }}
 
    |  \ x . e              :: :: lam {{ com function abstraction }}
@@ -21,31 +33,30 @@ e :: 'e_' ::= {{ com Expressions (Computations) }}
 
    |  fix f . e            :: :: fix  {{ com recursive computation [[e]] named by [[f]] }}
 
-   | force v               :: :: force
+   | force v               :: :: force {{ com Evaluate thunk, a suspended computation. }}
 
-   | roll e                :: :: roll
-   | unroll e              :: :: unroll
+   | unroll ( v , x . e )  :: :: unroll {{ com Iso-recursive type coercion }}
 
-   | e1 || e2              :: :: par {{ tex [[e1]]~{\mathrel{||} }~[[e2]] }}
-   | e1 ++ e2              :: :: choice {{ tex [[e1]]~{\oplus}~[[e2]] }}
-   | rd v                  :: :: read
-   | v1 --> v2             :: :: write {{ tex [[v1]] \rightarrow [[v2]] }}
-   | nu x . e              :: :: nu {{ tex \nu [[x]] . [[e]] }}
-
-%   | e1 ; e2               :: :: seq 
-%   | x <--  v ;  e        :: :: read {{ tex [[x]] \leftarrow [[v]] ; [[e]] }}
+   | e1 || e2              :: :: par {{ com Parallel computation (sub-terms may communicate). }}
+   | e1 ++ e2              :: :: choice {{ com Choice of computations (at most one sub-term steps). }}
+   | rd v                  :: :: read {{ com Read from a given channel. }}
+   | v1 --> v2             :: :: write {{ tex [[v1]] \rightarrow [[v2]] }} {{ com Write [[v1]] to channel [[v2]] }}
+   | nu x . e              :: :: nu {{ tex \nu [[x]] . [[e]] }} {{ com Fresh channel [[x]] available in [[e]]. }}
 
    | ( e ) :: M :: paren {{ com parenthesized (syntactic sugar) }}
 
    | e [ v  / x ] :: M :: subst_val  {{ com [[e]] with [[x]] substituted with [[v]] }}
    | e [ e' / f ] :: M :: subst_fix  {{ com [[e]] with [[f]] substituted with [[e']] }}
+   | E [ e ]      :: M :: exprContext {{ com Expression context }}
 
 v :: 'v_' ::= {{ com Values }}
    | ( v ) :: M :: paren
    | ()    :: :: unit
    | ( v1 , v2 ) :: :: pair {{ com Value pair. }}
-   |  inj i v    :: :: inj {{ tex [[inj]]_{[[i]]}\,[[v]] }} {{ com Injected value. }}
-   | thunk e     :: :: thunk
+   | inj i v     :: :: inj {{ tex [[inj]]_{[[i]]}\,[[v]] }} {{ com Injected value. }}
+   | thunk e     :: :: thunk  {{ com Suspended computation }}
+   | roll v      :: :: roll {{ com Recursive value }}
+   | ch l        :: :: ch {{ com Channel value }}
 
 grammar
 A, B :: 'A_' ::= {{ com Value types }}
@@ -55,6 +66,9 @@ A, B :: 'A_' ::= {{ com Value types }}
       | Ch n A :: :: Chan  {{ tex \textsf{Ch}\,[[n]]\,[[A]] }}
       | U C @ eps :: :: thunk {{ tex \textsf{U}\,[[C]]\,@\,[[eps]] }}
       | U_ C @ eps :: :: thunk_ {{ tex \underline{\textsf{U} }\,{[[C]]}\,@\,[[eps]] }}
+      | mu a . A :: :: mu
+      | a :: :: var
+      | A [ B / a ] :: M :: subst
 
 C, D :: 'C_' ::= {{ com Computation types }}
       | forall a . C :: :: forall {{ tex \forall [[a]] . [[C]] }}
@@ -79,9 +93,12 @@ terminals :: 'terminals_' ::=
     | ->     :: :: arrowright     {{ tex \rightarrow }}
     | U      :: :: union          {{ tex {\cup} }}
     | -->    :: :: longarrowright {{ tex \longrightarrow }}
+    | --->   :: :: llongarrowright {{ tex \longrightarrow }}
     | <--    :: :: longarrowleft {{ tex \longleftarrow }}
     | *      :: :: times          {{ tex \times }}
     | mu     :: :: mu             {{ tex \mu }}
+    | ||     :: :: par            {{ tex \mathrel{|\!|} }}
+    | ++     :: :: choice         {{ tex \oplus }}
 
 
 
@@ -92,7 +109,8 @@ eps {{ tex \epsilon }} :: 'eps_' ::= {{ com Effects }}
 R :: 'R_' ::= {{ com Read sets }}
    | emp          :: :: emp {{ tex \bullet }}
    | Rd n         :: :: singleton_rd
-   | R1 _|_ R2    :: :: disjointunion_rd
+   | R1 || R2     :: :: par
+   | R1 _|_ R2    :: :: orthogonal_rd
    | R1 U R2      :: :: union_rd
    | R1 ; R2      :: :: seq
    | ( R )        :: M :: paren
@@ -130,21 +148,12 @@ A * B send
 ------------------ :: thunk
 U C @ eps send
 
-A1 send
-A2 send
------------- :: send_sum
-A1 + A2 send
+A send
+-------------- :: mu
+mu a . A send
 
-A1 send
-A2 send
------------- :: send_prod
-A1 * A2 send
-
-
------------- :: send_thunk
-U C @ eps send
-% Note: No conclusion for U_ C @ eps
-
+-------- :: var
+a send
 
 defn
 G |- v : A
@@ -224,12 +233,21 @@ G |- e : C @ eps
 ------------------------- :: thunk_
 G |- thunk e : U_ C @ eps
 
+G |- v : A [ mu a . A / a ]
+----------------------------- :: roll
+G |- roll v : mu a . A
+
 defn
 G |- e : C @ eps
 :: :: JType :: 'T_'
 {{ com Typing: Under [[G]], expression [[e]] has type [[C]] and effect [[eps]]. }}
 {{ tex [[G]] [[|-]] [[e]] : [[C]]~@~[[eps]] }}
 by
+
+G |- v : mu a . A
+G, x : A [ mu a . A / a ] |- e : C @ eps
+----------------------------------------- :: unroll
+G |- unroll ( v , x . e ) : C @ eps
 
 G , f : C @ eps |- e : C @ eps
 ------------------------------- :: fix
@@ -264,7 +282,7 @@ G |- nu x . e : C @ eps
 G |- e1 : C @ R1
 G |- e2 : C @ R2
 ------------------------------ :: par
-G |- e1 || e2 : C @ R1 _|_ R2
+G |- e1 || e2 : C @ R1 || R2
 
 G |- e1 : C @ R11 ; R12
 G |- e2 : C @ R21 ; R22
@@ -274,6 +292,10 @@ G |- e1 ++ e2 : C @ (R11 _|_ R12) ; (R12 U R22)
 G |- e : C @ R1 ; R2
 ------------------ :: forgetSeq
 G |- e : C @ R1 U R2
+
+G |- e : C @ R1 || R2
+------------------------ :: forgetPar
+G |- e : C @ R1 _|_  R2
 
 G , a name |- e : C @ eps
 ---------------------------- :: Iforall
@@ -292,6 +314,11 @@ G, x : A |- e2 : C   @ W R2
 ------------------------------------------ :: RWR
 G |- let x = e1 in e2 : C @ R1 ; R2
 
+G        |- e1 : F A @ emp || R2
+G, x : A |- e2 : C   @ W R3
+------------------------------------------ :: RWR2
+G |- let x = e1 in e2 : C @ W (R1 || R2)
+
 G        |- e1 : F A @ W R1
 G, x : A |- e2 : C   @ R2
 ---------------------------------------- :: WRR
@@ -305,3 +332,53 @@ G |- v1 : A
 G |- v2 : Ch n A
 ------------------------------- :: W
 G |- v1 --> v2 : F Unit @ W R
+
+
+defn
+e ---> e'
+:: :: JStep :: 'S_'
+{{ com Expression [[e]] steps to expression [[e']] }}
+by
+
+---------------------------------------- :: split
+split((v1,v2), x.y.e) ---> e[v1/x][v2/y]
+
+------------------------------------------- :: case
+case(inj i v, x1.e1, x2.e2) ---> ei[vi/xi]
+
+---------------------- :: app
+(\x.e) v ---> e[v/x]
+
+------------------------------------- :: let
+let x = ret v in e ---> e [ v / x ]
+
+-------------------------- :: fix
+fix f.e ---> e[fix f.e/f]
+
+------------------------ :: force
+force (thunk e) ---> e
+
+--------------------------------- :: unroll
+unroll (roll v, x.e) ---> e[v/x]
+
+e ---> e'
+----------------------- :: cxt
+E [ e ] ---> E [ e' ]
+
+----------------------------------------------------------------------- :: wrRd
+E1 [ v --> ch l ] || E2 [ rd ch l  ] ---> E1 [ ret () ] || E2 [ ret v ]
+
+----------------------------------------------------------------------- :: rdWr
+E1 [ rd ch l ] || E2 [ v --> ch l  ] ---> E1 [ ret v ] || E2 [ ret () ]
+
+e1 ---> e1'
+--------------------- :: chooseL
+e1 ++  e2 ---> e1'
+
+e2 ---> e2'
+--------------------- :: chooseR
+e1 ++  e2 ---> e2'
+
+
+
+

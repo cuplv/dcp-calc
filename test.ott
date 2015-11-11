@@ -16,7 +16,7 @@ n :: 'n_' ::= {{ com Names }}
 grammar
 E :: 'E_' ::= {{ com Evaluation context }}
    | E v :: :: app {{ com Evaluate consumer computation to a lambda term. }}
-   | let x = E = in e :: :: let {{ com Evaluate producer computation to a return value. }}
+   | let x = E in e :: :: let {{ com Evaluate producer computation to a return value. }}
    | E || e :: :: parL {{ com Evaluate the left parallel term. }}
    | e || E :: :: parR {{ com Evaluate the right parallel term. }}
 

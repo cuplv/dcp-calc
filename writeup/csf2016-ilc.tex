@@ -1,5 +1,5 @@
 \newif\iftr\trfalse
-\documentclass[conference,compsoc]{IEEEtran}
+\documentclass[comsoc,conference]{IEEEtran}
 
 \ifCLASSOPTIONcompsoc
   \usepackage[nocompress]{cite}
@@ -33,28 +33,18 @@
 \usepackage{color}
 \usepackage{xspace}
 \usepackage{balance}
-
-\newcommand{\etal}{{\it et. al.}\xspace}
-\newcommand{\lang}{$\lambda_{\tt ILC}$\xspace}
-\newcommand{\tn}{\textnormal}
-\newcommand{\codeb}[1]{\textsf{#1}}
-\newcommand{\kw}[1]{\codeb{\textbf{#1}}}
-\newcommand{\hash}{\ensuremath{\mathsf{hash}}}
-\newcommand{\auth}{\ensuremath{\mathit{auth}}}
-%\newcommand{\sproj}[2][X]{\ensuremath{[\![ {#2} ]\!]}^{#1}}
-\newcommand{\sproj}[1]{\ensuremath{(\![ {#1} ]\!)}}
-\newcommand{\concat}{\ensuremath{~@~}}
-\newcommand{\unauth}{\ensuremath{\mathit{unauth}}}
-\newcommand{\todo}[1]{{\bf TODO:#1}}
-\newcommand{\mwh}[1]{{\color{blue}[Mike: #1]}}
-\newcommand{\elaine}[1]{{\color{red}[elaine: #1]}}
-\newcommand{\jnote}[1]{{\color{green}[JK: #1]}}
-\newcommand{\anote}[1]{{\color{magenta}[AM: #1]}}
+\usepackage{boxedminipage}
+\usepackage{enumitem}
+\usepackage{bussproofs}
+\usepackage{thmtools}
+\usepackage{thm-restate}
+\usepackage{bbm}
 
 
 \usepackage{url}
 %\usepackage{hyperref}
 
+\input{macros}
 
 
 \title{Interactive Lambda Calculus (\lang): A Core Semantics for Universally Composable Cryptography}
@@ -85,26 +75,36 @@ Email: matthew.hammer@colorado.edu}
 
 \section{Metatheory}
 
-\paragraph{Theorem: Deterministic Semantics}
+\subsection{Theorem: Deterministic Semantics}
+\anote{Confluence?}
 
-\paragraph{Theorem: Equivalence with ITMs}
+\subsection{Theorem: Equivalence with ITMs}
 
 We can describe, in the informal language of ITMs, how to compile an ITM to a term in this language, and what equivalence means.
 
-\paragraph{Lemma: Bisimilarity implies statistical }
+\subsection{Lemma: Bisimilarity implies statistical indistinguishability}
 This is meant to justify the use of tools like Proverif which can do bisimilarity proofs.
-
 
 \section{Implementing UC in \lang}
 
 \anote{As this is the first technical report for SaUCy, we should include an explanation of how we model UC. This includes an implementation of Static Byzantine Corruptions, and a few theorems}
 
-\paragraph{Theorem: Dummy Lemma}
+\subsection{Theorem: Dummy Lemma}
 
 
-\paragraph{Theorem: Protocol Substitution Theorem}
+\subsection{Theorem: Protocol Substitution Operation}
 
-\paragraph{Theorem: Bisimilarity implies UC emulation}
-This is meant to justify the use of tools like Proverif which can do bisimilarity proofs.
+
+\input{saucy}
+
+\input{composition}
+
+\input{async-saucy}
+
+\section{Related Work}
+
+\subsection{Symbolic UC}
+
+\subsection{RSIM}
 
 \end{document}

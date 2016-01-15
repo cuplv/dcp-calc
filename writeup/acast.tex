@@ -1,0 +1,133 @@
+\paragraph{Asynchronous Byzantine Broadcast (ACast).}
+ACast is a useful building block with Byzantine tolerance which we will see and explain later.
+
+Suppos the sender inputs $v$. If the sender is honest, then every correct process will receive $v$ within two rounds; otherwise, each correct processes may receive $v$ at any time or never at all. Regardless, no two parties receive differing values.
+
+\begin{figure}[h!]
+  \begin{boxedminipage}{\columnwidth}
+    \begin{centering}
+      \textbf{$\F{ACast}(\P_{\msf{Sender}}, {\Ps},f)$} \\
+    \end{centering}
+    \small
+    \begin{itemize}[leftmargin=2mm]
+    \item[] assume $|\msf{Corrupted}| \le f \le \lfloor (N-1)/3 \rfloor$
+    \item[] $|~ v \leftarrow \P_\msf{Sender}$
+      \begin{itemize}[leftmargin=3mm]
+      \item[] \mtt{leak} $v$
+      \item[] for each $\P_i$:
+        \begin{itemize}[leftmargin=4mm]
+        \item[] within $2$ rounds: $\mtt{A}(v) \rightarrow \P_i$
+        \end{itemize}
+        \item[] $\mtt{OK} \rightarrow \P_\msf{Sender}$
+      \end{itemize}
+    \end{itemize}
+  \end{boxedminipage}
+  \caption{
+    \label{fig:f_acast}
+    Definition of asynchronous reliable broadcast functionality $\F{ACast}$}
+\end{figure}
+
+
+We assume a signature scheme and a PKI. 
+Essentially this signature scheme is slightly stronger than intended. It guarantees that the public keys assigned to each party are the result of running the protocol correctly. In reality, parties generate their own keys, and it is possible for corrupted parties to generate public keys using something other than the ordinary setup procedure. We avoid dealing with these details, as they're inessential to the contribution here. \anote{For more detail, see the full SaUCy paper, where are more thorough about issues such as these.}
+
+\begin{figure}[h!]
+  \begin{boxedminipage}{\columnwidth}
+    \begin{centering}
+      \textbf{$\F{PKI}({\Ps})$} \\
+    \end{centering}
+    \small
+    \begin{itemize}
+    \item[] let $\Sigma$ be a signature scheme~\anote{properties?}
+    \item[] let $\msf{params} = \Sigma.Setup(1^\lambda)$
+    \item[] for each $\P_i$: $\pk_i,\sk_i := \Sigma.\msf{KeyGen}(\msf{params})$
+    \item[] for each $\P_i$:
+      \begin{itemize}[leftmargin=2mm]
+      \item[] $|~ \mtt{GETKEYS} \leftarrow \P_i; (\pk_i,\sk_i) \rightarrow \P_i$
+      \end{itemize}
+    \end{itemize}
+  \end{boxedminipage}
+  \caption{
+    \label{fig:f_pki}
+    Definition of $\F{PKI}$
+  }
+\end{figure}
+
+\begin{figure}[h!]
+  \begin{boxedminipage}{\columnwidth}
+    \begin{centering}
+      \textbf{$\proto{ACast}(\P_{\msf{Sender}}, {\Ps},f)$} \\
+    \end{centering}
+    \small
+    \begin{itemize}[leftmargin=2mm]
+    \item[] let $\msf{multicast}[\P,n] = \F{Multicast}[n](\P)$ \emph{// shortcut for accessing the $n'th$ instance of multicast where $\P$ is the sender}
+      %\item[] $\msf{GetKeys} \rightarrow \F{PKI}; (\sk,\{\pk_i\}) \leftarrow \F{PKI}$
+    \item[] let $\msf{shares}$ = \msf{ref} $empty$
+    \item[] let $\msf{digest}$ = \msf{ref} $\bot$
+    \item[] if $\msf{PID} = \P_{\msf{Sender}}$:
+      \begin{itemize}[leftmargin=2mm]
+      \item[] $v \leftarrow \chan{z2p}$
+      \item[] $\mtt{VAL}(v) \rightarrow \F{Multicast}[\msf{PID},0]; \mtt{OK} \leftarrow \msf{multicast}[\msf{PID},0]; \mtt{OK}\!\rightarrow\!\chan{p2z}$
+      \end{itemize}
+    \item[] $|~ \mtt{M}(\mtt{VAL}(v)) \leftarrow \msf{multicast}[\P_\msf{Sender},0]$
+      \begin{itemize}[leftmargin=2mm]
+      \item[] let $s = E.\msf{encode}(v)[i]$ (where $\msf{PID} = \P_i$)
+      \item[] $\mtt{ECHO}(\hash(v),s) \rightarrow \msf{multicast}[\msf{PID}, 1]$
+      \end{itemize}
+    \item[] for each $\P_j$:
+    \item[] $|~ \mtt{ECHO}(h,s_j) \leftarrow \msf{multicast}[\P_j, 1]$
+      \begin{itemize}[leftmargin=2mm]
+      \item[] $\msf{shares}[h] := \msf{shares}[h] \cup \{(j,s_j)\}$
+      \item[] if $|\msf{shares}[h]| = \lceil (N+t+1) / 2 \rceil$ and \mtt{READY} has not been sent 
+      \item[] then $\mtt{READY}(h) \rightarrow \msf{multicast}[\msf{PID}, 2]$ (only once)
+      %\item[] $\sigma := \Sigma.\msf{Sign}(\sk, \hash(v))$
+      \end{itemize}
+      %\item[] $|~ \mtt{M}(\mtt{ECHO}(\sigma,h,s_j)) \leftarrow \msf{multicast}[\P_j,1]$
+    %\item[] if $\msf{echoes}[h]$ $\lceil (N+t+1) / 2 \rceil$ then
+    \item[] $|~ \mtt{READY}(h) \leftarrow \msf{multicast}[\P_j, 2]$
+      \begin{itemize}[leftmargin=2mm]
+      \item[] if $\mtt{READY}(h)$ has been received $t+1$ times and $\mtt{READY}$ has not been sent, then $\mtt{READY}(h) \rightarrow \msf{multicast}[\msf{PID},2]$
+      \item[] if $\mtt{READY}(h)$ has been receievd $2t+1$ times then 
+        \begin{itemize}[leftmargin=2mm]
+        \item[] $\msf{digest} := h$
+        \item[] $\msf{tryToFinish}()$
+        \end{itemize}
+      \end{itemize}
+    \item[] let $\msf{tryToFinish}() = $ do
+      \begin{itemize}[leftmargin=2mm]
+      \item[] if $\msf{digest} = \bot$ then pass
+      \item[] if $|\msf{shares}[\msf{digest}]| < \lceil(N-t+1)/2\rceil$ then pass
+      \item[] $v \leftarrow E.\msf{decode}(\msf{echoes}[\msf{digest}])$
+      \item[] if $\hash(v) \neq \msf{digest}$ then pass \emph{// decode failed}
+      \item[] $\mtt{A}(v) \rightarrow \chan{p2z}$ (only once)
+      \end{itemize}
+    \end{itemize}
+  \end{boxedminipage}
+  \caption{
+    \label{fig:prot_acast}
+    Reliable broadcast protocol $\proto{ACast}$ (based on Cachin and Tessaro\cite{dispersal})
+  }
+\end{figure}
+
+
+
+\paragraph{Simulator for ACast.}
+
+The simulator runs a copy of the entire real-world experiment, in its head, including an instance of $!\F{Multicast}$ and $\F{PKI}$. 
+
+\begin{itemize}
+\item When the environment instructs an honest party $\P_S$ to submit $\msf{Input}(v)$ to \F{ACast}, the simulator \S receives $(\msf{SID},v)$ in its leak buffer. Therefore the simulator provides $\msf{Input}(v)$ to the honest party.
+\item When an honest party in the imaginary world outputs a message $v$, the adversary instructs.
+\end{itemize}
+
+This completes the description of the simulators behavior.
+
+\begin{theorem}
+The simulator above shows that $\proto{ACast}$ realizes $\F{ACast}$ in the $\{\F{PKI};\F{Multicast}\}$-hybrid model.
+\end{theorem}
+
+\begin{proof}
+If any honest party receives $t+1$ $\mtt{READY}$ messages, then at least one honest party must have collected $\lfloor N + t + 1 / 2 \rfloor$ \mtt{ECHO} messages. 
+This implies that every honest party will receive at least $\lfloor N - t+1 / 2 \rfloor$ \mtt{ECHO} messages from honest parties, and will thus be able to reconstruct the message.
+If any honest party outputs $v$ then it must have received $2t+1$ \mtt{READY} messages, at least $t+1$ were sent by honest parties. And if $t+1$ honest parties send ready messages, then \mtt{READY} messages have been received, then at least $t+1$ honest parties have sent \mtt{READY} messages, in which case all honest parties will output \mtt{READY} messages and receive $2t+1$.
+\end{proof}

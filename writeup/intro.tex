@@ -60,3 +60,21 @@ def teeRandom (getRand, rand) (getRandL, randL) (getRandR, randR) :=
 
 
 
+
+
+\subsection{Why bother with Simulation Based Security? Isn't this out of place?}
+Simulation-based security notions are stronger than property-based definitions, because they guarantee security when concurrent composition with instances other arbitrary protocols.
+Additionally, a virtue of simulation-based specifications is that they consist of executable code and are, in our subjective opinion, often easier to understand and work with.
+
+It is actually because of the diversity and complexity of the cryptocurrency applications that motivate our work (many of which rely on cryptography) that we consider the discipline of composable simulation-based security an essential goal.
+
+Our contribution is a simulation-based security framework for asynchronous protocols that corrects flaws in earlier attempts. We affirm that the BFT protocols we study are still secure in this stronger model. This ensures that these protocols can be used as components of larger (e.g., cryptocurrencies) simulation-based applications.
+
+We stress that the protocols we examine in this paper are not new, and have already been proven correct in traditional asynchronous models.
+That they are also secure in our simulation-based framework model is not surprising, but rather serves as a useful sanity check of our model.
+
+Actually the proofs carry over in tact, and the simulators are simple, since the protocols have little to ``hide.''
+
+Although we present the protocols and specifications in the style of our new formalism, it is not necessary to understand the intricate details of our model to read.
+Instead these can be read as pseudocode, and intuitions from the standard informal asynchronous model remains applicable.
+

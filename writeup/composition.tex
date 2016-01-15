@@ -1,0 +1,160 @@
+\paragraph{Composition Theorems and Categorical Notation.}
+As a matter of style, we use categorical notation to explain our constructions, which provides us with convenient default choices for many composition operations.
+
+Without needing to go into much detail about category theory, we consider functionalities as objects, and protocols as an arrow from the functionality it depends on to the functionality it realizes. Thus
+\mbox{$\F{A} \overset{\pi}{\longrightarrow} \F{B}$}
+is an abbreviation for
+
+\begin{align*}
+\forall \A \exists \S_\A \forall \Z. \quad
+ &         \execUC{\Z}{\pi}{\A}{\msf{Async}(\F{A})} \\ 
+ \approx &  \execUC{\Z}{\pi_\msf{id}}{\S_\A}{\msf{Async}(\F{B})}
+\end{align*}
+
+
+Functionality realization forms a category, as we have a notion of an identity protocol and an associative protocol composition operator.
+
+\emph{Ideal protocol}:
+The identity protocol (aka, the ``ideal'' protocol) simply forwards every message from the environment to the functionality, and vice versa. It also leaves $\msf{conf}$ unchanged.
+\begin{theorem}
+\[
+\F{} \xrightarrow{\pi_\msf{id}} \F{}
+\]
+\end{theorem}
+\begin{figure}[h!]
+\begin{boxedminipage}{\columnwidth}
+\begin{centering}
+$\pi_\msf{id} \triangleq$
+\end{centering}
+\small
+\begin{itemize}[leftmargin=2mm]
+\item[] $|$ forever do $\{m \leftarrow \chan{f2p}; m \rightarrow \chan{p2z} \}$
+\item[] $|$ forever do $\{m \leftarrow \chan{z2p}; m \rightarrow \chan{p2f} \}$
+\end{itemize}
+\hrule
+\begin{itemize}[leftmargin=2mm]
+\item[] $\pi_\msf{id}.\mtt{cmap}~ \msf{SID}~ \msf{conf} \triangleq \msf{conf}$
+\end{itemize}
+\end{boxedminipage}
+\end{figure}
+
+We omit the (obvious) proof for this.
+
+\emph{Protocol composition.}
+The composed protocol $\pi_1 \circ \pi_2$ connects the fuctionality tape (\chan{p2f}) of $\pi_2$ to the environment tape (\chan{f2p}) of $\pi_1$.
+
+\begin{figure}[h!]
+\begin{boxedminipage}{\columnwidth}
+\begin{centering}
+$\pi_1 \circ \pi_2 \triangleq$
+\end{centering}
+\small
+\begin{itemize}[leftmargin=2mm]
+\item[] let $\msf{conf'} = \pi_2.\mtt{cmap} ~ \msf{SID} ~\msf{conf'}$
+\item[] $\nu c.$
+~ $|~ \pi_1 \{\msf{conf}/\msf{conf'}, \chan{p2z}/c\}$
+~ $|~ \pi_2 \{\chan{p2f}/c\}$
+\end{itemize}
+\hrule
+\begin{itemize}[leftmargin=2mm]
+\item[] $(\pi_1 \circ \pi_2).\mtt{cmap}~ \msf{SID}~ \msf{conf} \triangleq \pi_1.\mtt{cmap} ~\msf{SID}~(\pi_2.\mtt{cmap} ~\msf{SID} ~\msf{conf})$
+\end{itemize}
+\end{boxedminipage}
+\end{figure}
+
+\begin{theorem}
+\begin{prooftree}
+\AxiomC{$\F{A} \overset{\pi_2}{\longrightarrow} \F{B}$}
+\AxiomC{$\F{B} \overset{\pi_1}{\longrightarrow} \F{C}$}
+\BinaryInfC{$\F{A} \xrightarrow{\pi_1 \circ \pi_2} \F{C}$}
+\end{prooftree}
+\end{theorem}
+\begin{proof}
+A similar is proven for \SaUCy, but we must check that it is preserved even given the $\msf{Async}(\cdot)$ wrapper. The simulator $S$ is straightforward, and simply runs the simulator $S_1$ for $\pi_1$ alongside the simulator $S_2$ for $\pi_2$. To finish the proof, we must take an environment $\Z$ that distinguishes $S$ and reduce it to one that distinguishes either $S_1$ or $S_2$.
+\end{proof}
+
+\emph{Empty Functionality.}
+The empty functionality $\F{\mathbbm{1}}$ provides no particular power, and can be trivially realized from any functionality. For concreteness, it simply echoes back any message it receives from a party or adversary. (Many other equally trivial definitions are feasible too).
+\begin{theorem}
+\[
+\F{} \rightarrow \F{\mathbbm{1}}
+\]
+\end{theorem}
+\begin{proof}
+The protocol for this realization simply echoes back all messages from the environment. The simulator likewise echoes back messages intended for corrupted parties. The simulator also runs a copy of $\F{}$ locally, and forwards messages faithfully to it. The \msf{leaks} buffer is always empty. This is a perfect simulation.
+\end{proof}
+
+\emph{Functionality Products.}
+We often wish to write protocols that make use of more than one functionality. The product of two functionalities, $\{\F{L};\F{R}\}$, provides access to an instance of $\F{L}$ and one of $\F{R}$ by multiplexing the $\chan{f2p}$ and $\chan{f2a}$ channels with tagged messages $\mtt{L}(\cdot)$ and $\mtt{R}(\cdot)$. The instances of \F{L} and \F{R} are also given distinct \msf{SID}s by prepending tags.
+
+\begin{figure}[h!]
+\begin{boxedminipage}{\columnwidth}
+\begin{centering}
+$\F{L} \times \F{R} \triangleq$
+\end{centering}
+\begin{small}
+\begin{itemize}[leftmargin=2mm]
+\item[] parse $\msf{conf}$ as $(\msf{conf}_\msf{L},\msf{conf}_\msf{R})$
+\item[] $\nu  ~\chan{f2pL}~\chan{f2pR}~\chan{f2aL}~\chan{f2aR}.$
+\item[] $|~ \F{L}\{\mtt{L}(\msf{SID}),\msf{conf}_\msf{L}, \chan{f2p}/\chan{f2pL}, \chan{f2a}/\chan{f2aL} \}$
+\item[] $|~ \F{R}\{\mtt{R}(\msf{SID}),\msf{conf}_\msf{R}, \chan{f2p}/\chan{f2pR}, \chan{f2a}/\chan{f2aR} \}$
+\item[] $|$ forever do 
+  \begin{itemize}[leftmargin=2mm]
+  \item[] $|~ \mtt{L}(m)\leftarrow \chan{p2f}; m \rightarrow \chan{f2pL}$
+  \qquad  $|~ \mtt{R}(m)\leftarrow \chan{p2f}; m \rightarrow \chan{f2pR}$
+  \item[] $|~ \mtt{L}(m)\leftarrow \chan{a2f}; m \rightarrow \chan{f2aL}$
+  \qquad  $|~ \mtt{R}(m)\leftarrow \chan{a2f}; m \rightarrow \chan{f2aL}$
+  \item[] $|~m\leftarrow\chan{a2fL};\mtt{L}(m) \rightarrow \chan{f2a}$
+  \qquad  $|~m\leftarrow\chan{a2fR};\mtt{R}(m) \rightarrow \chan{f2a}$
+  \item[] $|~m\leftarrow\chan{p2fL};\mtt{L}(m) \rightarrow \chan{f2p}$
+  \qquad  $|~m\leftarrow\chan{p2fR};\mtt{R}(m) \rightarrow \chan{f2p}$
+  \end{itemize}
+\end{itemize}
+\end{small}
+\hrule
+\begin{centering}
+$\pi_1 \times \pi_2 \triangleq$
+\end{centering}
+\begin{small}
+\begin{itemize}[leftmargin=2mm]
+\item[] $|$ forever do $\{m \leftarrow \chan{f2p}; m \rightarrow \chan{p2z} \}$
+\item[] $|$ forever do $\{m \leftarrow \chan{z2p}; m \rightarrow \chan{p2f} \}$
+\end{itemize}
+\end{small}
+\hrule
+\small
+\begin{itemize}[leftmargin=2mm]
+\item[] $(\pi_\msf{L}\!\times\!\pi_\msf{R}).\mtt{cmap}~\msf{SID}~ \msf{conf}\!\triangleq\!(
+\pi_\msf{L}.\mtt{cmap}~\msf{SID}~\msf{conf},\!
+\pi_\msf{R}.\mtt{cmap}~\msf{SID}~\msf{conf})$
+\end{itemize}
+\end{boxedminipage}
+\end{figure}
+
+
+\begin{theorem}
+
+\begin{prooftree}
+\AxiomC{$ \F{B_1} \times \F{B_2} \overset{\pi}{\longrightarrow} \F{C}  $}
+\AxiomC{$ \F{A_1} \overset{\pi_1}{\longrightarrow} \F{B_1} $}
+\AxiomC{$ \F{A_2} \overset{\pi_2}{\longrightarrow} \F{B_2} $}
+\TrinaryInfC{
+$ \{\F{A_1};\F{A_2}\} \xrightarrow{\pi \circ \{\pi_1;\pi_2\}} \F{C}$
+}
+\end{prooftree}
+\end{theorem}
+
+Multi-session extension ($!\F{}$ and $!\pi$)
+
+Squash lemma:
+\[
+ !\F{} \longrightarrow !!\F{}
+\]
+
+Multi-session lemma:
+\[ 
+\F{A} \overset{\pi}{\longrightarrow} \F{B}
+\implies
+!\F{A} \overset{!\pi}{\longrightarrow} !\F{B} 
+\]
+

@@ -1,0 +1,259 @@
+\section{Modeling Asynchronous Protocols in \SaUCy}
+
+
+
+In the asynchronous network model, the adversary is given full control over the delivery order of network messages, and parties in the network are not assumed to have a reliable source of time. This is in contrast to stronger \emph{synchronous} or \emph{partially synchronous} models, where parties have (at least occasionally) reliable clocks, and message delays are bounded \emph{a priori}.
+However, even in the asynchronous model, the adversary must deliever messages eventually. It is therefore also meaningful to characterize the latency of an asynchronous protocol by the number of causally-related round-trips.
+
+
+
+\paragraph{Design Goals.}
+
+\begin{enumerate}
+\item The adversary must not be able to prevent progress indefinitely.
+\item The adversary must be able to completely control the delivery order of events.
+\item The adversary must be given a chance to run as much as possible --- the model should not inadvertently ``starve'' the adversary.
+\item We must be able to characterize the running time of an asynchronous protocol in terms of the number of ``round-trips'' required.
+\end{enumerate}
+
+Our solution, satisfying all of these demands, is to maintain a buffer of pending events, such that the environment can directly force the system to make progress by delivering the next event in the buffer.
+However, the adversary is activated prior to each such forced delivery, and the adversary is allowed to deliver any event, from anywhere in the buffer, at any time, thereby satisfying goals 2 and 3.
+The events in the buffer are stratified by a round number. An event added (by a functionality or by the adversary) during round $r$ is assigned label $r+1$, and the adversary is only allowed to permute the buffers in the current round.
+
+
+\paragraph{Asynchronous functionalities.}
+We model asynchronous protocols using a $\F{Clock}$ functionality in \SaUCy. Asynchronous functionalities can interact with the clock in order to register ``callbacks'', which are guaranteed to be invoked before the round counter advances. Functionality definitions can therefore make use of routines $\msf{by next round}$ or $\msf{within 2 rounds}$ to handle message scheduling and quantify latency. The adversary can trigger callbacks in any order, however the clock counter does not advance until all callbacks registered during the previous round are delivered. If the adversary does not deliver any messages, then the environment can force progress to be made by delivering messages in a default order.
+
+Although functionalities may be written to depend on the round counter, protocol parties \emph{cannot} interact directly with the clock and determine the current round. Thus an asynchronous protocol must be written to depend only on the order of messages delivered to it from functionalities, not on any direct observation of time.
+
+\begin{itemize}
+\item $\mtt{leak}(v)$: Defined as interaction with $\F{Leak}$. Causes $\F{Leak}$ to record a new entry $(\msf{SID},v)$, where $\msf{SID}$ is the current session ID of the caller, in a buffer.  The adversary can query $\F{leak}$ and immediately receives the ordered seqeuence of leaked messages in the buffer.
+\item $\mtt{by next round: \{do...\}}$: Defined as an interaction with $\F{Clock}$. Registers a callback for the next round. At any time the adversary can instruct $\F{Clock}$ to deliver a currently-pending callbacks. The environment can force progress by delivering the next callback in the buffer. Other keywords, $\mtt{eventually}$, or $\mtt{within N rounds}$ are implemented in terms of $\mtt{by next round}$,
+%\item $\mtt{publish}$: Defined as interaction with $\F{Publish}$. Data is eventually provided to any party who asks for it. The set of parties does not need to be predetermined. Must be activated by the party polling the functionality (unlike \F{Auth}, where the recipient does not have to poll before being activated).
+\end{itemize}
+
+\begin{figure}[h!]
+\begin{boxedminipage}{\columnwidth}
+\begin{centering}
+\textbf{$\msf{Async}(\F{})$} \\
+\end{centering}
+\small
+\begin{itemize}[leftmargin=2mm]
+  \item[] let $\msf{round}$ = ref 0
+  \item[] let $\msf{cbMap}$ = ref empty
+  \item[] let $\msf{cbBuffer}$ = ref empty
+  \item[] let $\mtt{byNextRound} ~e = $ do
+    \begin{itemize}[leftmargin=3mm]
+    \item[] $\nu c.$
+    \item[] let $\msf{cb} = \mtt{fresh}$
+    \item[] $@\msf{cbMap}[\msf{cb}] := c$
+    \item[] $@\msf{cbBuffer}[@\msf{round}+1].\msf{append}~ \msf{cb}$
+    \item[] $() \leftarrow c$ \emph{// block until delivery}
+    \item[] $e$
+    \end{itemize}
+  \item[] let $\msf{deliver}~ \msf{cb} =$
+    \begin{itemize}[leftmargin=3mm]
+    \item[] find $\msf{cb}$ in $@\msf{cbBuffer}$
+    \item[] remove $\msf{cb}$ from $@\msf{cbBuffer}$
+    \item[] $() \rightarrow @\msf{cbMap}[\msf{cb}]$
+    \end{itemize}
+  \item[] $|$ forever do
+    \begin{itemize}[leftmargin=3mm]
+    \item[] $\mtt{DELIVER}(\msf{cb}) \leftarrow \chan{a2clock}$
+    \item[] $\msf{deliver}~\msf{cb}$
+    \end{itemize}
+  \item[] $|$  forever do
+    \begin{itemize}[leftmargin=3mm]
+      \item[] $\mtt{MAKEPROGRESS} \leftarrow \chan{z2clock}$
+      \item[] $\mtt{MAKEPROGRESS} \rightarrow \chan{clock2a}$
+      \item[] $\mtt{MAKEPROGRESS} \leftarrow \chan{z2clock}$
+      \item[] if $@\msf{cbBuffer}[@\msf{round}]$ is empty:
+        \begin{itemize}[leftmargin=4mm]
+        \item[] $@\msf{round} += 1$
+        \item[] $\mtt{NEWROUND}(@\msf{round}) \rightarrow \chan{clock2z}$
+        \end{itemize}
+      \item[] else
+        \begin{itemize}[leftmargin=4mm]
+        \item[] let $\msf{cb}$ be the first element of $@\msf{buffer}[@\msf{round}]$
+        \item[] $\msf{deliver}~ \msf{cb}$
+        \end{itemize}
+    \end{itemize}
+\end{itemize}
+\hrule
+\begin{itemize}[leftmargin=2mm]
+\item[] let $\msf{leaks} = \msf{ref} []$
+\item[] let $\mtt{leak}~ m =$
+  \begin{itemize}[leftmargin=3mm]
+    \item[] let $\msf{sid} := \msf{getSID}()$
+    \item[] $@\msf{leaks}.\msf{append}~ (\msf{sid},m)$
+  \end{itemize}
+\item[] $|$ forever do
+  \begin{itemize}
+    \item[] $\mtt{READLEAKS} \leftarrow \chan{a2leak}$
+    \item[] $@\msf{leaks} \rightarrow \chan{leak2a}$
+  \end{itemize}
+\end{itemize}
+\hrule
+\begin{itemize}[leftmargin=2mm]
+\item[] $| \F{}\{\msf{leak},\msf{byNextRound}\}$
+\end{itemize}
+\end{boxedminipage}
+\caption{
+\label{fig:async}
+Definition of $\msf{Async}(\cdot)$, the Asynchronous Functionality wrapper.
+}
+\end{figure}
+
+
+\begin{itemize}
+ \item Formally, the type system keeps track of the polarity (i.e., sending or receiving) of each endpoint of a channel. Thus in most cases, to allow duplex communication, we must pass around a pair of channels. A protocol party writes to the $\chan{p2f}$ channel and reads from the $\chan{f2p}$ channel, and vice-versa for the functionality. We simply write $\chan{f2p}$ as though it means $\{f2p,p2f\}$.
+
+ \item Each party is identified by a unique string, it's PID, which we typically denote with a variable $\P$. A functionality sends a message $m$ to a party $\P$ with the expression $(\P,m) \rightarrow \chan{f2p}$. We abbreviate this with $m \rightarrow \P$.
+ \item A functionality receives a message from a party by reading from $(\P,m) \leftarrow \chan{p2f}$; this has the effect of binding the variables $\P$ and $m$.
+ \item A party receive a message from the functionality with $m \leftarrow \chan{f2p}$.
+ \item within $0$ rounds do $e$ $\triangleq$ $e$
+ \item[] within $N$ rounds do $e$ $\triangleq$ \mtt{byNextRound} do
+   \begin{itemize}[leftmargin=40mm]
+   \item[] within $N-1$ rounds do $e$
+   \end{itemize}
+\end{itemize}
+
+
+\paragraph{The Fair Environment}
+
+The fair environment behaves as follows: it runs the adversary a polynomial number of times. Then it calls make progress until a round advances.
+
+The environment delegates all other behaviors to the adversary. It allows the adversary to choose the SID for the experiment and to choose the set of corrupted parties.
+
+\begin{theorem}
+Every event delivery order that can be achieved by an adversary and arbitrary environment can be emulated by the fair environment.
+\end{theorem}
+\proof
+TODO: Let $\A'$ be $\A \circ \Z$ (that is, )
+\qed
+
+\begin{theorem}
+The number of rounds as measured by $\F{clock}$ is consistent with the definition of round labelling defined earlier for standard.
+\end{theorem}
+\proof
+TODO: 
+\qed
+
+\paragraph{Asynchronous Communication Primitives.}
+The standard model of asynchronous computation resembles point-to-point authenticated channels. In \SaUCy, these are modeled as a functionality, $\F{Auth}$, as defined below.
+
+At any time, the sender submit input a (single) message, which is guaranteed to be delivered before the end of the next round. The $\F{Auth}$ functionality does not provide any privacy - the message is immediately made available to the adversary, via the $\msf{leak}$ instruction. This instruction appends the leaked information into a buffer that the adversary can read, although it does not immediately notify the adversary (instead, control is returned immediately to the sender). The keywords ${\bold \mtt{leak}}$ and ${\bold \mtt{within N rounds}}$ are given concrete semantics in \SaUCy (more detail given in Appendix).
+
+To keep the description simple, each instance of $\F{Auth}$ corresponds to a one-shot channel between a fixed sender and recipient.
+The instance is indexed by the two parties' identity strings, as well as a arbitrary session tag, encoded in the session string. To represent multi-use channels on a fully-connected graph, we can apply standard techniques. For example $!\F{Auth}$ can invoke arbitrary sub-sessions of $\F{Auth}$, where any sender and recipient can be designated, and message sequence numbers can be encoded in the tag.
+
+
+\begin{figure}[h!]
+\begin{boxedminipage}{\columnwidth}
+\begin{centering}
+\textbf{$\F{Auth}(\P_{\msf{Sender}}, \P_{\msf{Recipient}})$} \\
+\end{centering}
+\small
+\begin{itemize}[leftmargin=2mm]
+  \item[] $|~ v \leftarrow \P_{\msf{Sender}}$:
+    \begin{itemize}[leftmargin=3mm]
+    \item[] \mtt{leak} $v$
+    \item[] \mtt{byNextRound}: $\msf{A}(v) \rightarrow \P_\msf{Recipient}$
+    \item[] $\mtt{OK} \rightarrow \P_{\msf{Sender}}$
+    \end{itemize}
+\end{itemize}
+\end{boxedminipage}
+\caption{
+\label{fig:fauth}
+Definition of $\F{Auth}$, a one-shot, point-to-point, asynchronous messaging channel. \anote{Delete in favor of multicast}}
+\end{figure}
+
+
+\begin{figure}[h!]
+\begin{boxedminipage}{\columnwidth}
+\begin{centering}
+\textbf{$\F{Multicast}(\P_{\msf{Sender}}, \Ps)$} \\\end{centering}
+\small
+\begin{itemize}[leftmargin=2mm]
+\item[] if $\P_{\msf{Sender}} \notin \msf{Corrupted}$ then
+  \begin{itemize}[leftmargin=2mm]
+  \item[] $|~ v \leftarrow \P_{\msf{Sender}}$
+    \begin{itemize}[leftmargin=2mm]
+    \item[] \mtt{leak} ~$v$
+    \item[] for each $\P_i$: 
+      \begin{itemize}[leftmargin=2mm]
+      \item[] \mtt{byNextRound}: $\mtt{M}(v) \rightarrow \P_i$
+      \end{itemize}
+    \item[] $\mtt{OK} \rightarrow \P_\msf{Sender}$
+    \end{itemize}
+  \end{itemize}
+\item[] else for each $\P_i$
+  \begin{itemize}[leftmargin=2mm]
+  \item[] $|~ \mtt{DELIVER}(i,v) \leftarrow \A;~
+    \mtt{\mtt{M}(v)} \rightarrow \P_i$
+  \end{itemize}
+\end{itemize}
+\end{boxedminipage}
+\caption{
+\label{fig:multicast}
+Definition of $\F{Multicast}$, a one-shot, one-to-many, asynchronous messaging channel. If the sender is corrupted, the adversary may deliver arbitrary (possibly distinct) messages to each party.
+}
+\end{figure}
+
+\paragraph{Measuring Time in \SaUCy.}
+During the execution of a protocol, a trace of events is generated.
+
+\[
+ trace[ \execUC{\Z}{\pi}{\A}{\F{}} ] \in \{ (register(e) | deliver(e) \}^*
+\]
+
+
+\paragraph{How to Prove Asynchronous Protocols in SaUCy.}
+Although the simulation-based security framework is intended to capture notions of privacy, the protocols are essentially ``full-information,'' and do not make any privacy guarantees. This fact makes it fairly straightforward to create a simulator. 
+
+Most of the challenge in writing a simulator for a cryptographic protocol arises due to the simulator's lack of information; the simulator typically make plausible-looking ``guesses'' about communications between functionality, and must later show them to be consistent.
+
+It turns out that the property-based definitions of asynchronous protocols are equivalent, with some additional mild constraints:
+\begin{itemize}
+\item \emph{(Input transparency.)} An asynchronous functionality is input-transparent if it leaks every input it receives from an honest party.
+\item \emph{(Output transparency.)} A functionality provides output transparency if for every output it provides 
+\end{itemize}
+If a functionality is output.
+
+All our simulators have a common structure. We abstract these away by defining a simulator wrapper. We elaborate this for the example of ACast, and in later constructions only describe the differences.
+
+Due to the dummy lemma, we will only need to define simulators for the dummy adversary. Thus we will speak of messages ``instructs the corrupted parties to send'' or ``instructs the adversary to send $m$ to the functionality.''
+
+We will need to define the behavior of the simulator given for several ``flows'': we must say what the simulator does when it receives commands from the environment, and when it receives messages from the ideal world functionality.
+
+The simulator $\msf{Sim}(\cdot)$ runs a sandboxed copy of the entire real-world experiment, including the protocol $\pi$ and the real world functionality $\msf{Async}(\F{Real})$. We call this sandboxed execution the \emph{imaginary world}.
+
+
+\begin{figure}[h]
+\begin{boxedminipage}{\columnwidth}
+\begin{centering}
+Wrapper $\msf{Sim}(\msf{S})$ \\
+\end{centering}
+\begin{itemize}
+\item When $\msf{Sim}(\msf{S})$ receives \mtt{MAKEPROGRESS} from the ideal world clock, it fetches the current leaks buffer. If a new element $(\msf{SID},m)$ has been added to the leak buffer, send $(\msf{SID},m)$ to the simulator program $\msf{S}$. In our protocols, each input provided by a party generates some leakage, and the simulator program will be able to infer from the leak what inputs were given to an honest party.
+\item When the environment asks the dummy adversary to fetch the leaks, the simulator returns the imaginary world leaks buffer in $\msf{Async}(\F{Real})$.
+\item When the imaginary world functionality $\F{Real}$ registers a new callback in round, the simulator registers a callback with the ideal world in round $r$.
+\item When the environment asks the dummy adversary to send a message to the real world functionality $\F{Real}$, this is passed directly to the imaginary world functionality.
+\item When $\F{Real}$ outputs a message to a corrupted party, this message is forwarded directly to the environment.
+\end{itemize}
+\end{boxedminipage}
+\caption{Simulator Wrapper $\msf{Async}()$}
+\end{figure}
+
+%%% ACast
+\input{acast}
+
+\paragraph{Differences with Previous Asynchronous Models UC}
+In the traditional models of asynchronous communication model, every message is guaranteed to eventually be delivered, but the adversary is given full control over the delivery order.
+However, the typical presentation of asynchronous networks in UC is weaker than this, as it allows the adversary to delay delivery \emph{forever}.
+
+Additionally, when defining functionalities, it is common to activate the adversary and ``wait for \mtt{OK} from \A.'' This is not what's intended, as nothing constrains the adversary to answer such messages. Furthermore, a simple implementation of multicast, that sends multiple messages, would be unable to implement, as control does not return after activating the adversary. \anote{explain one of the pitfalls from the proposal}
+
+Furthermore, this does not provide a way to count rounds, therefore it's impossible to directly use this model to characterize the running time of a protocol.
+
+

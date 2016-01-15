@@ -1,0 +1,47 @@
+\section{The \SaUCy Execution model}
+
+\paragraph{Simulation Based Security}
+Environments, adversaries, protocols, functionalities. Indistinguishability
+At the lowest level, these are Interactive Turing Machines, or processes in a core calculus. This detail is deferred.
+
+Composition theorems. Protocol substitution. Other composition theorems allow functionalities to be modified. For example ``joint-state'' composition.
+
+Each functionality instance is associated with a unique session string. By convention, c.f. UC, configuration parameters are typically encoded in the session string.
+
+\paragraph{SaUCy}
+SaUCy is designed to overcome several technical details of the UC model. Mostly, these amount to abuses of notation, that we must resolve before the system can be concretely implemented.
+
+As another example, UC presentations are often written as though many operations can be performed in parallel,  e.g. sending $N$ messages in a round, once each to the $N$ other parties. This is ill-defined in the interactive turing machine model, which specifies an unambiguous execution order: the first such message ends the current activation and invokes the adversary. %These and other issues, along with our solutions, are described in more detail in the Appendix.
+
+\[
+ \execUC{\pi}{\A}{\Z}{\F{}}
+\]
+
+
+\paragraph{Configurations and Session Identifiers.}
+The UC framework is concerned with safe concurrent composition of protocols. To keep protocols safe, (e.g., from hazards such as replay attacks), need to enforce isolation. The SID mechanism provides a systematic way to to enforce this automatically, hiding many of the tedious and error-prone details from the programmer.
+
+Functionalities and protocols often depend on configuration parameters which can only be determined at runtime, such as the PIDs of parties involved in a protocol. These are packaged in a \msf{conf} string. Historically, such configuration parameters are encoded in the \msf{SID}. We prefer to avoid conflating these and instead keep them distinct.
+
+In a UC execution, the environment chooses the \msf{SID} and \msf{conf}. This \msf{SID} and \msf{conf} are made available to instances of the protocol $\pi$. The protocol must define a mapping from $\msf{conf}$ to a configuration for the functionality it depends on, which we denote $\pi.\mtt{cmap}$. This must be a deterministic computable function, that does not rely on any channels (as otherwise this would imbue the model with too much power). The protocol must output a configuration $\msf{conf}' := \pi.\mtt{cmap}(\msf{SID},\msf{conf})$, which is then passed along with \msf{SID} to the functionality.
+
+\paragraph{Assertions.}
+We use the syntax $\msf{assert} condition$ in functionalities to establish assertions. An assertion failure immediately outputs. This is supported at the lowest level in the process calculus. It is not necessary to handle assertions by the . The interesting specifications are those in which it is easy to determine whether an assertion has occured. In this paper, we only use assertions to specify the fault tolerance assumptions.
+
+\paragraph{Randomness.}
+The underlying core calculus is purely deterministic. Parties can access random tapes. In some cases it is important to be able to replay random tape so that the same outcome is achieved. Explicitly modeled using tapes. A party requests a random bit by sending a unit on the channel, and read a random bit from the channel. We omit details of passing around randomness as they are not needed in proofs here.
+
+\input{defn_execuc}
+
+\paragraph{Passing.}
+A functionality or protocol can ``pass''. Control is returned again to the environment. Effectively there is a default channel, available to the environment, from which it can read a steady stream of units. This is also the case if execution gets stuck, or if execution exceeds a running bound.
+
+\paragraph{Static Corruptions}
+SaUCy models static Byzantine corruptions. The environment $\Z$ must declare a set of corrupted \msf{PID}s at the beginning of the execution. The adversary is given complete control over corrupted parties --- messages sent to a corrupted party from the environment or from the functionality are routed to the adversary, and the adversary sends messages to the functionality or environment on behalf of corrupted parties. The set of corrupted parties is known to the functionality (via the keyword $\msf{Corrupted}$), but not to the protocol parties.
+
+\paragraph{Dummy Lemma}
+Although the adversary can be fully general, it suffices to construct a simulator for the ``dummy adversary'', defined below, which simply gives the environment direct access to the corrupted parties and to the functionality.
+
+\paragraph{Protocol Composition.}
+Protocols are used to realize a functionality-based specification, assuming access to some primitive or setup, which are also modeled as functionalities. For example, an ACast protocol that uses authenticated channels and threshold signatures give $\msf{protACast} : (!\F{Auth}; \F{ThresholdSig}) \rightarrow \F{ACast}$.
+

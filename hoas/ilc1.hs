@@ -89,11 +89,11 @@ class Lin (repr :: Nat -> [Maybe Nat] -> [Maybe Nat] -> * -> *) where
                ) -> 
                repr vid hi ho c
 
-{--    (!) :: repr vid tf h h a -> repr vid False h h (Bang a)
-    letBang :: repr vid tf0 hi h (Bang a) -> 
-               (RegVar repr a -> repr vid tf1 h ho b) -> 
-               repr vid (Or tf0 tf1) hi ho b
-   --} 
+    (!) :: repr vid h h a -> repr vid h h (Bang a)
+    letBang :: repr vid hi h (Bang a) -> 
+               (RegVar repr a -> repr vid h ho b) -> 
+               repr vid hi ho b
+
 type Defn a = forall repr v h . (Lin repr) => repr v h h a
 
 defn :: Defn a -> Defn a
@@ -142,6 +142,11 @@ instance Lin R where
     letStar xy f = R $ do
                      (Tensor x y) <- unR xy
                      unR $ f (R $ return x, R $ return y)
+
+    (!) a = R $ unR a >>= return . Bang
+    letBang a f = R $ do
+                    a' <- unR a
+                    unR $ f $ R $ return $ unBang a'
     
 
 eval :: R Z '[] '[] a -> IO a
@@ -173,10 +178,14 @@ test9 = nu $ \(w,r) -> drop (wr w (base ())) (wr w (base ())) ||| readForever' 0
 readForever'' :: Lin repr => Int -> Int -> repr vid hi h (Rd a) -> repr vid hi h b
 readForever'' m n c = letStar (rd c) $ \(c, x) -> drop x $ drop (prt ("[" ++ show m ++ "]:" ++ show n)) $ readForever'' m (n+1) c
 
-test10 = nu $ \(w,r) -> drop (wr w (base ())) (wr w (base ())) ||| readForever'' 0 0 r
+test10 = nu $ \(w,r) -> drop (wrClosed w (base ())) (wrClosed w (base ())) ||| readForever'' 0 0 r
 
 multiplex :: Lin repr => repr vid hi h (Rd (Base Int)) -> repr vid hi h (Base Int)
 multiplex c = letStar (rd c) $ \(c, x) -> drop c $ app (\x -> base x) x
+
+test11 = nu $ \(w,r) -> wrClosed w (base 1) ||| 
+                        (letStar (rd r) $ \(r, x) -> 
+                         nu $ \(w',r') -> drop w' $ drop x $ drop r' r)
 
 
 -- good = defn $ llam $ \f -> llam $ \x -> f <^> x

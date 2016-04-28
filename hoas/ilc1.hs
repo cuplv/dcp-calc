@@ -24,8 +24,6 @@ import Prelude hiding (drop)
 
 data Nat = Z | S Nat
 
---data Mayb = Noth | Jus Nat Typ
-
 --
 -- Type level Nat equality
 --
@@ -138,7 +136,7 @@ type Defn a = forall repr v h . (Sendable h h, Lin repr, LinRec repr) => repr v 
 
 defn :: Defn a -> Defn a
 defn x = x
--- show
+
 newtype R (vid::Nat) (hi::[Maybe (Nat,*)]) (ho::[Maybe (Nat,*)]) a = R {unR :: IO a}
 
 instance Lin R where
@@ -219,6 +217,7 @@ newtype MyListF a lst = MLF {unMLF :: One :+: (a :*: lst)} deriving Show
 type MyList a = Mu (MyListF a)
 instance Send a => Send (MyList a)
 
+{-
 type Map k a = MyList (k :*: a)
 
 mapIns :: Defn (Map k a :-<>: k :*: a :-<>: Map k a)
@@ -240,7 +239,6 @@ tl0 = defn $ mapIns <^> mapNil <^> (base 1 <**> base "1")
 
 tl1 :: Defn (Map (Base Int) (Base String))
 tl1 = defn $ mapIns <^> tl0 <^> (base 2 <**> base "2")
-
 
 test0 = prt "hi" ||| base 1
 test1 = nu $ \(x,y) -> y
@@ -273,8 +271,11 @@ test22 = llam $ \wx -> letStar wx $ \(w, x) -> wrClosed w x
 test11 :: Defn (Wr (Base Int) :-<>: (Base Int :-<>: ()))
 test11 = defn $ llam $ \c -> llam $ \x -> 
          wrClosed c x
+-}
 
-
+-- Examples exercising sendable
+--test12 :: Defn (Rd One :-<>: Wr One :-<>: One)
+test12 = defn $ llam $ \r -> llam $ \w -> letStar (rd r) $ \(r, x) -> wrClosed w (r <**> x)
 
 main = do
 --    putStrLn $ unLolli (eval $ good <^> llam (\x -> x)) "I was passed to a real function."

@@ -41,15 +41,35 @@ instance (EQ v x b, Consume1 b v x t i o) => Consume v (Just '(x, t) ': i) o
 instance Consume1 True v x t i (Nothing ': i)
 instance (Consume v i o) => Consume1 False v x t i (Just '(x, t) ': o)
 
-type LinVar repr (vid::Nat) a = forall (v::Nat) (i::[Maybe (Nat,*)]) (o::[Maybe (Nat,*)]). (Consume vid i o) => repr v i o a
+--
+-- Modes / effects
+--
+data Mode = Write | Readd | Value
+class ParMode (ma::Mode) (mb::Mode) (mc::Mode) | ma mb -> mc
+instance ParMode Write Value Write
+instance ParMode Write Readd Write
+instance ParMode Value Write Write
+instance ParMode Readd Write Write
+instance ParMode Readd Readd Readd
+instance ParMode Readd Value Value
+instance ParMode Value Value Value
+instance ParMode Value Readd Readd
+class SeqMode (ma::Mode) (mb::Mode) (mc::Mode) | ma mb -> mc
+instance SeqMode Write m Write
+instance SeqMode Readd m Readd
+instance SeqMode Value m m
 
-type RegVar repr a = forall (v::Nat) (h::[Maybe (Nat,*)]) . repr v h h a
+
+-- Abbreviations for variables
+
+type LinVar repr (vid::Nat) a = forall (v::Nat) (i::[Maybe (Nat,*)]) (o::[Maybe (Nat,*)]). (Consume vid i o) => repr Value v i o a
+
+type RegVar repr a = forall (v::Nat) (h::[Maybe (Nat,*)]) . repr Value v h h a
 
 -- to distinguish linear arrow from regular arrow
 newtype a :-<>: b = Lolli {unLolli :: a -> IO b}
 infixr 5 :-<>:
 data a :*: b = Tensor a b deriving Show
-data One = One deriving Show
 data a :+: b = Inl a | Inr b deriving Show
 newtype Bang a = Bang {unBang :: a}
 
@@ -57,10 +77,9 @@ newtype Bang a = Bang {unBang :: a}
 newtype Mu a = Mu {unMu :: a (Mu a)}
 deriving instance Show (a (Mu a)) => Show (Mu a)
 
-class LinRec (repr :: Nat -> [Maybe (Nat,*)] -> [Maybe (Nat,*)] -> * -> *) where
-    wrap :: (b -> a (Mu a)) -> repr vid i o b -> repr vid i o (Mu a)
-
-    unwrap :: (a (Mu a) -> b) -> repr vid i o (Mu a) -> repr vid i o b
+class LinRec (repr :: Mode -> Nat -> [Maybe (Nat,*)] -> [Maybe (Nat,*)] -> * -> *) where
+    wrap :: (b -> a (Mu a)) -> repr m vid i o b -> repr m vid i o (Mu a)
+    unwrap :: (a (Mu a) -> b) -> repr m vid i o (Mu a) -> repr m vid i o b
 
 -- Channel types
 newtype Rd a = Rd {unRd :: Chan a }
@@ -75,7 +94,7 @@ instance Send b => Send (a :-<>: b) -- Negative position is OK
 instance (Send a, Send b) => Send (a :*: b)
 instance Send (Base ())
 instance Send (Base Int)
-instance Send One
+instance Send ()
 instance (Send a, Send b) => Send (a :+: b)
 instance Send a => Send (Bang a)
 
@@ -86,58 +105,58 @@ instance Sendable '[] '[]
 instance Sendable i o => Sendable (a ': i) (a ': o)
 instance (Sendable i o, Send a) => Sendable (Just '(n, a) ': i) (Nothing ': o)
 
-class Lin (repr :: Nat -> [Maybe (Nat,*)] -> [Maybe (Nat,*)] -> * -> *) where
-    llam :: (LinVar repr vid a -> repr (S vid) (Just '(vid, a) ': hi) (Nothing ': ho) b) -> repr vid hi ho (a :-<>: b)
-    nu :: ((RegVar repr     (Wr a), {-- write end --}
+class Lin (repr :: Mode -> Nat -> [Maybe (Nat,*)] -> [Maybe (Nat,*)] -> * -> *) where
+    llam :: (LinVar repr vid a -> repr m (S vid) (Just '(vid, a) ': hi) (Nothing ': ho) b) 
+         -> repr Value vid hi ho (a :-<>: b)
+    nu :: ((RegVar repr     (Wr a),    {-- write end --}
             LinVar repr vid (Rd a)) -> {--  read end --}
-           repr (S vid) (Just '(vid, a) ': hi) (Nothing ': ho) b) -> repr vid hi ho b
-    (|||) :: repr vid hi h a -> repr vid h ho b -> repr vid hi ho b
-    base :: a -> repr vid h h (Base a)
-    app :: repr vid hi h (Base a) -> (a -> repr vid h ho b) -> repr vid hi ho b
-    (<^>) :: repr vid hi h (a :-<>: b) -> repr vid h ho a -> repr vid hi ho b
-    prt :: String -> repr vid h h ()
-    stop :: repr vid h h ()
-    wrClosed :: (Sendable h ho, Send a) => repr vid hi h (Wr a) -> repr vid h ho a -> repr vid hi ho ()
-    wr :: repr vid hi h (Wr a) -> repr vid h ho a -> repr vid hi ho ()
-    rd :: repr vid hi ho (Rd a) -> repr vid hi ho (Rd a :*: a)
-    lett :: repr vid hi h a -> (LinVar repr vid a -> repr vid h ho b) -> repr vid hi ho b
-    drop :: repr vid hi h a -> repr vid h ho b -> repr vid hi ho b
-    one :: repr vid h h One
+           repr m (S vid) (Just '(vid, a) ': hi) (Nothing ': ho) b) 
+       -> repr m vid hi ho b
+    (|||) :: ParMode ma mb mc => repr ma vid hi h a -> repr mb vid h ho b -> repr mc vid hi ho b
+    base :: a -> repr Value vid h h (Base a)
+    app :: SeqMode ma mb mc => repr ma vid hi h (Base a) -> (a -> repr mb vid h ho b) -> repr mc vid hi ho b
+    (<^>) :: SeqMode ma mb mc => repr ma vid hi h (a :-<>: b) -> repr mb vid h ho a -> repr mc vid hi ho b
+    prt :: String -> repr Value vid h h ()
+    stop :: repr Value vid h h ()
+    wrClosed :: (SeqMode ma mb mc, SeqMode mc Write md, Sendable h ho, Send a) => repr ma vid hi h (Wr a) -> repr mb vid h ho a -> repr md vid hi ho ()
+    wr :: (SeqMode ma mb mc, SeqMode mc Write md) => repr ma vid hi h (Wr a) -> repr mb vid h ho a -> repr md vid hi ho ()
+    rd :: SeqMode ma Readd mc => repr ma vid hi ho (Rd a) -> repr mc vid hi ho (Rd a :*: a)
+    lett :: SeqMode ma mb mc => repr ma vid hi h a -> (LinVar repr vid a -> repr mb vid h ho b) -> repr mc vid hi ho b
+    drop :: SeqMode ma mb mc => repr ma vid hi h a -> repr mb vid h ho b -> repr mc vid hi ho b
+    one :: repr Value vid h h ()
 
     -- Bang
-    (!) :: repr vid h h a -> repr vid h h (Bang a)
-    letBang :: Send a => repr vid hi h (Bang a) -> 
-               (RegVar repr a -> repr vid h ho b) -> 
-               repr vid hi ho b
-    pick :: repr vid hi ho (Bang a) -> repr vid hi ho (a :*: Bang a)
+    (!) :: repr m vid h h a -> repr m vid h h (Bang a)
+    letBang :: (SeqMode ma mb mc, Send a) => repr ma vid hi h (Bang a) -> 
+               (RegVar repr a -> repr mb vid h ho b) -> 
+               repr mc vid hi ho b
+    pick :: repr m vid hi ho (Bang a) -> repr m vid hi ho (a :*: Bang a)
 
     -- Plus
-    inl :: repr vid hi ho a -> repr vid hi ho (a :+: b)
-    inr :: repr vid hi ho b -> repr vid hi ho (a :+: b)
-    letPlus :: repr vid hi h (a :+: b) ->
-               (LinVar repr vid a -> repr (S vid) (Just '(vid,a) ': h) (Nothing ': ho) c) ->
-               (LinVar repr vid b -> repr (S vid) (Just '(vid,b) ': h) (Nothing ': ho) c) ->
-               repr vid hi ho c
+    inl :: repr m vid hi ho a -> repr m vid hi ho (a :+: b)
+    inr :: repr m vid hi ho b -> repr m vid hi ho (a :+: b)
+    letPlus :: SeqMode ma mb mc => repr ma vid hi h (a :+: b) ->
+               (LinVar repr vid a -> repr mb (S vid) (Just '(vid,a) ': h) (Nothing ': ho) c) ->
+               (LinVar repr vid b -> repr mb (S vid) (Just '(vid,b) ': h) (Nothing ': ho) c) ->
+               repr mc vid hi ho c
 
     -- Pair
-    (<**>) :: repr vid hi h a -> repr vid h ho b ->
-             repr vid hi ho (a :*: b)
-    letStar :: repr vid hi h (a :*: b) ->
+    (<**>) :: SeqMode ma mb mc => 
+              repr ma vid hi h a -> repr mb vid h ho b ->
+              repr mc vid hi ho (a :*: b)
+    letStar :: SeqMode ma mb mc =>
+               repr ma vid hi h (a :*: b) ->
                ((LinVar repr vid a,
                 LinVar repr (S vid) b) -> 
-                    repr (S (S vid)) 
+                    repr mb (S (S vid)) 
                          (Just '(S vid, b) ': Just '(vid, a) ': h) 
                          (Nothing ': Nothing ': ho)
                          c
                ) -> 
-               repr vid hi ho c
+               repr mc vid hi ho c
 
-type Defn a = forall repr v h . (Sendable h h, Lin repr, LinRec repr) => repr v h h a
 
-defn :: Defn a -> Defn a
-defn x = x
-
-newtype R (vid::Nat) (hi::[Maybe (Nat,*)]) (ho::[Maybe (Nat,*)]) a = R {unR :: IO a}
+newtype R (m::Mode) (vid::Nat) (hi::[Maybe (Nat,*)]) (ho::[Maybe (Nat,*)]) a = R {unR :: IO a}
 
 instance Lin R where
     llam f = R $ return $ Lolli $ \x -> unR $ f $ R (return x)
@@ -198,33 +217,37 @@ instance Lin R where
                     a' <- unR a
                     unR $ f $ R $ return $ unBang a'
     pick a = R $ do { a <- unR a; return $ Tensor (unBang a) a}
+    one = R $ return ()
 
-    one = R $ return One
 
-
-instance LinRec (R :: Nat -> [Maybe (Nat,*)] -> [Maybe (Nat,*)] -> * -> *) where
+instance LinRec R where
     wrap f a = R $ unR a >>= return . Mu . f
     unwrap f a = R $ unR a >>= return . f . unMu
 
 
+-- Evaluation of closed terms
 
+type Defn a = forall repr v h . (Sendable h h, Lin repr, LinRec repr) => repr Value v h h a
 
-eval :: R Z '[] '[] a -> IO a
+defn :: Defn a -> Defn a
+defn x = x
+
+eval :: R Value Z '[] '[] a -> IO a
 eval = unR
 
 -- List, as an example of recursive type
-newtype MyListF a lst = MLF {unMLF :: One :+: (a :*: lst)} deriving Show
+newtype MyListF a lst = MLF {unMLF :: () :+: (a :*: lst)} deriving Show
 type MyList a = Mu (MyListF a)
 instance Send a => Send (MyList a)
 
-{-
+
 type Map k a = MyList (k :*: a)
 
 mapIns :: Defn (Map k a :-<>: k :*: a :-<>: Map k a)
 mapIns = llam $ \lst -> llam $ \ka -> wrap MLF (inr (ka <**> lst))
 
 mapLookup :: Eq k => Defn (Map (Base k) a :-<>: Base k :-<>: 
-                           Map (Base k) a :*: (One :+: a))
+                           Map (Base k) a :*: (() :+: a))
 mapLookup = llam $ \lst -> llam $ \k -> app k $ \k ->
             letPlus (unwrap unMLF lst)
             (\nil -> (wrap MLF $ inl nil) <**> (inl one))
@@ -240,8 +263,10 @@ tl0 = defn $ mapIns <^> mapNil <^> (base 1 <**> base "1")
 tl1 :: Defn (Map (Base Int) (Base String))
 tl1 = defn $ mapIns <^> tl0 <^> (base 2 <**> base "2")
 
+
 test0 = prt "hi" ||| base 1
 test1 = nu $ \(x,y) -> y
+
 test2 = prt "hi"
 test3 = (|||) (prt "1") (prt "2")
 test4 = nu $ \(_,a) -> nu $ \(_,b) ->  prt "hi" ||| a ||| b
@@ -256,12 +281,12 @@ test7 = nu $ \(ww,rr) -> drop rr $
 test8 = app (base 1) (\x -> base x)
 
 
-readForever'' :: Lin repr => Int -> Int -> repr vid hi h (Rd a) -> repr vid hi h b
+readForever'' :: Lin repr => Int -> Int -> repr Value vid hi h (Rd a) -> repr Readd vid hi h b
 readForever'' m n c = letStar (rd c) $ \(c, x) -> drop x $ drop (prt ("[" ++ show m ++ "]:" ++ show n)) $ readForever'' m (n+1) c
 
 test10 = nu $ \(w,r) -> drop (wrClosed w (base ())) (wrClosed w (base ())) ||| readForever'' 0 0 r
 
-multiplex :: Lin repr => repr vid hi h (Rd (Base Int)) -> repr vid hi h (Base Int)
+multiplex :: Lin repr => repr Value vid hi h (Rd (Base Int)) -> repr Readd vid hi h (Base Int)
 multiplex c = letStar (rd c) $ \(c, x) -> drop c $ app x (\x -> base x)
 
 
@@ -271,11 +296,17 @@ test22 = llam $ \wx -> letStar wx $ \(w, x) -> wrClosed w x
 test11 :: Defn (Wr (Base Int) :-<>: (Base Int :-<>: ()))
 test11 = defn $ llam $ \c -> llam $ \x -> 
          wrClosed c x
--}
+
 
 -- Examples exercising sendable
---test12 :: Defn (Rd One :-<>: Wr One :-<>: One)
+--test12 :: Defn (Rd () :-<>: Wr () :-<>: ())
 test12 = defn $ llam $ \r -> llam $ \w -> letStar (rd r) $ \(r, x) -> wrClosed w (r <**> x)
+         
+-- Two writes cannot compose
+-- testWWbad = defn $ llam $ \w1 -> llam $ \w2 -> wr w1 one ||| wr w2 one
+testWR = defn $ llam $ \w -> llam $ \r -> wr w one ||| rd r
+testRW = defn $ llam $ \w -> llam $ \r -> rd r ||| wr w one
+--}
 
 main = do
 --    putStrLn $ unLolli (eval $ good <^> llam (\x -> x)) "I was passed to a real function."

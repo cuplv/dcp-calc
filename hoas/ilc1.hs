@@ -46,7 +46,7 @@ instance (Consume v i o) => Consume1 False v x t i (Just '(x, t) ': o)
 --
 data Mode = Write | Readd | Value
 class ParMode (ma::Mode) (mb::Mode) (mc::Mode) | ma mb -> mc
-instance ParMode Write Value Write
+instance ParMode Write Value Write -- Excluded
 instance ParMode Write Readd Write
 instance ParMode Value Write Write
 instance ParMode Readd Write Write
@@ -55,7 +55,8 @@ instance ParMode Readd Value Value
 instance ParMode Value Value Value
 instance ParMode Value Readd Readd
 class SeqMode (ma::Mode) (mb::Mode) (mc::Mode) | ma mb -> mc
-instance SeqMode Write m Write
+instance SeqMode Write Value Write
+instance SeqMode Write Readd Write
 instance SeqMode Readd m Readd
 instance SeqMode Value m m
 
@@ -106,13 +107,13 @@ instance Sendable i o => Sendable (a ': i) (a ': o)
 instance (Sendable i o, Send a) => Sendable (Just '(n, a) ': i) (Nothing ': o)
 
 class Lin (repr :: Mode -> Nat -> [Maybe (Nat,*)] -> [Maybe (Nat,*)] -> * -> *) where
-    llam :: (LinVar repr vid a -> repr m (S vid) (Just '(vid, a) ': hi) (Nothing ': ho) b) 
+    llam :: (LinVar repr vid a -> repr m (S vid) (Just '(vid, a) ': hi) (Nothing ': ho) b)
          -> repr Value vid hi ho (a :-<>: b)
     nu :: ((RegVar repr     (Wr a),    {-- write end --}
             LinVar repr vid (Rd a)) -> {--  read end --}
            repr m (S vid) (Just '(vid, a) ': hi) (Nothing ': ho) b) 
        -> repr m vid hi ho b
-    (|||) :: ParMode ma mb mc => repr ma vid hi h a -> repr mb vid h ho b -> repr mc vid hi ho b
+    (|>|) :: ParMode ma mb mc => repr ma vid hi h a -> repr mb vid h ho b -> repr mc vid hi ho b
     base :: a -> repr Value vid h h (Base a)
     app :: SeqMode ma mb mc => repr ma vid hi h (Base a) -> (a -> repr mb vid h ho b) -> repr mc vid hi ho b
     (<^>) :: SeqMode ma mb mc => repr ma vid hi h (a :-<>: b) -> repr mb vid h ho a -> repr mc vid hi ho b
@@ -121,7 +122,7 @@ class Lin (repr :: Mode -> Nat -> [Maybe (Nat,*)] -> [Maybe (Nat,*)] -> * -> *) 
     wrClosed :: (SeqMode ma mb mc, SeqMode mc Write md, Sendable h ho, Send a) => repr ma vid hi h (Wr a) -> repr mb vid h ho a -> repr md vid hi ho ()
     wr :: (SeqMode ma mb mc, SeqMode mc Write md) => repr ma vid hi h (Wr a) -> repr mb vid h ho a -> repr md vid hi ho ()
     rd :: SeqMode ma Readd mc => repr ma vid hi ho (Rd a) -> repr mc vid hi ho (Rd a :*: a)
-    lett :: SeqMode ma mb mc => repr ma vid hi h a -> (LinVar repr vid a -> repr mb vid h ho b) -> repr mc vid hi ho b
+    lett :: SeqMode ma mb mc => repr ma vid hi h a -> (LinVar repr vid a -> repr mb (S vid) (Just '(vid, a) ': h) (Nothing ': ho) b) -> repr mc vid hi ho b
     drop :: SeqMode ma mb mc => repr ma vid hi h a -> repr mb vid h ho b -> repr mc vid hi ho b
     one :: repr Value vid h h ()
 
@@ -166,7 +167,7 @@ instance Lin R where
                  unLolli f' x'
 
     -- Parallel composition
-    p ||| q = R $ forkIO (unR p >> return ()) >> unR q
+    p |>| q = R $ forkIO (unR p >> return ()) >> unR q
 
     -- Channels
     nu f = R $ do
@@ -227,9 +228,9 @@ instance LinRec R where
 
 -- Evaluation of closed terms
 
-type Defn a = forall repr v h . (Sendable h h, Lin repr, LinRec repr) => repr Value v h h a
+type Defn (m::Mode) a = forall repr v h . (Sendable h h, Lin repr, LinRec repr) => repr m v h h a
 
-defn :: Defn a -> Defn a
+defn :: Defn m a -> Defn m a
 defn x = x
 
 eval :: R Value Z '[] '[] a -> IO a
@@ -243,10 +244,10 @@ instance Send a => Send (MyList a)
 
 type Map k a = MyList (k :*: a)
 
-mapIns :: Defn (Map k a :-<>: k :*: a :-<>: Map k a)
+mapIns :: Defn Value (Map k a :-<>: k :*: a :-<>: Map k a)
 mapIns = llam $ \lst -> llam $ \ka -> wrap MLF (inr (ka <**> lst))
 
-mapLookup :: Eq k => Defn (Map (Base k) a :-<>: Base k :-<>: 
+mapLookup :: Eq k => Defn Value (Map (Base k) a :-<>: Base k :-<>: 
                            Map (Base k) a :*: (() :+: a))
 mapLookup = llam $ \lst -> llam $ \k -> app k $ \k ->
             letPlus (unwrap unMLF lst)
@@ -257,25 +258,25 @@ mapLookup = llam $ \lst -> llam $ \k -> app k $ \k ->
                                    else letStar (mapLookup <^> lst <^> base k) $ \(lst',res) -> (wrap MLF $ inr ((base k' <**> a) <**> lst')) <**> res)
 
 mapNil = wrap MLF (inl one)
-tl0 :: Defn (Map (Base Int) (Base String))
+tl0 :: Defn Value (Map (Base Int) (Base String))
 tl0 = defn $ mapIns <^> mapNil <^> (base 1 <**> base "1")
 
-tl1 :: Defn (Map (Base Int) (Base String))
+tl1 :: Defn Value (Map (Base Int) (Base String))
 tl1 = defn $ mapIns <^> tl0 <^> (base 2 <**> base "2")
 
 
-test0 = prt "hi" ||| base 1
+test0 = prt "hi" |>| base 1
 test1 = nu $ \(x,y) -> y
 
 test2 = prt "hi"
-test3 = (|||) (prt "1") (prt "2")
-test4 = nu $ \(_,a) -> nu $ \(_,b) ->  prt "hi" ||| a ||| b
-test5 = nu $ \(_,x) -> drop x stop ||| prt "hi"
-test6 = nu $ \(w,r) -> drop (wr w (base 1)) (wr w (base 2)) ||| 
+test3 = prt "1" |>| prt "2"
+test4 = nu $ \(_,a) -> nu $ \(_,b) ->  prt "hi" |>| a |>| b
+test5 = nu $ \(_,x) -> drop x stop |>| prt "hi"
+test6 = nu $ \(w,r) -> drop (wr w (base 1)) (wr w (base 2)) |>| 
         letStar (rd r) (\(r, a) -> 
                             letStar (rd r) (\(r, b) -> drop r (a <**> b)))
 test7 = nu $ \(ww,rr) -> drop rr $
-        nu $ \(w,r) -> drop (wrClosed w $ base ww) (wrClosed w $ base ww) ||| 
+        nu $ \(w,r) -> drop (wrClosed w $ base ww) (wrClosed w $ base ww) |>| 
         letStar (rd r) (\(r, a) -> 
                             letStar (rd r) (\(r, b) -> drop r (a <**> b)))
 test8 = app (base 1) (\x -> base x)
@@ -284,16 +285,16 @@ test8 = app (base 1) (\x -> base x)
 readForever'' :: Lin repr => Int -> Int -> repr Value vid hi h (Rd a) -> repr Readd vid hi h b
 readForever'' m n c = letStar (rd c) $ \(c, x) -> drop x $ drop (prt ("[" ++ show m ++ "]:" ++ show n)) $ readForever'' m (n+1) c
 
-test10 = nu $ \(w,r) -> drop (wrClosed w (base ())) (wrClosed w (base ())) ||| readForever'' 0 0 r
+test10 = nu $ \(w,r) -> drop (wrClosed w (base ())) (wrClosed w (base ())) |>| readForever'' 0 0 r
 
 multiplex :: Lin repr => repr Value vid hi h (Rd (Base Int)) -> repr Readd vid hi h (Base Int)
 multiplex c = letStar (rd c) $ \(c, x) -> drop c $ app x (\x -> base x)
 
 
-test22 :: Send a => Defn (Wr a :*: a :-<>: ())
+test22 :: Send a => Defn Value (Wr a :*: a :-<>: ())
 test22 = llam $ \wx -> letStar wx $ \(w, x) -> wrClosed w x
 
-test11 :: Defn (Wr (Base Int) :-<>: (Base Int :-<>: ()))
+test11 :: Defn Value (Wr (Base Int) :-<>: (Base Int :-<>: ()))
 test11 = defn $ llam $ \c -> llam $ \x -> 
          wrClosed c x
 
@@ -303,10 +304,15 @@ test11 = defn $ llam $ \c -> llam $ \x ->
 test12 = defn $ llam $ \r -> llam $ \w -> letStar (rd r) $ \(r, x) -> wrClosed w (r <**> x)
          
 -- Two writes cannot compose
--- testWWbad = defn $ llam $ \w1 -> llam $ \w2 -> wr w1 one ||| wr w2 one
-testWR = defn $ llam $ \w -> llam $ \r -> wr w one ||| rd r
-testRW = defn $ llam $ \w -> llam $ \r -> rd r ||| wr w one
---}
+--testWWbad = defn $ llam $ \w1 -> llam $ \w2 -> wr w1 one |>| wr w2 one
+testWR = defn $ llam $ \w -> llam $ \r -> wr w one |>| rd r
+testRW = defn $ llam $ \w -> llam $ \r -> rd r |>| wr w one
+
+-- Examples involving values and parcompose
+testPW = defn $ llam $ \w1 -> llam $ \w2 -> llam $ \r -> 
+         lett (wr w1 one |>| one) $ 
+         \x -> letStar (drop w2 one |>| rd r) $ \(r,y) -> r <**> y <**> x
+
 
 main = do
 --    putStrLn $ unLolli (eval $ good <^> llam (\x -> x)) "I was passed to a real function."

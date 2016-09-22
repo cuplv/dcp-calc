@@ -4,7 +4,8 @@
 \documentclass{llncs}
 \input{defs}
 \usepackage{joshuadunfield}
-\usepackage{goodcharter}
+\usepackage{goodcharter} %% XXX -- Check that ETAPS permits this font!
+\usepackage{euler}
 
 \title{ILC: The Interactive Lambda Calculus}
 \subtitle{$\lambda$-Calculus for Universal Composibility
@@ -40,6 +41,23 @@ XXX
 
 \appendix
 \section{ILC: Full Language Definition}
+
+
+\paragraph{Done:}
+\begin{enumerate}
+\item Define syntax for $A, C, \Delta, \Gamma, v, e, m$
+\item Define judgement $m_1 ;; m_2 => m_3$
+\item Define judgement $m_1 || m_2 => m_3$
+\item Define judgement $\Delta; \Gamma |- e : C |> m$
+\end{enumerate}
+
+\paragraph{To do:}
+\begin{enumerate}
+\item Define judgement $\Delta; \Gamma |- v : A$
+\item Discuss typing for thunks
+\item Define dynamic semantics judgement $e ---> e'$
+\item State read determinism proof; prove it
+\end{enumerate}
 
 
 \begin{figure}[htbp]
@@ -195,10 +213,10 @@ Note that in particular, the following mode compositions are \emph{not derivable
 \and
 %
 \Infer{nu}
-{\Delta, x:(\Rd A ** (*! \Wr A)) ; \Gamma |- e : C |> m}
-{\Delta                          ; \Gamma |- \nuexp{x} : C |> m}
+{\Delta, x:\big(\Rd A ** *!(\Wr A)\big) ; \Gamma |- e : C |> m}
+{\Delta                                 ; \Gamma |- \nuexp{x} : C |> m}
 %
-\and
+\\
 %
 \Infer{rd}
 {\Delta; \Gamma |- v : \Rd A}
@@ -207,9 +225,27 @@ Note that in particular, the following mode compositions are \emph{not derivable
 \and
 %
 \Infer{wr}
-{\Delta; \Gamma |- v_1 : \Rd A \\
- \Delta; \Gamma |- v_2 : A }
-{\Delta         |- \wrexp{v_1}{v_2} : \F \unitty |> \Wm}
+{\Delta_1; \Gamma   |- v_1 : \Rd A \\
+ \Delta_2; \Gamma   |- v_2 : A }
+{\Delta_1, \Delta_2 |- \wrexp{v_1}{v_2} : \F \unitty |> \Wm}
+%
+\\
+%
+\Infer{par1}
+{\Delta_1; \Gamma |- e_1 : C |> m_1\\\\
+ \Delta_2; \Gamma |- e_2 : D |> m_2\\\\ %% XXX Does this second expression have type C, or some other type D ?
+  m_1 || m_2 => m_3
+}
+{\Delta_1, \Delta_2 |- e_1 || e_2 : D |> m_3} 
+%
+\and
+%
+\Infer{par2}
+{\Delta_1; \Gamma |- e_1 : C |> m_1\\\\
+ \Delta_2; \Gamma |- e_2 : C |> m_2\\\\
+  m_1 || m_2 => m_3
+}
+{\Delta_1, \Delta_2 |- e_1 *|| e_2 : C |> m_3}
 %
 \end{mathpar}
 \end{figure}

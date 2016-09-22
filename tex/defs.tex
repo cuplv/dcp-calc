@@ -83,6 +83,8 @@
 
 \newcommand{\Unit}{\tyname{unit}}
 \newcommand{\unitty}{\Unit}
+\newcommand{\Nat}{\tyname{nat}}
+\newcommand{\natty}{\Nat}
 \newcommand{\unit}{\textvtt{()}}
 \newcommand{\unitexp}{\unit}
 
@@ -95,6 +97,17 @@
 \newcommand{\F}{\xF\,}
 \newcommand{\xU}{\boldsf{U}}
 \newcommand{\U}{\xU\,}
+
+% Read and Write channel types
+\newcommand{\xRd}{\boldsf{Rd}}
+\newcommand{\Rd}{\xRd\,}
+\newcommand{\xWr}{\boldsf{Wr}}
+\newcommand{\Wr}{\xWr\,}
+
+% Modes
+\newcommand{\Rm}{\textsf{R}}
+\newcommand{\Wm}{\textsf{W}}
+\newcommand{\Vm}{\textsf{V}}
 
 \newcommand{\disj}{\mathop{\bot}}
 
@@ -151,6 +164,9 @@
 \mathlig{->}{\arr}
 \mathlig{-->}{\impty}
 \mathlig{=>}{\Rightarrow}
+\mathlig{*!}{\boldsf{!}~}
+\mathlig{||}{\mathrel{|\!|}}
+\mathlig{;;}{\mathrel{;}}
 
 \mathlig{@>}{\arr_{\namesort}}
 
@@ -183,7 +199,7 @@
 \mathlig{>>}{\rangle}
 \mathlig{==>}{\syn}
 \mathlig{<==}{\chk}
-\mathlig{||}{\Downarrow}
+%\mathlig{||}{\Downarrow}
 \mathlig{!!}{\Downarrow}
 % \mathlig{..}{\epsilon}
 
@@ -257,6 +273,7 @@
 % use \nteval (infix) instead
 
 \newcommand{\emptygraph}{\varepsilon}
+\newcommand{\emptycxt}{\varepsilon}
 
 \newcommand{\bnfheader}[1]{\multicolumn{4}{@{}l}{\text{#1}}}
 \newenvironment{sbnfarray}{\begin{tabular}{c}\begin{array}[t]{lr@{~~}c@{~~~}ll}}{\end{array}\end{tabular}}

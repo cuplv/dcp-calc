@@ -43,32 +43,105 @@ XXX
 
 \begin{figure}[htbp]
   \centering
- 
+
+\begin{grammar}
+  Value Types
+  & $A,B$
+      &$\bnfas$&
+      $x$
+      \\ &&& $\bnfaltbrk \unitexp$ & Unit value
+      \\ &&& $\bnfaltbrk \natty$         & Natural number
+      \\ &&& $\bnfaltbrk A ** B$ & Product
+      \\ &&& $\bnfaltbrk A + B$ & Sum type
+      \\ &&& $\bnfaltbrk *! A$ & Intuitionistic type
+      \\ &&& $\bnfaltbrk \Rd A$ & Read channel
+      \\ &&& $\bnfaltbrk \Wr A$ & Write channel
+      \\ &&& $\bnfaltbrk \U C$ & Thunk type
+  \\[1ex]
+  Computation Types
+  & $C, D$
+      &$\bnfas$ & 
+             $A -> C$ & Value-consuming computation
+      \\ &&& $\bnfaltbrk \F A$ & Value-producing computation
+  \\[1ex]
+  Linear Typing Contexts
+  & $\Delta$
+     &$\bnfas$& $\emptycxt \bnfalt \Delta,x:A$
+  \\
+  Intuitionisitic Typing Contexts
+  & $\Gamma$
+     &$\bnfas$& $\emptycxt \bnfalt \Gamma,x:A$
+\end{grammar}
+
+  \caption{Syntax of types and typing contexts}
+  \label{fig:expr}
+\end{figure}
+
+
+\begin{figure}[htbp]
+  \centering
+
 \begin{grammar}
   Values
   & $v$
       &$\bnfas$&
       $x$
-      \\ &&& $\bnfaltbrk \unitexp$ & 
-      \\ &&& $\bnfaltbrk \Pair{v_1}{v_2}$ &
-      \\ &&& $\bnfaltbrk \inj{i}{v}$ &
-      \\ &&& $\bnfaltbrk \thunk{n}$ &
+      \\ &&& $\bnfaltbrk \unitexp$ & Unit value
+      \\ &&& $\bnfaltbrk n$         & Natural number
+      \\ &&& $\bnfaltbrk \Pair{v_1}{v_2}$ & Pair of values
+      \\ &&& $\bnfaltbrk \inj{i}{v}$ & Injected value
+      \\ &&& $\bnfaltbrk \thunk{n}$ & Thunk (suspended, closed expression)
   \\[1ex]
   Expressions
   & $e$
       &$\bnfas$&
-             $\Split{v}{x_1}{x_2}{e}$ &
-      \\ &&& $\bnfaltbrk \Case{v}{x_1}{e_1}{x_2}{e_2}$ &
-      \\ &&& $\bnfaltbrk \Ret{v}$ &
-      \\ &&& $\bnfaltbrk \Let{e_1}{x}{e_2}$ &
-      \\ &&& $\bnfaltbrk e\;v$ &
-      \\ &&& $\bnfaltbrk \lam{x} e$ &
-      \\ &&& $\bnfaltbrk \Force{v}$ &
+             $\Split{v}{x_1}{x_2}{e}$ & Pair elimination
+      \\ &&& $\bnfaltbrk \Case{v}{x_1}{e_1}{x_2}{e_2}$ & Injection elimination
+      \\ &&& $\bnfaltbrk \Ret{v}$ & Value-producing computation
+      \\ &&& $\bnfaltbrk \Let{e_1}{x}{e_2}$ & Let-binding/sequencing
+      \\ &&& $\bnfaltbrk e\;v$ & Function application
+      \\ &&& $\bnfaltbrk \lam{x} e$ & Function abstraction
+      \\ &&& $\bnfaltbrk \Force{v}$ & Unsuspend (force) a thunk
 \end{grammar}
 
-  \caption{Syntax of expressions}
+  \caption{Syntax of values and expressions}
   \label{fig:expr}
 \end{figure}
+
+
+\begin{figure}[htbp]
+{
+  \centering
+
+\begin{grammar}
+  Modes & $m,n,p$ &$\bnfas$& $\Wm \bnfalt \Rm \bnfalt \Vm$ & (Write, Read and Value) 
+\end{grammar}
+
+\judgbox{m || n => p}{~~The parallel composition of modes $m$ and $n$ is mode~$p$.}
+\begin{mathpar}
+\Infer{sym}{m || n => p}{n || m => p}
+\and \Infer{wv}{ }{\Wm || \Vm => \Wm}
+\and \Infer{wr}{ }{\Wm || \Rm => \Wm}
+\and \Infer{rr}{ }{\Rm || \Rm => \Rm}
+\end{mathpar}
+\\[2mm]
+\judgbox{m ;; n => p}{~~The sequential composition of modes $m$ and $n$ is mode~$p$.}
+\begin{mathpar}
+\and \Infer{v$\ast$}{ }{\Vm ;; n => n}
+\and \Infer{wv}{ }{\Wm ;; \Vm => \Wm}
+\and \Infer{r$\ast$}{ }{\Rm ;; n => \Rm}
+\and \Infer{wr}{ }{\Wm ;; \Rm => \Wm}
+\end{mathpar}
+}
+Note that in particular, the following mode compositions are \emph{not derivable}:
+\begin{itemize}
+\item $\Wm || \Wm => p$ is \emph{not} derivable for any mode~$p$
+\item $\Wm ;; \Wm => p$ is \emph{not} derivable for any mode~$p$
+\end{itemize}
+\caption{Syntax of modes; sequential and parallel mode composition.}
+\label{fig:expr}
+\end{figure}
+
 
 
 

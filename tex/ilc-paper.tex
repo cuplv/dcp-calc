@@ -1,7 +1,12 @@
+\def\OPTIONConf{0}%
+\def\OPTIONArxiv{0}%
+%
 \documentclass{llncs}
+\input{defs}
+\usepackage{joshuadunfield}
 
 \title{ILC: The Interactive Lambda Calculus}
-\subtitle{A $\lambda$-Calculus for Universal Composibility, \emph{or}
+\subtitle{$\lambda$-Calculus for Universal Composibility, \emph{or}
   \\
   \emph{Halt Research on Interactive Turing Machines}
 }
@@ -35,6 +40,35 @@ XXX
 \appendix
 \section{ILC: Full Language Definition}
 
+
+\begin{figure}[htbp]
+  \centering
+ 
+\begin{grammar}
+  Values
+  & $v$
+      &$\bnfas$&
+      $x$
+      \\ &&& $\bnfaltbrk \unitexp$ & 
+      \\ &&& $\bnfaltbrk \Pair{v_1}{v_2}$ &
+      \\ &&& $\bnfaltbrk \inj{i}{v}$ &
+      \\ &&& $\bnfaltbrk \thunk{n}$ &
+  \\[1ex]
+  Expressions
+  & $e$
+      &$\bnfas$&
+             $\Split{v}{x_1}{x_2}{e}$ &
+      \\ &&& $\bnfaltbrk \Case{v}{x_1}{e_1}{x_2}{e_2}$ &
+      \\ &&& $\bnfaltbrk \Ret{v}$ &
+      \\ &&& $\bnfaltbrk \Let{e_1}{x}{e_2}$ &
+      \\ &&& $\bnfaltbrk e\;v$ &
+      \\ &&& $\bnfaltbrk \lam{x} e$ &
+      \\ &&& $\bnfaltbrk \Force{v}$ &
+\end{grammar}
+
+  \caption{Syntax of expressions}
+  \label{fig:expr}
+\end{figure}
 
 
 

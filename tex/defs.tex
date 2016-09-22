@@ -1,0 +1,288 @@
+\usepackage{semantic}   % Tools for typesetting PL semantics
+\usepackage{braket}     % Easy angle-bracket notation
+\usepackage{mathpartir} % Used to typeset blocks of inference rules
+\usepackage{rotating} % for sidewaysfigure
+%\usepackage{proof}
+\usepackage{pdflscape}
+\usepackage{fancyvrb} % to use \verb in footnotes
+\usepackage{stmaryrd}
+%\usepackage{amsmath,amsthm,amssymb}
+%\usepackage{thmtools,thm-restate}
+\usepackage{mathtools}
+
+% Marvosym
+\let\MathRightArrow\Rightarrow % save original definition of \Rightarrow
+\usepackage{marvosym} % feloniously overrides \Rightarrow
+\def\Rightarrow{\MathRightArrow}
+
+%% \declaretheorem[style=mytheoremstyle]{theorem}
+%% \declaretheorem[style=mytheoremstyle]{property}
+%% %\declaretheorem[style=mytheoremstyle, sibling=theorem]{lemma}
+%% \declaretheorem[style=mytheoremstyle]{lemma}
+%% \declaretheorem[style=mytheoremstyle, sibling=lemma]{corollary}
+%% \declaretheorem[style=mytheoremstyle, sibling=lemma]{conjecture}
+%% \declaretheorem{example}
+%% \makeatletter
+%% \declaretheorem[style=mytheoremstyle, sibling=lemma, 
+%% %             postheadhook={%
+%% %               envname is `\thmt@envname'; %
+%% %               thmname is `\thmt@thmname'; %
+%% %               optarg is `\thmt@optarg'; %
+%% %%               innercounters are `\thmt@innercounters'.
+%% %             }
+%%        ]{proposition}
+%% \makeatother
+%% \declaretheorem{remark}
+%% \declaretheorem[style=mytheoremstyle]{definition}
+
+
+%% \theoremstyle{remark}
+
+\newcommand{\calc}{$\lambda_{\textsf{nom}}$\xspace}
+
+\newcommand{\Label}[1]{\label{#1}} % XXX
+\newcommand{\FLabel}[1]{\label{#1}} % XXX
+\newcommand{\D}{\mathcal{D}}
+\newcommand{\Ss}{\mathcal{S}}
+\newcommand{\derives}{::}
+\newcommand{\satisfactory}{~\textsf{satisfactory}}
+%\newcommand{\wf}{~\textsf{wf}}
+
+%% \newtheorem{thm}{Theorem}[section]
+%% \newtheorem*{thm*}{Theorem}
+%% \newtheorem{lem}[thm]{Lemma}
+%% \newtheorem{conj}[thm]{Conjecture}
+%% \newtheorem{prop}[thm]{Proposition}
+%% \newtheorem*{cor}{Corollary}
+%% \newcommand{\thmref}[1]{Theorem~\ref{thm:#1}}
+%% \newcommand{\thmreftwo}[2]{Theorems \ref{thm:#1} and~\ref{thm:#2}}
+%% \newtheorem{defn}[thm]{Definition}
+
+\newcommand{\type}{\star}
+\newcommand{\sort}{\gamma}
+\newcommand{\namesort}{\boldsf{Nm}}
+\newcommand{\namesetsort}{\boldsf{NmSet}}
+\newcommand{\unitsort}{\boldsf{1}}
+
+\newcommand{\Nmsp}{\tyname{Nmsp}}
+
+\newcommand{\xwfeff}{\text{wf-effects}}
+\newcommand{\wfeff}{~\xwfeff}
+\newcommand{\xwfname}{\text{wf-name}}
+\newcommand{\wfname}{~\xwfname}
+
+\newcommand{\xwf}{\text{wf}}
+\newcommand{\wf}{~\xwf}
+
+\newcommand{\xwfgraph}{\xwf}
+\newcommand{\wfgraph}{~\xwfgraph}
+
+% \newcommand{\ixf}{\boldsf{f}}
+
+\newcommand{\namevar}{\nu}
+
+\newcommand{\Unit}{\tyname{unit}}
+\newcommand{\unitty}{\Unit}
+\newcommand{\unit}{\textvtt{()}}
+\newcommand{\unitexp}{\unit}
+
+\newcommand{\unitindex}{\unit}
+
+\newcommand{\runonboldsf}{\sffamily\bfseries\selectfont}
+\newcommand{\boldsf}[1]{\text{\runonboldsf #1}}
+
+\newcommand{\xF}{\boldsf{F}}
+\newcommand{\F}{\xF\,}
+\newcommand{\xU}{\boldsf{U}}
+\newcommand{\U}{\xU\,}
+
+\newcommand{\disj}{\mathop{\bot}}
+
+\newcommand{\trueprop}{\boldsf{tt}}
+\newcommand{\andpropsym}{\boldsf{and}}
+\newcommand{\andprop}{\mathrel{\andpropsym}}
+\newcommand{\impty}{\supset}
+
+% \Univ currently deprecated
+\newcommand{\Univsym}{\Pi}
+% \Univ currently deprecated
+\newcommand{\Univ}[1]{\Univsym{#1}.\,}
+
+% Currently, using \All for both type variables (\All{\alpha : K}
+% and index variables (\All{ea : \sort})
+\newcommand{\Allsym}{\forall}
+\newcommand{\All}[1]{\Allsym{#1}.\,}
+
+% Name function arrow (name in scope at both the type and term level!)
+% \Namearr{a}{... @> ...}
+\newcommand{\Namearrsym}{\aleph}
+\newcommand{\Namearr}[2]{\Namearrsym{#1}:{#2} \arr}
+
+\newcommand{\namearrintro}[1]{\Namearrsym{#1}.\;}
+\newcommand{\namearrelimsym}{\texttt{@}}
+\newcommand{\namearrelim}[2]{{#1} \mathop{\namearrelimsym} {#2}}
+
+\newcommand{\tyapp}[2]{{#1}\tbrack{#2}}
+% \newcommand{\idxapp}[2]{{#1}\tbrack{#2}}
+\newcommand{\idxapp}[2]{{#1}({#2})}
+
+\newcommand{\Split}[4]{\keyword{split}\Lparen{#1}, {#2}.{#3}.{#4}\Rparen}
+\newcommand{\Case}[5]{\keyword{case}\Lparen{#1}, {#2}.{#3}, {#4}.{#5}\Rparen}
+
+\newcommand{\inj}[1]{\keyword{inj}_{#1}\,}
+\newcommand{\Inj}[1]{\inj{#1}}
+
+\newcommand{\Scope}[2]{\keyword{scope}\Lparen{#1}, {#2}\Rparen}
+
+\newcommand{\Sig}{\mathcal{S}}
+
+
+%% Math ligatures (thanks to the semantic package) that make it
+%% easier to typeset math using readable LaTeX text.
+%\mathlig{|-->}{\longmapsto}
+\mathlig{::=}{\bnfas}
+\mathlig{|}{\;|\;}
+% \mathlig{[[}{\mbsf{[}}
+% \mathlig{]]}{\mbsf{]}}
+\mathlig{[[}{\texttt{\upshape[}}
+\mathlig{]]}{\texttt{\upshape]}}
+\mathlig{**}{\times}
+\mathlig{|>}{\rhd}
+\mathlig{->}{\arr}
+\mathlig{-->}{\impty}
+\mathlig{=>}{\Rightarrow}
+
+\mathlig{@>}{\arr_{\namesort}}
+
+
+\newcommand{\eff}[2]{{#1} |> {#2}}
+\newcommand{\effseqsym}{\mathsf{then}}
+\newcommand{\effseq}{\,\effseqsym\,}
+
+\newcommand{\effcoalsym}{\mathsf{after}}
+\newcommand{\effcoal}{\,\effcoalsym\,}
+
+\newcommand{\Lparen}{\texttt{(}}
+\newcommand{\Rparen}{\texttt{)}}
+% \newcommand{\Pair}[2]{\Lparen{#1}\texttt{,}{#2}\Rparen}
+
+%\mathlig{unit}{\unitty}
+
+
+% Bidirectional typing
+
+\newcommand{\chkcolor}{dBlue}
+\newcommand{\syncolor}{dRed}
+\newcommand{\isyncolor}{dGreen}
+\newcommand{\chk}{\mathrel{\mathcolor{\chkcolor}{\Leftarrow}}}
+\newcommand{\uncoloredsyn}{{\Rightarrow}}
+\newcommand{\syn}{\mathrel{\mathcolor{\syncolor}{\uncoloredsyn}}}
+\newcommand{\RRightarrow}{\mathrel{\mathrlap{\Rightarrow}\mkern2mu\Rightarrow}}
+\newcommand{\isyn}{\mathrel{\mathcolor{\isyncolor}{\RRightarrow}}}
+\mathlig{<<}{\langle}
+\mathlig{>>}{\rangle}
+\mathlig{==>}{\syn}
+\mathlig{<==}{\chk}
+\mathlig{||}{\Downarrow}
+\mathlig{!!}{\Downarrow}
+% \mathlig{..}{\epsilon}
+
+\newcommand{\e}{\epsilon}
+\newcommand{\hist}{\mathcal{H}}
+
+\newcommand{\ambns}{M}
+
+\newcommand{\disjoint}{\mathrel{\bot}}
+
+\newcommand{\tbrack}[1]{\texttt{\upshape[}{#1}\texttt{\upshape]}}
+
+\newcommand{\rootname}{\textvtt{root}}
+
+%\newcommand{\tv}{tv}
+\newcommand{\Mv}{V}
+\newcommand{\ntevalsym}{\Downarrow_{\mathsf{M}}}
+\newcommand{\nteval}{\mathrel{\ntevalsym}}
+
+\newcommand{\xrefv}{\keyword{ref}}
+\newcommand{\xthunk}{\keyword{thunk}}
+\newcommand{\xunthunk}{\keyword{unthunk}}
+\newcommand{\xname}{\keyword{name}}
+%\newcommand{\xName}{\tyname{Name}}
+\newcommand{\xName}{\tyname{Nm}}
+
+\newcommand{\xRef}{\tyname{Ref}}
+%\newcommand{\xThunk}{\tyname{Thunk}}
+\newcommand{\xThunk}{\tyname{Thk}}
+\newcommand{\xUnthunk}{\tyname{Unthunk}}
+
+\newcommand{\refv}[1]{\xrefv\;{#1}}
+\newcommand{\thunk}[1]{\xthunk\;{#1}}
+\newcommand{\unthunk}[1]{\xunthunk\;{#1}}
+\newcommand{\name}[1]{\xname\;{#1}}
+\newcommand{\Name}[1]{\xName\tbrack{#1}}
+
+
+\newcommand{\Ref}[1]{\xRef\tbrack{#1}\,}
+\newcommand{\Thk}[1]{\xThunk\tbrack{#1}\,}
+\newcommand{\Unthk}[1]{\xUnthunk\tbrack{#1}\,}
+\newcommand{\Thunk}[2]{\keyword{thunk}\Lparen{#1},{#2}\Rparen}
+\newcommand{\Unthunk}[1]{\keyword{unthunk}\Lparen{#1}\Rparen}
+\newcommand{\Refe}[2]{\keyword{ref}\Lparen{#1},{#2}\Rparen} % Ref expression form
+
+\newcommand{\List}[3]{\tyname{List}\tbrack{#1;#2}~{#3}}
+\newcommand{\Art}[2]{\tyname{Art}\tbrack{#1}~{#2}}
+\newcommand{\Int}[0]{\tyname{Int}}
+
+\let\Force\undefined
+\newcommand{\Force}[1]{\keyword{force}\Lparen{#1}\Rparen}
+\newcommand{\Get}[1]{\keyword{get}\Lparen{#1}\Rparen}
+
+\newcommand{\Ns}[2]{\keyword{ns}\Lparen{#1}\Rparen\{#2\}}
+
+\newcommand{\Ret}[1]{\keyword{ret}\Lparen{#1}\Rparen}
+\newcommand{\Let}[3]{\keyword{let}\Lparen{#1},{#2}.{#3}\Rparen}
+
+\newcommand{\xstoretype}{\textsf{has-store-type}}
+\newcommand{\storetype}{\;\xstoretype\;}
+\newcommand{\xisname}{\textsf{is-name}}
+\newcommand{\isname}{\;\xisname}
+
+\newcommand{\PreSt}[3]{{#1}\vdash^{#2}_{#3}}
+
+\newcommand{\xterminal}{\textsf{terminal}}
+\newcommand{\terminal}{\;\xterminal}
+
+\newcommand{\nscons}[2]{\left[\!\left[ #1~(#2) \right]\!\right]} % Namespace/Name cons operation
+% \newcommand{\nsEval}[3]{\vdash t\;p !! q}
+% use \nteval (infix) instead
+
+\newcommand{\emptygraph}{\varepsilon}
+
+\newcommand{\bnfheader}[1]{\multicolumn{4}{@{}l}{\text{#1}}}
+\newenvironment{sbnfarray}{\begin{tabular}{c}\begin{array}[t]{lr@{~~}c@{~~~}ll}}{\end{array}\end{tabular}}
+\newenvironment{bnfarray}{\begin{tabular}{c}\begin{array}[t]{r@{~~}c@{~~~}ll}}{\end{array}\end{tabular}}
+\newenvironment{xbnfarray}{\begin{tabular}{c}\begin{array}[t]{r@{~~}c@{~}l@{~~}l}}{\end{array}\end{tabular}}
+
+\newcommand{\DHasEffects}[3]{#1~\textsf{reads}~#2~\textsf{writes}~#3}
+\newcommand{\DByHasEffects}[4]{#1~\textsf{by}~#2~\textsf{reads}~#3~\textsf{writes}~#4}
+\newcommand{\mergeRds}{\cup}
+\newcommand{\joinWrs}{\mathrel{\ast}}
+\newcommand{\joinGrs}{\mathrel{\ast}}
+\newcommand{\mergeGrs}{\cup}
+\newcommand{\restrict}[2]{\textsf{restrict}\lfloor{#1}\rfloor_{#2}}
+\newcommand{\dom}[1]{\textsf{dom}(#1)}
+\newcommand{\update}[4]{#1\{#2 \mapsto #3\} = #4}
+%\newcommand{\disjoint}{\cupplus}
+
+%\newcommand{\Dee}{\mathcal{D}}
+%\newcommand{\D}{\mathcal{\Dee}}
+
+\newcommand{\te}{e_{\mathsf{terminal}}}
+
+\newcommand{\nfap}[3]{{\color{blue}{}^{#1}_{#2}}{\color{blue}\big[} #3 {\color{blue}\big]}}
+
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: types
+%%% End: 
+

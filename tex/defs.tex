@@ -6,6 +6,7 @@
 \usepackage{pdflscape}
 \usepackage{fancyvrb} % to use \verb in footnotes
 \usepackage{stmaryrd}
+\usepackage{amssymb}
 %\usepackage{amsmath,amsthm,amssymb}
 %\usepackage{thmtools,thm-restate}
 \usepackage{mathtools}
@@ -164,9 +165,10 @@
 \mathlig{->}{\arr}
 \mathlig{-->}{\impty}
 \mathlig{=>}{\Rightarrow}
-\mathlig{*!}{\boldsf{!}~}
+\mathlig{*!}{\boldsf{!}}
 \mathlig{||}{\mathrel{|\!|}}
 \mathlig{;;}{\mathrel{;}}
+\mathlig{*&}{\mathrel{\&}}
 
 \mathlig{@>}{\arr_{\namesort}}
 
@@ -257,6 +259,12 @@
 
 \newcommand{\Ret}[1]{\keyword{ret}\Lparen{#1}\Rparen}
 \newcommand{\Let}[3]{\keyword{let}\Lparen{#1},{#2}.{#3}\Rparen}
+\newcommand{\LetBang}[3]{\keyword{let!}\Lparen{#1},{#2}.{#3}\Rparen}
+
+% Channel read and Channel write expressions
+\newcommand{\rdexp}[1]{\textsf{rd}\,#1}
+\newcommand{\wrexp}[2]{\textsf{wr}\,#1<-#2}
+\newcommand{\nuexp}[2]{\nu#1.\,#2}
 
 \newcommand{\xstoretype}{\textsf{has-store-type}}
 \newcommand{\storetype}{\;\xstoretype\;}
@@ -273,7 +281,7 @@
 % use \nteval (infix) instead
 
 \newcommand{\emptygraph}{\varepsilon}
-\newcommand{\emptycxt}{\varepsilon}
+\newcommand{\emptyctxt}{\varepsilon}
 
 \newcommand{\bnfheader}[1]{\multicolumn{4}{@{}l}{\text{#1}}}
 \newenvironment{sbnfarray}{\begin{tabular}{c}\begin{array}[t]{lr@{~~}c@{~~~}ll}}{\end{array}\end{tabular}}

@@ -2,20 +2,21 @@
 \def\OPTIONArxiv{0}%
 %
 \documentclass{llncs}
-\input{defs}
 \usepackage{joshuadunfield}
+\usepackage{boxedminipage}
 \usepackage{goodcharter} %% XXX -- Check that ETAPS permits this font!
-\usepackage{euler}
+%\usepackage{euler}
+\input{defs}
+\usepackage{enumitem}
 
 \title{ILC: The Interactive Lambda Calculus}
-\subtitle{$\lambda$-Calculus for Universal Composibility
-  \\
-  or, \emph{``Please, Halt Research with Interactive Turing Machines''}
-}
-\titlerunning{ILC}
-\author{Andrew Miller\inst{1} \and Matthew A. Hammer\inst{2}}
-\institute{University of Illinois \and University of Colorado Boulder}
-\authorrunning{Miller and Hammer}
+%\subtitle{$\lambda$-Calculus for Universal Composibility
+%  or, \emph{``Please, Halt Research with Interactive Turing Machines''}
+%}
+%\titlerunning{ILC}
+%\author{Andrew Miller\inst{1} \and Matthew A. Hammer\inst{2}}
+%\institute{University of Illinois \and University of Colorado Boulder}
+%\authorrunning{Miller and Hammer}
 
 \begin{document}
 
@@ -33,11 +34,13 @@
 
 \section{ILC: Meta Theory}
 
+\section{SaUCy Execution}
+\input{defn_execuc}
+
 \begin{theorem}[Read determinism]
 \label{thm:read-det}
 XXX
 \end{theorem}
-
 
 \appendix
 \section{ILC: Full Language Definition}
@@ -249,6 +252,7 @@ Note that in particular, the following mode compositions are \emph{not derivable
 %
 \end{mathpar}
 \end{figure}
+
 
 
 \end{document}

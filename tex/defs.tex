@@ -1,3 +1,4 @@
+\usepackage{mathtools}
 \usepackage{semantic}   % Tools for typesetting PL semantics
 \usepackage{braket}     % Easy angle-bracket notation
 \usepackage{mathpartir} % Used to typeset blocks of inference rules
@@ -9,7 +10,7 @@
 \usepackage{amssymb}
 %\usepackage{amsmath,amsthm,amssymb}
 %\usepackage{thmtools,thm-restate}
-\usepackage{mathtools}
+
 
 % Marvosym
 \let\MathRightArrow\Rightarrow % save original definition of \Rightarrow
@@ -313,3 +314,36 @@
 %%% TeX-master: types
 %%% End: 
 
+\newcommand{\msf}[1]{\ensuremath{{\mathsf {#1}}}}
+\newcommand{\mtt}[1]{\ensuremath{\mathtt {#1}}}
+\newcommand{\mcal}[1]{\ensuremath{\mathcal {#1}}}
+\newcommand{\val}{\msf{val}}
+\newcommand{\sn}{\msf{sn}}
+
+\newcommand{\tn}{\textnormal}
+\newcommand{\codeb}[1]{\textsf{#1}}
+\newcommand{\hash}{\ensuremath{{\cal H}}}
+\newcommand{\adv}{\ensuremath{{\mathcal A}}\xspace}
+\newcommand{\Adv}{\adv}
+\newcommand{\A}{\adv}
+\newcommand{\samples}{\overset{\$}{\leftarrow}}
+\newcommand{\SA}{\msf{SA}}
+% SaUCy specific
+\newcommand{\SaUCy}{\xspace{\msf{SaUCy}}\xspace}
+\newcommand{\leak}{\color{blue}\mtt{leak}}
+\newcommand{\eventually}[1]{\color{blue}\mtt{leak}}
+\newcommand{\poly}{\textnormal{poly}}
+\newcommand{\negl}{\textnormal{negl}}
+\newcommand{\execUC}[4]{\mtt{execUC}({#1},{#2},{#3},{#4})}
+\newcommand{\chan}[1]{{\underline{\smash{\msf{#1}}}}}
+\newcommand{\functionality}[1]{\ensuremath{{\cal F}_{\textnormal{\msf{{#1}}}}}}
+\renewcommand{\F}{\functionality}
+\newcommand{\G}[1]{{\cal G}_{\textnormal{\tiny {\uppercase{#1}}}}}
+\newcommand{\GG}[1]{{\overline {\cal G}}_{\textnormal{\tiny {\uppercase{#1}}}}}
+\renewcommand{\C}[1]{{\cal C}_{\textnormal{\tiny {\uppercase{#1}}}}}
+\renewcommand{\P}{\ensuremath{\mathcal P}}
+\newcommand{\Ps}{\ensuremath{\{\mathcal{P}_i\}_{i \in [N]}}}
+\renewcommand{\S}{\ensuremath{\mathcal S}}
+\newcommand{\env}{\Z}
+\newcommand{\Z}{{\mcal{E}}}
+\newcommand{\R}{{\mathcal R}}

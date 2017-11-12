@@ -1,4 +1,4 @@
-embed {{ tex-preamble }}
+% embed {{ tex-preamble }}
 
 metavar a {{ tex \alpha }}, b {{ tex \beta }} ::= {{ com type variables }}
 metavar x, y, f, g ::= {{ com variables }}

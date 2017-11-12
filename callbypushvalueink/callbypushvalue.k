@@ -29,7 +29,8 @@ module CALLBYPUSHVALUE
   // For fresh variables
   syntax Id ::= "$x" | "$y"
 
-  // Following Fig. 6 CK-machine for CBPV
+  // Semantics by following Fig. 6 CK-machine for CBPV
+  // http://www.cs.bham.ac.uk/~pbl/papers/hosc05.pdf
 
   // Evaluation
   rule let X be V in M => M[V / X]

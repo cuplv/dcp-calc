@@ -1,2 +1,3 @@
-let thunk lambda x . (ret x + ret x) be Double in
-((force Double 10) to x . ret x)
+let Double be thunk (lambda x . x + x) in
+let Incr   be thunk (lambda x . 1 + x) in
+((force Incr) 10 + (force Double) 10)

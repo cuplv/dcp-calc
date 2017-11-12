@@ -1,0 +1,2 @@
+let thunk lambda x . (ret x + ret x) be Double in
+((force Double 10) to x . ret x)

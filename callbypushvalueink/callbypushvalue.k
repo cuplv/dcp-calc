@@ -43,7 +43,7 @@ module CALLBYPUSHVALUE
   rule <k> let X be M . N => M </k>
        <stack> .List => ListItem(to X . N) ...</stack>  [letpush]
   rule <k> ret V => N[V / X] </k>
-       <stack> ListItem(to X . N) => .List ...</stack>  [letpush]
+       <stack> ListItem(to X . N) => .List ...</stack>  [letpop]
 
   // Force thunk
   rule force thunk M => M  [force]

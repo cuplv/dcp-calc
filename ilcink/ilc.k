@@ -1,4 +1,4 @@
-require "modules/substitution.k"
+require "substitution.k"
 
 module ILC-SYNTAX
   syntax Var ::= Id
@@ -6,9 +6,9 @@ module ILC-SYNTAX
   	     | Var "(" Var ")" "." P
 	     | Var "<" Var ">" "." P
 	     | P "|" P
-	     | "(" "new" Var ")" P
+	     | "(" "new" Var ")" P      [binder]
 	     | "!" P
-	     | "(" P ")"		[bracket]
+	     | "(" P ")"		        [bracket]
 endmodule
 
 module ILC
@@ -17,23 +17,34 @@ module ILC
   syntax KResult ::= P
   configuration
     <T>
-      <k> $PGM:P </k>
-      <context> .List </context>
-      <env> .Map </env>
+      <processes>
+        <k multiplicity="*"> $PGM:P </k>
+      </processes>
+      <chans> .Map </chans>
     </T>
 
+  //@ Split parallel processes
+  rule <k> P | Q => P </k> (.Bag => <k> Q </k>)
 
-  // Split parallel processes
-  rule <k> A:P => . </k> <context> . => ListItem(A) </context>
-  rule <context>... ListItem(A:P | B:P) => ListItem(A) ListItem(B) ...</context>
+  //@ Execute sends
+  rule <k> X<Y>.P => P </k>
 
+  //rule <k> A:P => . </k> <context> .Set => SetItem(A) </context>
+  //rule <context>... SetItem(A | B) => SetItem(A) SetItem(B) ...</context>
+
+/* Lists
+  rule <k> A:P => . </k> <context> .List => ListItem(A) </context>
+  rule <context> ListItem(A | B) => ListItem(A) ListItem(B) ...</context>
+  rule <context>... ListItem(A | B) => ListItem(A) ListItem(B) </context>
+*/
+
+/*
   // Execute sends
-  rule <context>... ListItem(X<Y>.P) => ListItem(P) ...</context> <env> Rho:Map (. => X |-> Y) </env>
-    when notBool (X in keys(Rho))
+  rule <context>... ListItem(X<Y>.P => P) ...</context> //<env> . => X |-> Y </env>
 
   rule <context>... ListItem(X<Y>.P) => ListItem(P) ...</context> <env>... X |-> (_ => Y) ...</env>
 
   // Execute reads
   rule <context>... ListItem(X(Y).P) => ListItem(P[Z / Y]) ...</context> <env>... X |-> (Z => .) ... </env>
-
+*/
 endmodule

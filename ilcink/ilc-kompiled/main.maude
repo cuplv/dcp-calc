@@ -1,8 +1,0 @@
-load "/tmp/tcloop/k/lib/maude/lib/k-prelude"
-load "base.maude"
-load "builtins.maude"
-mod ILC is 
-  including ILC-BASE .
-  including ILC-BUILTINS .
-eq mainModule = 'ILC .
-endm

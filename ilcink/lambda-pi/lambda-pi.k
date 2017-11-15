@@ -5,7 +5,7 @@ module LAMBDA-PI-SYNTAX
   syntax Exp ::= Exp Exp  [strict]
          > Val
 	 > Exp "+" Exp               [strict,left]
-	 > Exp ".|" Exp
+	 > Exp ".|" Exp              [left]
          > "nu" Id "." Exp [binder]
   	 | "wr" Exp "->" Exp "." Exp [strict(1,2)]
 	 | "rd" Id "<-" Exp "." Exp [binder(1),strict(2)]

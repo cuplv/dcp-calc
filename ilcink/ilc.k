@@ -2,7 +2,7 @@ require "substitution.k"
 
 module ILC-SYNTAX
   syntax P ::= "O"
-  	     | Id "[" Id "]" "." P
+  	     | Id "[" Id "]" "." P              [binder]
 	     | Id "<" Id ">" "." P
 	     | P "|" P
 	     | "(" "new" Id ")" "(" P ")"       [binder]

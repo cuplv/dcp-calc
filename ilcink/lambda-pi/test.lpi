@@ -1,0 +1,8 @@
+// Lambda-Pi programs can treat parallel processes as values,
+//  so (P.| Q) returns the value of P
+let Double = lam x. (x + x) in
+nu c. nu d.
+5 + (
+     (wr 3 -> c. (rd x <- d. (Double x))) .|
+     (rd y <- c. (wr y -> d. 0))
+    )

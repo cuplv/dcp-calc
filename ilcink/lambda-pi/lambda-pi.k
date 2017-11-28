@@ -5,10 +5,16 @@ module LAMBDA-PI-SYNTAX
   syntax Exp ::= Exp Exp  [strict]
          > Val
 	 > Exp "+" Exp               [strict,left]
-	 > Exp ".|" Exp              [left]
+	 // Parallel composition
+	 > Exp ".|"  Exp              [left]
+	 | Exp ".|." Exp              [left]
+	 | Exp  "."  Exp              [left]
+	 | Exp "&"   Exp 	      [left]
+	 // Read and write
          > "nu" Id "." Exp [binder]
   	 | "wr" Exp "->" Exp "." Exp [strict(1,2)]
 	 | "rd" Id "<-" Exp "." Exp [binder(1),strict(2)]
+	 | "rd" Exp [strict]
 	 | "let" Id "=" Exp "in" Exp [binder(1),strict(2)]
 	 > "(" Exp ")" [bracket]
 
@@ -23,12 +29,17 @@ module LAMBDA-PI
 
   // Turn any parallel .| composition into separate <k> cells
   // Note that the context ~>R is kept with the left term
-  rule <k>P .| Q ~> R</k> => <k>P ~> R</k> <k>Q</k> // If in a context
-  rule <k>P .| Q     </k> => <k>P     </k> <k>Q</k> // If terminal
+  rule <k>(P.| Q => P) ~> R</k> (.Bag => <k>Q</k>) // If in a context
+  rule P | Q => 0 .| P .| Q // Sugar
+  //rule P |. Q => Q .| P // Sugar
 
   // Exchange rule
   rule <k>wr V -> C . P => P        ...</k>
-       <k>rd X <- C . Q => Q[V / X] ...</k>
+       <k>rd X <- C . Q => Q[V / X] ...</k>   [transition]
+
+  // Read sugar
+  syntax Id ::= "$x" | "$y"
+  rule rd E => rd $x <- E . $x
 
   // Application
   rule (lam X . E) V => E[V/X]

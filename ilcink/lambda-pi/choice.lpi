@@ -1,0 +1,6 @@
+let GetBit = lam x.
+    nu c. nu d. (
+       ((rd a <- c. a) & (rd b <- d. b))
+    .| (wr 1 -> c. 0)
+    .| (wr 2 -> d. 0)) in
+(GetBit 1)

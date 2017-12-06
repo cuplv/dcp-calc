@@ -327,7 +327,7 @@ C_2 \equiv C_2'
 { \Config{\Chans}{\Procs,E_1[R[\eRd{\vChan{c}}] ],E_2[\eWr{\vChan{c}}{v}]} ---> \Config{\Chans}{\Procs,E_1[v],E_2[\vUnit]} }
 \and
 \Infer{nu}{ c \notin \Chans }
-{ \Config{\Chans}{\Procs,E[\eNu{x}{e}]} ---> \Config{\Chans, c}{\Procs, E[\vPair{\vChan{c}}{\vChan{c}}]} }
+{ \Config{\Chans}{\Procs,E[\eNu{x}{e}]} ---> \Config{\Chans, c}{\Procs, E[ [\vPair{\vChan{c}}{\vChan{c}} / x] e ]} }
 \and
 \Infer{local}{ e ---> e' }
 { \Config{\Chans}{\Procs, E[e]} ---> \Config{\Chans}{\Procs, E[e]'} }

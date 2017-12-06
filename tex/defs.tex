@@ -126,7 +126,7 @@
 \mathlig{**}{\times}
 \mathlig{|>}{\rhd}
 \mathlig{->}{\arr}
-\mathlig{-->}{\impty}
+\mathlig{-->}{\rightarrow}
 \mathlig{--->}{\longrightarrow}
 \mathlig{=>}{\Rightarrow}
 \mathlig{*!}{\boldsf{!}}
@@ -256,14 +256,14 @@
 \newcommand{\emptygraph}{\varepsilon}
 \newcommand{\emptyctxt}{\varepsilon}
 
-\newcommand{\Config}[2]{\left<#1,#2\right>}
+\newcommand{\Config}[2]{\left<#1;#2\right>}
 
 \newcommand{\Chans}{\Sigma}
 \newcommand{\vChan}[1]{\texttt{chan}(#1)}
 \newcommand{\emptyChans}{\varepsilon}
 
-\newcommand{\Procs}{\Pi}
-\newcommand{\proc}{P}
+\newcommand{\Procs}{\pi}
+\newcommand{\proc}{e}
 \newcommand{\emptyProcs}{\varepsilon}
 
 \newcommand{\bnfheader}[1]{\multicolumn{4}{@{}l}{\text{#1}}}

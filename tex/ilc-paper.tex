@@ -258,12 +258,14 @@ Note that in particular, the following mode compositions are \emph{not derivable
 \end{figure}
 
 
+\begin{figure}
+\centering
 \begin{grammar}
   Channels
   & $\Chans$ 
     & $\bnfas$ & $\emptyChans ~|~ \Chans, c$
     \\[2mm]
-  Processes
+  Process pool
   & $\Procs$ 
     & $\bnfas$ & $\emptyProcs ~|~ \Procs, \proc$
     \\[2mm]
@@ -284,20 +286,56 @@ Note that in particular, the following mode compositions are \emph{not derivable
      \\ &&& $\bnfaltbrk \bullet$
 \end{grammar}
 
-%% \begin{figure}
-%% \centering
-%% \judgbox{\Config_1 \equiv \Config_2}
+\judgbox{e ---> e'}{~~Expression~$e_1$ reduces to~$e_2$.}
+\begin{mathpar}
+\Infer{let}
+{}
+{ \Let{\Ret{v}}{x}{e} ---> [v/x]e }
+\and
+\Infer{app}
+{}
+{ \eApp{(\lam{x} e)}{v} ---> [v/x]e }
+\and
+\Infer{split}
+{ }
+{ \eSplit{\vPair{v_1}{v_2}}{x}{y}{e} ---> [v_1/x][v_2/y]e }
+\and
+\Infer{case}
+{ }
+{ \eCase{\vInj{i}{v}}{x_1}{e_1}{x_2}{e_2} ---> e_i[v/x_i] }
+\end{mathpar}
 
-%% \judgbox{\Config_1 --> \Config_2}
-%% \begin{mathpar}
-%% \Infer{congr}{\Config_1 \equiv \Config_1' 
-%%              \\
-%%              \Config_1' --> \Config_2
-%%              \\
-%%              \Config_2 \equiv \Config_2'
-%% }{ \Config_1 --> \Config_2' }
-%% \end{mathpar}
-%% \end{figure}
+\judgbox{C_1 \equiv C_2}{~~Configurations~$C_1$ and $C_2$ are equivalent.}
+\begin{mathpar}
+\Infer{permProcs}
+{  \Procs_1 \equiv_\textsf{perm} \Procs_2 }
+{ \Config{\Chans}{\Procs_1} \equiv \Config{\Chans}{\Procs_2} }
+\end{mathpar}
+
+\judgbox{C_1 ---> C_2}{~~Configuration~$C_1$ reduces to $C_2$.}
+\begin{mathpar}
+\Infer{congr}{
+C_1 \equiv C_1' 
+\\
+C_1' ---> C_2
+\\
+C_2 \equiv C_2'
+}
+{ C_1 ---> C_2' }
+\and
+\Infer{rw}{ ~ }
+{ \Config{\Chans}{\Procs,E_1[R[\eRd{\vChan{c}}]],E_2[\eWr{\vChan{c}}{v}]} ---> \Config{\Chans}{\Procs,E_1[v],E_2[\vUnit]} }
+\and
+\Infer{nu}{ c \notin \Chans }
+{ \Config{\Chans}{\Procs,E[\eNu{x}{e}]} ---> \Config{\Chans, c}{\Procs, E[\vPair{\vChan{c}}{\vChan{c}}]} }
+\and
+\Infer{local}{ e ---> e' }
+{ \Config{\Chans}{\Procs, E[e]} ---> \Config{\Chans}{\Procs, E[e]'} }
+\and
+\Infer{fork}{ ~ }
+{ \Config{\Chans}{\Procs, E[ e_1 \xFork e_2 ] } ---> \Config{\Chans}{\Procs, e_1, E[ e_2 ] } }
+
+\end{mathpar}
+\end{figure}
 
 \end{document}
-\end{figure}

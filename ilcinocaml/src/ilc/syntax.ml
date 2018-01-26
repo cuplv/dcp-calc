@@ -45,29 +45,28 @@ type process =
     | Process of expr
 
 let name_to_str = function
-        | x -> "Name(" ^ x ^ ")"
+    | x -> Printf.sprintf "Name(%s)" x
+
 let string_of_expr e =
     let rec to_str e = 
         match e with
         | Name x -> name_to_str x
-        | Int n -> "Int(" ^ string_of_int n ^ ")"
-        | Bool b -> "Bool(" ^ string_of_bool b ^ ")"
-        | Plus (e1, e2) -> "Plus(" ^ to_str e1 ^ "," ^ to_str e2 ^ ")"
-        | Minus (e1, e2) -> "Minus(" ^ to_str e1 ^ "," ^ to_str e2 ^ ")"
-        | Times (e1, e2) -> "Times(" ^ to_str e1 ^ "," ^ to_str e2 ^ ")"
-        | Divide (e1, e2) -> "Divide(" ^ to_str e1 ^ "," ^ to_str e2 ^ ")"
-        | Mod (e1, e2) -> "Mod(" ^ to_str e1 ^ "," ^ to_str e2 ^ ")"
-        | Less (e1, e2) -> "Less(" ^ to_str e1 ^ "," ^ to_str e2 ^ ")"
-        | If (e1, e2, e3) -> "If(" ^ to_str e1 ^ "," ^ 
-          to_str e2 ^ "," ^ to_str e3 ^ ")"
-        | Let (x, e1, e2) -> "Let(" ^ name_to_str x ^ "," ^ 
-          to_str e1 ^ "," ^ to_str e2 ^ ")"
-        | App (e1, e2) -> "App(" ^ to_str e1 ^ "," ^ to_str e2 ^ ")"
-        | Lam (x, e) -> "Lam(" ^ name_to_str x ^ "," ^ to_str e ^ ")"
-        | Wr (e, x) -> "Wr(" ^ to_str e ^ "," ^ name_to_str x ^ ")"
-        | Rd (e, x) -> "Rd(" ^ to_str e ^ "," ^ name_to_str x ^ ")"
-        | Nu (x, e) -> "Nu(" ^ name_to_str x ^ "," ^ to_str e ^ ")"
-        | ParComp (e1, e2) -> "ParComp(" ^ to_str e1 ^ "," ^ to_str e2 ^ ")"
-        | ParLeft (e1, e2) -> "ParLeft(" ^ to_str e1 ^ "," ^ to_str e2 ^ ")"
-        | Seq (e1, e2) -> "Seq(" ^ to_str e1 ^ "," ^ to_str e2 ^ ")"
+        | Int n -> Printf.sprintf "Int(%d)" n
+        | Bool b -> Printf.sprintf "Bool(%b)" b
+        | Plus (e1, e2) -> Printf.sprintf "Plus(%s,%s)" (to_str e1) (to_str e2)
+        | Minus (e1, e2) -> Printf.sprintf "Minus(%s,%s)" (to_str e1) (to_str e2)
+        | Times (e1, e2) -> Printf.sprintf "Times(%s,%s)" (to_str e1) (to_str e2)
+        | Divide (e1, e2) -> Printf.sprintf "Divide(%s,%s)" (to_str e1) (to_str e2)
+        | Mod (e1, e2) -> Printf.sprintf "Mod(%s,%s)" (to_str e1) (to_str e2)
+        | Less (e1, e2) -> Printf.sprintf "Less(%s,%s)" (to_str e1) (to_str e2)
+        | If (e1, e2, e3) -> Printf.sprintf "If(%s,%s,%s)" (to_str e1) (to_str e2) (to_str e3)
+        | Let (x, e1, e2) -> Printf.sprintf "Let(%s,%s,%s)" (name_to_str x) (to_str e1) (to_str e2)
+        | App (e1, e2) -> Printf.sprintf "App(%s,%s)" (to_str e1) (to_str e2)
+        | Lam (x, e) -> Printf.sprintf "Lam(%s,%s)" (name_to_str x) (to_str e)
+        | Wr (e, x) -> Printf.sprintf "Wr(%s,%s)" (to_str e) (name_to_str x)
+        | Rd (e, x) -> Printf.sprintf "Rd(%s,%s)" (to_str e) (name_to_str x)
+        | Nu (x, e) -> Printf.sprintf "Nu(%s,%s)" (name_to_str x) (to_str e)
+        | ParComp (e1, e2) -> Printf.sprintf "ParComp(%s,%s)" (to_str e1) (to_str e2)
+        | ParLeft (e1, e2) -> Printf.sprintf "ParLeft(%s,%s)" (to_str e1) (to_str e2)
+        | Seq (e1, e2) -> Printf.sprintf "Seq(%s,%s)" (to_str e1) (to_str e2)
     in to_str e

@@ -22,19 +22,19 @@ let rec compile = function
 let rec string_of_frame = function
     | [] -> ""
     | i::is -> match i with
-               | IVar x -> "IVar(" ^ x ^ ")\n" ^ string_of_frame is
-               | IInt n -> "IInt(" ^ string_of_int n ^ ")\n" ^ string_of_frame is
-               | IBool b -> "IBool(" ^ string_of_bool b ^ ")\n" ^ string_of_frame is
+               | IVar x -> Printf.sprintf "IVar(%s)\n%s" x (string_of_frame is)
+               | IInt n -> Printf.sprintf "IInt(%d)\n%s" n (string_of_frame is)
+               | IBool b -> Printf.sprintf "IBool(%b)\n%s" b (string_of_frame is)
                | IAdd -> "IAdd\n" ^ string_of_frame is
                | ISub -> "ISub\n" ^ string_of_frame is
                | IMult -> "IMult\n" ^ string_of_frame is
                | IDiv -> "IDiv\n" ^ string_of_frame is
                | IMod -> "IMod\n" ^ string_of_frame is
                | ILess -> "ILess\n" ^ string_of_frame is
-               | IClosure (_, x, f) -> "IClosure(" ^ x ^ "\n" ^
-                                    string_of_frame f ^ ")\n" ^ string_of_frame is
-               | IBranch (f1, f2) -> "IBranch(\n" ^ string_of_frame f1 ^ 
-                                     string_of_frame f2 ^ ")" ^ string_of_frame is
+               | IClosure (_, x, f) ->
+                    Printf.sprintf "IClosure(%s\n%s)\n%s" x (string_of_frame f) (string_of_frame is)
+               | IBranch (f1, f2) ->
+                    Printf.sprintf "IBranch(\n%s%s)" (string_of_frame f1) (string_of_frame f2)
                | ICall -> "ICall\n" ^ string_of_frame is
                | IPopEnv -> "IPopEnv\n" ^ string_of_frame is
-               | ILet x -> "ILet(" ^ x ^ ")\n" ^ string_of_frame is
+               | ILet x -> Printf.sprintf "ILet(%s)\n%s" x (string_of_frame is)

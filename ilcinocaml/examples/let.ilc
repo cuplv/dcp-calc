@@ -1,0 +1,1 @@
+let double = lam x . x + x in double 2

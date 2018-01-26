@@ -14,8 +14,8 @@ let rec compile = function
     | Syntax.Mod (e1, e2) -> (compile e1) @ (compile e2) @ [IMod]
     | Syntax.Less (e1, e2) -> (compile e1) @ (compile e2) @ [ILess]
     | Syntax.If (e1, e2, e3) -> (compile e1) @ [IBranch (compile e2, compile e3)]
-    (*| Syntax.Let*)
-    | Syntax.Lam (x, e) -> [IClosure ("lol", x, compile e @ [IPopEnv])]
+    | Syntax.Let (x, e1, e2) -> (compile e1) @ [ILet x] @ (compile e2)
+    | Syntax.Lam (x, e) -> [IClosure ("anon", x, compile e @ [IPopEnv])]
     | Syntax.App (e1, e2) -> (compile e1) @ (compile e2) @ [ICall]
     | _ -> raise (Compilation_error)
 
@@ -37,3 +37,4 @@ let rec string_of_frame = function
                                      string_of_frame f2 ^ ")" ^ string_of_frame is
                | ICall -> "ICall\n" ^ string_of_frame is
                | IPopEnv -> "IPopEnv\n" ^ string_of_frame is
+               | ILet x -> "ILet(" ^ x ^ ")\n" ^ string_of_frame is

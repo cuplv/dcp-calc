@@ -18,6 +18,7 @@ and instr =
     | IBranch of frame * frame
     | ICall
     | IPopEnv
+    | ILet of name
 and frame = instr list
 and environ = (name * mvalue) list
 and stack = mvalue list
@@ -70,7 +71,6 @@ let modu = function
     | (MInt x) :: (MInt y) :: s -> MInt (y mod x) :: s
     | _ -> error "int and int expected in mod"
 
-
 let less = function
     | (MInt x) :: (MInt y) :: s -> MBool (y < x) :: s
     | _ -> error "int and int expected in less"
@@ -90,9 +90,21 @@ let exec instr frms stck envs =
     | IClosure (f, x, frm) ->
         (match envs with
         | env :: _ ->
-            let rec c = MClosure (x, frm, (f, c) :: env)
+            let named =
+                match frms with
+                | (ILet x :: _) :: _ -> x
+                | _ -> f
+            in
+            let rec c = MClosure (x, frm, (named, c) :: env)
             in (frms, c :: stck, envs)
         | [] -> error "no environment for a closure")
+    | ILet x ->
+        (match envs with
+        | env :: env_tail ->
+            let (x', stck') = pop stck in
+            let updated_env = (x, x') :: env in
+            (frms, stck', updated_env :: env_tail)
+        | [] -> error "no environment for variable")
     | IBranch (f1, f2) ->
         let (b, stck') = pop_bool stck in
         ((if b then f1 else f2) :: frms, stck', envs)
@@ -103,7 +115,6 @@ let exec instr frms stck envs =
         match envs with
         | [] -> error "no environment to pop"
         | _ :: envs' -> (frms, stck, envs')
-    | _ -> error "Execution error"
 
 let run frm env = 
     let rec loop = function

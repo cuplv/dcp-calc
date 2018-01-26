@@ -155,7 +155,7 @@ struct
 
   (** Parse input from toplevel, using the given [parser]. *)
   let read_toplevel parser () =
-    let prompt = L.name ^ "> "
+    let prompt = ">>> "
     and prompt_more = String.make (String.length L.name) ' ' ^ "> " in
     print_string prompt ;
     let str = ref (read_line ()) in
@@ -186,18 +186,17 @@ struct
 
   (** Interactive toplevel *)
   let toplevel ctx =
-    let eof = match Sys.os_type with
+    (*let eof = match Sys.os_type with
       | "Unix" | "Cygwin" -> "Ctrl-D"
       | "Win32" -> "Ctrl-Z"
       | _ -> "EOF"
-    in
+    in*)
       let toplevel_parser =
         match L.toplevel_parser with
         | Some p -> p
         | None -> fatal_error "I am sorry but this language has no interactive toplevel."
       in
-      Format.printf "%s -- programming languages zoo@\n" L.name ;
-      Format.printf "Type %s to exit@." eof ;
+      Format.printf "%si, version 0.0.1 @." L.name ;
       try
         let ctx = ref ctx in
           while true do

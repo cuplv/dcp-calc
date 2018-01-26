@@ -34,7 +34,6 @@
 
 /* Precedence and assoc */
 %left PAR PARL
-%left LARROW RARROW
 %nonassoc ELSE
 %nonassoc LESS
 %left PLUS MINUS

@@ -27,7 +27,11 @@ module ILC = Zoo.Main(struct
     let exec env =  function
         | Syntax.Process p ->
 
+            (*print_endline (Syntax.string_of_expr p);
+            env*)
+
             (*let frm = Compile.compile p in
+            print_endline (Syntax.string_of_expr p);
             print_endline (Compile.string_of_frame frm);
             env*)
             

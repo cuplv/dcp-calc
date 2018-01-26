@@ -40,8 +40,6 @@
 
 %% \theoremstyle{remark}
 
-\newcommand{\calc}{$\lambda_{\textsf{nom}}$\xspace}
-
 \newcommand{\Label}[1]{\label{#1}} % XXX
 \newcommand{\FLabel}[1]{\label{#1}} % XXX
 \newcommand{\D}{\mathcal{D}}
@@ -60,86 +58,39 @@
 %% \newcommand{\thmreftwo}[2]{Theorems \ref{thm:#1} and~\ref{thm:#2}}
 %% \newtheorem{defn}[thm]{Definition}
 
-\newcommand{\type}{\star}
-\newcommand{\sort}{\gamma}
-\newcommand{\namesort}{\boldsf{Nm}}
-\newcommand{\namesetsort}{\boldsf{NmSet}}
-\newcommand{\unitsort}{\boldsf{1}}
-
-\newcommand{\Nmsp}{\tyname{Nmsp}}
-
-\newcommand{\xwfeff}{\text{wf-effects}}
-\newcommand{\wfeff}{~\xwfeff}
-\newcommand{\xwfname}{\text{wf-name}}
-\newcommand{\wfname}{~\xwfname}
-
-\newcommand{\xwf}{\text{wf}}
-\newcommand{\wf}{~\xwf}
-
-\newcommand{\xwfgraph}{\xwf}
-\newcommand{\wfgraph}{~\xwfgraph}
-
-% \newcommand{\ixf}{\boldsf{f}}
-
-\newcommand{\namevar}{\nu}
-
+\newcommand{\vUnit}{\texttt{()}}
 \newcommand{\Unit}{\tyname{unit}}
-\newcommand{\unitty}{\Unit}
 \newcommand{\Nat}{\tyname{nat}}
-\newcommand{\natty}{\Nat}
-\newcommand{\unit}{\textvtt{()}}
-\newcommand{\unitexp}{\unit}
-
-\newcommand{\unitindex}{\unit}
 
 \newcommand{\runonboldsf}{\sffamily\bfseries\selectfont}
 \newcommand{\boldsf}[1]{\text{\runonboldsf #1}}
 
+% ILC Computation types
 \newcommand{\xF}{\boldsf{F}}
-\newcommand{\F}{\xF\,}
 \newcommand{\xU}{\boldsf{U}}
-\newcommand{\U}{\xU\,}
+\newcommand{\tyFp}[1]{\xF(#1)}
+\newcommand{\tyF}[1]{\xF\,#1}
+\newcommand{\tyUp}[1]{\xU(#1)}
+\newcommand{\tyU}[1]{\xU\,#1}
 
-% Read and Write channel types
+% ILC Read and Write channel types
 \newcommand{\xRd}{\boldsf{Rd}}
-\newcommand{\Rd}{\xRd\,}
+\newcommand{\tyRdp}[1]{\xRd(#1)}
+\newcommand{\tyRd}[1]{\xRd\,#1}
+
 \newcommand{\xWr}{\boldsf{Wr}}
-\newcommand{\Wr}{\xWr\,}
+\newcommand{\tyWr}[1]{\xWr\,#1}
+\newcommand{\tyWrp}[1]{\xWr(#1)}
 
-% Modes
-\newcommand{\Rm}{\textsf{R}}
-\newcommand{\Wm}{\textsf{W}}
-\newcommand{\Vm}{\textsf{V}}
-
-\newcommand{\disj}{\mathop{\bot}}
-
-\newcommand{\trueprop}{\boldsf{tt}}
-\newcommand{\andpropsym}{\boldsf{and}}
-\newcommand{\andprop}{\mathrel{\andpropsym}}
-\newcommand{\impty}{\supset}
-
-% \Univ currently deprecated
-\newcommand{\Univsym}{\Pi}
-% \Univ currently deprecated
-\newcommand{\Univ}[1]{\Univsym{#1}.\,}
+% ILC Modes
+\newcommand{\Rm}{\textsf{R}} % read mode
+\newcommand{\Wm}{\textsf{W}} % write mode
+\newcommand{\Vm}{\textsf{V}} % value mode
 
 % Currently, using \All for both type variables (\All{\alpha : K}
 % and index variables (\All{ea : \sort})
 \newcommand{\Allsym}{\forall}
 \newcommand{\All}[1]{\Allsym{#1}.\,}
-
-% Name function arrow (name in scope at both the type and term level!)
-% \Namearr{a}{... @> ...}
-\newcommand{\Namearrsym}{\aleph}
-\newcommand{\Namearr}[2]{\Namearrsym{#1}:{#2} \arr}
-
-\newcommand{\namearrintro}[1]{\Namearrsym{#1}.\;}
-\newcommand{\namearrelimsym}{\texttt{@}}
-\newcommand{\namearrelim}[2]{{#1} \mathop{\namearrelimsym} {#2}}
-
-\newcommand{\tyapp}[2]{{#1}\tbrack{#2}}
-% \newcommand{\idxapp}[2]{{#1}\tbrack{#2}}
-\newcommand{\idxapp}[2]{{#1}({#2})}
 
 \newcommand{\Split}[4]{\keyword{split}\Lparen{#1}, {#2}.{#3}.{#4}\Rparen}
 \newcommand{\Case}[5]{\keyword{case}\Lparen{#1}, {#2}.{#3}, {#4}.{#5}\Rparen}
@@ -147,10 +98,21 @@
 \newcommand{\inj}[1]{\keyword{inj}_{#1}\,}
 \newcommand{\Inj}[1]{\inj{#1}}
 
-\newcommand{\Scope}[2]{\keyword{scope}\Lparen{#1}, {#2}\Rparen}
+\newcommand{\vPair}[2]{\Lparen{#1}\texttt{,}{#2}\Rparen}
+\newcommand{\vInj}[2]{\keyword{inj}_{#1}(#2)}
+\newcommand{\vThunk}[1]{\keyword{thunk}(#1)}
+
+\newcommand{\eSplit}[4]{\keyword{split}\Lparen{#1}, {#2}.{#3}.{#4}\Rparen}
+\newcommand{\eCase}[5]{\keyword{case}\Lparen{#1}, {#2}.{#3}, {#4}.{#5}\Rparen}
+
+\newcommand{\eFork}[2]{\ensuremath{#1 *&& #2}}
+\newcommand{\eChoose}[2]{\ensuremath{#1 *|| #2}}
+
+
 
 \newcommand{\Sig}{\mathcal{S}}
 
+\newcommand{\xFork}{\mathrel{|\rhd}}
 
 %% Math ligatures (thanks to the semantic package) that make it
 %% easier to typeset math using readable LaTeX text.
@@ -164,14 +126,14 @@
 \mathlig{**}{\times}
 \mathlig{|>}{\rhd}
 \mathlig{->}{\arr}
-\mathlig{-->}{\impty}
+\mathlig{-->}{\rightarrow}
 \mathlig{--->}{\longrightarrow}
 \mathlig{=>}{\Rightarrow}
 \mathlig{*!}{\boldsf{!}}
 \mathlig{||}{\mathrel{|\!|}}
 \mathlig{;;}{\mathrel{;}}
-\mathlig{*&}{\mathrel{\&}}
-\mathlig{*||}{\mathrel{\&}}
+\mathlig{*&&}{\mathrel{\xFork}}
+\mathlig{*||}{\mathrel{\oplus}}
 
 \mathlig{@>}{\arr_{\namesort}}
 
@@ -186,6 +148,7 @@
 \newcommand{\Lparen}{\texttt{(}}
 \newcommand{\Rparen}{\texttt{)}}
 % \newcommand{\Pair}[2]{\Lparen{#1}\texttt{,}{#2}\Rparen}
+
 
 %\mathlig{unit}{\unitty}
 
@@ -255,15 +218,22 @@
 \newcommand{\Int}[0]{\tyname{Int}}
 
 \let\Force\undefined
-\newcommand{\Force}[1]{\keyword{force}\Lparen{#1}\Rparen}
-\newcommand{\Get}[1]{\keyword{get}\Lparen{#1}\Rparen}
+\newcommand{\eForce}[1]{\keyword{force}\Lparen{#1}\Rparen}
 
-\newcommand{\Ns}[2]{\keyword{ns}\Lparen{#1}\Rparen\{#2\}}
+\newcommand{\App}[2]{#1\,#2}
+\newcommand{\eApp}[2]{#1\,#2}
 
 \newcommand{\Ret}[1]{\keyword{ret}\Lparen{#1}\Rparen}
 \newcommand{\Let}[3]{\keyword{let}\Lparen{#1},{#2}.{#3}\Rparen}
+\newcommand{\eLet}[3]{\keyword{let}\Lparen{#1},{#2}.{#3}\Rparen}
 \newcommand{\LetBang}[3]{\keyword{let!}\Lparen{#1},{#2}.{#3}\Rparen}
 
+% Channel read and Channel write expressions
+\newcommand{\eRd}[1]{\textsf{rd}(#1)}
+\newcommand{\eWr}[2]{\textsf{wr}(#1<-#2)}
+\newcommand{\eNu}[2]{\nu#1.\,#2}
+
+% DEPRECATED: % DEPRECATED: % DEPRECATED:
 % Channel read and Channel write expressions
 \newcommand{\rdexp}[1]{\textsf{rd}\,#1}
 \newcommand{\wrexp}[2]{\textsf{wr}\,#1<-#2}
@@ -285,6 +255,16 @@
 
 \newcommand{\emptygraph}{\varepsilon}
 \newcommand{\emptyctxt}{\varepsilon}
+
+\newcommand{\Config}[2]{\left<#1;#2\right>}
+
+\newcommand{\Chans}{\Sigma}
+\newcommand{\vChan}[1]{\texttt{chan}(#1)}
+\newcommand{\emptyChans}{\varepsilon}
+
+\newcommand{\Procs}{\pi}
+\newcommand{\proc}{e}
+\newcommand{\emptyProcs}{\varepsilon}
 
 \newcommand{\bnfheader}[1]{\multicolumn{4}{@{}l}{\text{#1}}}
 \newenvironment{sbnfarray}{\begin{tabular}{c}\begin{array}[t]{lr@{~~}c@{~~~}ll}}{\end{array}\end{tabular}}
@@ -337,7 +317,7 @@
 \newcommand{\execUC}[4]{\mtt{execUC}({#1},{#2},{#3},{#4})}
 \newcommand{\chan}[1]{{\underline{\smash{\msf{#1}}}}}
 \newcommand{\functionality}[1]{\ensuremath{{\cal F}_{\textnormal{\msf{{#1}}}}}}
-\renewcommand{\F}{\functionality}
+\newcommand{\F}{\functionality}
 \newcommand{\G}[1]{{\cal G}_{\textnormal{\tiny {\uppercase{#1}}}}}
 \newcommand{\GG}[1]{{\overline {\cal G}}_{\textnormal{\tiny {\uppercase{#1}}}}}
 \renewcommand{\C}[1]{{\cal C}_{\textnormal{\tiny {\uppercase{#1}}}}}

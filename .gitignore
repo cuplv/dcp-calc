@@ -127,3 +127,7 @@ sympy-plots-for-*.tex/
 
 # K
 *-kompiled/
+.DS_Store
+_build
+*.native
+*.output

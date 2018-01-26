@@ -2,7 +2,7 @@ open Syntax
 
 let eval env = 
     let rec eval = function
-        | Variable x ->
+        | Name x ->
             (try
                 List.assoc x env
              with
@@ -15,5 +15,5 @@ let eval env =
             let n2 = eval e2 in
                 if n2 <> 0 then eval e1 / n2 else Zoo.error "division by zero"
         | Mod (e1, e2) -> eval e1 mod eval e2
-        | Negate e -> - (eval e)
+        | _ -> 42
     in eval

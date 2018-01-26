@@ -77,14 +77,14 @@ let print_info msg = Format.kfprintf (fun ppf -> Format.pp_print_flush ppf ()) F
 module type LANGUAGE =
 sig
   val name : string 
-  type command     
+  type process     
   type environment 
   val options : (Arg.key * Arg.spec * Arg.doc) list 
   val initial_environment : environment 
   val read_more : string -> bool
-  val file_parser : (Lexing.lexbuf -> command list) option 
-  val toplevel_parser : (Lexing.lexbuf -> command) option
-  val exec : environment -> command -> environment 
+  val file_parser : (Lexing.lexbuf -> process list) option 
+  val toplevel_parser : (Lexing.lexbuf -> process) option
+  val exec : environment -> process -> environment 
 end
 
 module Main (L : LANGUAGE) =

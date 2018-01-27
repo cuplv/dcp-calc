@@ -19,9 +19,45 @@ and instr =
     | ICall
     | IPopEnv
     | ILet of name
+    | IProc
+    | IWr of name
+    | IRd of name
 and frame = instr list
 and environ = (name * mvalue) list
 and stack = mvalue list
+
+(*let string_of_instr = function 
+    | IVar x -> Printf.sprintf "IVar(%s)\n%s" x (string_of_frame is)
+    | IInt n -> Printf.sprintf "IInt(%d)\n%s" n (string_of_frame is)
+    | IBool b -> Printf.sprintf "IBool(%b)\n%s" b (string_of_frame is)
+    | IAdd -> "IAdd\n" ^ string_of_frame is
+    | ISub -> "ISub\n" ^ string_of_frame is
+    | IMult -> "IMult\n" ^ string_of_frame is
+    | IDiv -> "IDiv\n" ^ string_of_frame is
+    | IMod -> "IMod\n" ^ string_of_frame is
+    | ILess -> "ILess\n" ^ string_of_frame is
+    | IClosure (_, x, f) ->
+         Printf.sprintf "IClosure(%s\n%s)\n%s" x (string_of_frame f) (string_of_frame is)
+    | IBranch (f1, f2) ->
+         Printf.sprintf "IBranch(\n%s%s)" (string_of_frame f1) (string_of_frame f2)
+    | ICall -> "ICall\n" ^ string_of_frame is
+    | IPopEnv -> "IPopEnv\n" ^ string_of_frame is
+    | ILet x -> Printf.sprintf "ILet(%s)\n%s" x (string_of_frame is)
+    | IProc -> "IProc\n" ^ string_of_frame is
+    | IWr x -> Printf.sprintf "IWr(%s)\n%s" x (string_of_frame is)
+    | IRd x -> Printf.sprintf "IRd(%s)\n%s" x (string_of_frame is)
+
+let string_of_environ = function
+    | [] -> "\n"
+    | (x, MInt i) :: rest -> Printf.sprintf "(%s,%d), " x i
+    | (x, MBool b) :: rest -> Printf.sprintf "(%s,%b), " x b
+    | (x, MClosure _) :: rest -> Printf.sprintf "(%s,Closure), " x*)
+
+module ProcessSet = Set.Make(
+    struct
+        let compare = Pervasives.compare
+        type t = frame * stack * environ
+    end )
 
 exception Machine_error of string
 
@@ -115,10 +151,17 @@ let exec instr frms stck envs =
         match envs with
         | [] -> error "no environment to pop"
         | _ :: envs' -> (frms, stck, envs')
+    (*| IWr _ -> (frms, stck, envs)
+    | IRd _ -> (frms, stck, envs)*)
+
+(*let wtf = ProcessSet.singleton(([], [], []))*)
 
 let run frm env = 
     let rec loop = function
-        | ([], [v], _) -> v
+        (*| ([], [v], _) -> v*)
+        | ([], [v], e) -> ([], [v], e)
+        | ((IRd x ::is) :: frms, stck, envs) -> ((IRd x ::is) :: frms, stck, envs)
+        | ((IWr x ::is) :: frms, stck, envs) -> ((IWr x ::is) :: frms, stck, envs)
         | ((i::is) :: frms, stck, envs) -> loop (exec i (is::frms) stck envs)
         | ([] :: frms, stck, envs) -> loop (frms, stck, envs)
         | _ -> error "illegal end of program"

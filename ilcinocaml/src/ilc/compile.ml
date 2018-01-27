@@ -2,7 +2,7 @@ open Machine
 
 exception Compilation_error
 
-(* Compiles expression into frame, i.e., list of instructions *)
+(* Compiles expression into a list of abstract machine instructions *)
 let rec compile = function
     | Syntax.Name x ->  [IVar x]
     | Syntax.Int n -> [IInt n]
@@ -17,24 +17,31 @@ let rec compile = function
     | Syntax.Let (x, e1, e2) -> (compile e1) @ [ILet x] @ (compile e2)
     | Syntax.Lam (x, e) -> [IClosure ("anon", x, compile e @ [IPopEnv])]
     | Syntax.App (e1, e2) -> (compile e1) @ (compile e2) @ [ICall]
+    | Syntax.ParComp (e1, e2) -> (compile e1) @ [IProc] @ (compile e2)
+    | Syntax.Wr (e, x) -> (compile e) @ [IWr x]
+    | Syntax.Rd (e, x) -> (compile e) @ [IRd x]
     | _ -> raise (Compilation_error)
 
 let rec string_of_frame = function
     | [] -> ""
-    | i::is -> match i with
-               | IVar x -> Printf.sprintf "IVar(%s)\n%s" x (string_of_frame is)
-               | IInt n -> Printf.sprintf "IInt(%d)\n%s" n (string_of_frame is)
-               | IBool b -> Printf.sprintf "IBool(%b)\n%s" b (string_of_frame is)
-               | IAdd -> "IAdd\n" ^ string_of_frame is
-               | ISub -> "ISub\n" ^ string_of_frame is
-               | IMult -> "IMult\n" ^ string_of_frame is
-               | IDiv -> "IDiv\n" ^ string_of_frame is
-               | IMod -> "IMod\n" ^ string_of_frame is
-               | ILess -> "ILess\n" ^ string_of_frame is
-               | IClosure (_, x, f) ->
-                    Printf.sprintf "IClosure(%s\n%s)\n%s" x (string_of_frame f) (string_of_frame is)
-               | IBranch (f1, f2) ->
-                    Printf.sprintf "IBranch(\n%s%s)" (string_of_frame f1) (string_of_frame f2)
-               | ICall -> "ICall\n" ^ string_of_frame is
-               | IPopEnv -> "IPopEnv\n" ^ string_of_frame is
-               | ILet x -> Printf.sprintf "ILet(%s)\n%s" x (string_of_frame is)
+    | i::is ->
+        match i with
+        | IVar x -> Printf.sprintf "IVar(%s)\n%s" x (string_of_frame is)
+        | IInt n -> Printf.sprintf "IInt(%d)\n%s" n (string_of_frame is)
+        | IBool b -> Printf.sprintf "IBool(%b)\n%s" b (string_of_frame is)
+        | IAdd -> "IAdd\n" ^ string_of_frame is
+        | ISub -> "ISub\n" ^ string_of_frame is
+        | IMult -> "IMult\n" ^ string_of_frame is
+        | IDiv -> "IDiv\n" ^ string_of_frame is
+        | IMod -> "IMod\n" ^ string_of_frame is
+        | ILess -> "ILess\n" ^ string_of_frame is
+        | IClosure (_, x, f) ->
+             Printf.sprintf "IClosure(%s\n%s)\n%s" x (string_of_frame f) (string_of_frame is)
+        | IBranch (f1, f2) ->
+             Printf.sprintf "IBranch(\n%s%s)" (string_of_frame f1) (string_of_frame f2)
+        | ICall -> "ICall\n" ^ string_of_frame is
+        | IPopEnv -> "IPopEnv\n" ^ string_of_frame is
+        | ILet x -> Printf.sprintf "ILet(%s)\n%s" x (string_of_frame is)
+        | IProc -> "IProc\n" ^ string_of_frame is
+        | IWr x -> Printf.sprintf "IWr(%s)\n%s" x (string_of_frame is)
+        | IRd x -> Printf.sprintf "IRd(%s)\n%s" x (string_of_frame is)

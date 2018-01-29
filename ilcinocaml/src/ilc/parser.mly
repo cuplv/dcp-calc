@@ -96,8 +96,8 @@ expr:
     /* Wr */
     | WR e = expr RARROW x = NAME
       { Wr (e, x) }
-    | RD e = expr LARROW x = NAME
-      { Rd (e, x) }
+    | RD x1 = NAME LARROW x2 = NAME
+      { Rd (x1, x2) }
     | NU x = NAME DOT e = expr
       { Nu (x, e) }
     | e1 = expr PAR e2 = expr

@@ -1,1 +1,1 @@
-wr 3 -> c | rd y <- c
+wr 3 -> c | rd y <- c | 1 + 1

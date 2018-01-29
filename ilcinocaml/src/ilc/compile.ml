@@ -18,8 +18,8 @@ let rec compile = function
     | Syntax.Lam (x, e) -> [IClosure ("anon", x, compile e @ [IPopEnv])]
     | Syntax.App (e1, e2) -> (compile e1) @ (compile e2) @ [ICall]
     | Syntax.ParComp (e1, e2) -> (compile e1) @ [IProc] @ (compile e2)
-    | Syntax.Wr (e, x) -> (compile e) @ [IWr x]
-    | Syntax.Rd (e, x) -> (compile e) @ [IRd x]
+    | Syntax.Wr (e, x) -> (compile e) @ [IWr (MHole, x)]
+    | Syntax.Rd (x1, x2) -> [IRd (x1, x2)]
     | _ -> raise (Compilation_error)
 
 let rec string_of_frame = function
@@ -43,5 +43,5 @@ let rec string_of_frame = function
         | IPopEnv -> "IPopEnv\n" ^ string_of_frame is
         | ILet x -> Printf.sprintf "ILet(%s)\n%s" x (string_of_frame is)
         | IProc -> "IProc\n" ^ string_of_frame is
-        | IWr x -> Printf.sprintf "IWr(%s)\n%s" x (string_of_frame is)
-        | IRd x -> Printf.sprintf "IRd(%s)\n%s" x (string_of_frame is)
+        | IWr (v, x) -> Printf.sprintf "IWr(%s,%s)\n%s" (string_of_mvalue v) x (string_of_frame is)
+        | IRd (x1,x2) -> Printf.sprintf "IRd(%s,%s)\n%s" x1 x2 (string_of_frame is)

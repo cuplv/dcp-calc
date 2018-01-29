@@ -4,6 +4,7 @@ type mvalue =
     | MInt of int
     | MBool of bool
     | MClosure of name * frame * environ
+    | MHole
 and instr =
     | IVar of name
     | IInt of int
@@ -20,34 +21,41 @@ and instr =
     | IPopEnv
     | ILet of name
     | IProc
-    | IWr of name
-    | IRd of name
+    | IWr of mvalue * name
+    | IRd of name * name
 and frame = instr list
 and environ = (name * mvalue) list
 and stack = mvalue list
 
-(*let string_of_instr = function 
-    | IVar x -> Printf.sprintf "IVar(%s)\n%s" x (string_of_frame is)
-    | IInt n -> Printf.sprintf "IInt(%d)\n%s" n (string_of_frame is)
-    | IBool b -> Printf.sprintf "IBool(%b)\n%s" b (string_of_frame is)
-    | IAdd -> "IAdd\n" ^ string_of_frame is
-    | ISub -> "ISub\n" ^ string_of_frame is
-    | IMult -> "IMult\n" ^ string_of_frame is
-    | IDiv -> "IDiv\n" ^ string_of_frame is
-    | IMod -> "IMod\n" ^ string_of_frame is
-    | ILess -> "ILess\n" ^ string_of_frame is
-    | IClosure (_, x, f) ->
-         Printf.sprintf "IClosure(%s\n%s)\n%s" x (string_of_frame f) (string_of_frame is)
-    | IBranch (f1, f2) ->
-         Printf.sprintf "IBranch(\n%s%s)" (string_of_frame f1) (string_of_frame f2)
-    | ICall -> "ICall\n" ^ string_of_frame is
-    | IPopEnv -> "IPopEnv\n" ^ string_of_frame is
-    | ILet x -> Printf.sprintf "ILet(%s)\n%s" x (string_of_frame is)
-    | IProc -> "IProc\n" ^ string_of_frame is
-    | IWr x -> Printf.sprintf "IWr(%s)\n%s" x (string_of_frame is)
-    | IRd x -> Printf.sprintf "IRd(%s)\n%s" x (string_of_frame is)
+(* Convert machine value into string *)
+let string_of_mvalue = function
+    | MInt n -> string_of_int n
+    | MBool b -> string_of_bool b
+    | MClosure _ -> "<fun>"
+    | MHole -> "hole"
 
-let string_of_environ = function
+let string_of_instr = function 
+    | IVar x -> Printf.sprintf "IVar(%s)" x
+    | IInt n -> Printf.sprintf "IInt(%d)" n
+    | IBool b -> Printf.sprintf "IBool(%b)" b
+    | IAdd -> "IAdd"
+    | ISub -> "ISub"
+    | IMult -> "IMult"
+    | IDiv -> "IDiv"
+    | IMod -> "IMod"
+    | ILess -> "ILess"
+    | IClosure (_, x, f) ->
+         Printf.sprintf "IClosure(%s)" x 
+    | IBranch (f1, f2) ->
+         Printf.sprintf "IBranch()" 
+    | ICall -> "ICall" 
+    | IPopEnv -> "IPopEnv"
+    | ILet x -> Printf.sprintf "ILet(%s)" x
+    | IProc -> "IProc"
+    | IWr (v, x) -> Printf.sprintf "IWr(%s,%s)" (string_of_mvalue v) x
+    | IRd (x1, x2) -> Printf.sprintf "IRd(%s,%s)" x1 x2 
+
+(*let string_of_environ = function
     | [] -> "\n"
     | (x, MInt i) :: rest -> Printf.sprintf "(%s,%d), " x i
     | (x, MBool b) :: rest -> Printf.sprintf "(%s,%b), " x b
@@ -63,11 +71,7 @@ exception Machine_error of string
 
 let error msg = raise (Machine_error msg)
 
-(* Convert machine value into string *)
-let string_of_mvalue = function
-    | MInt n -> string_of_int n
-    | MBool b -> string_of_bool b
-    | MClosure _ -> "<fun>"
+
 
 let lookup x = function
     | env::_ -> (try List.assoc x env with Not_found -> error ("unknown " ^ x))
@@ -154,14 +158,13 @@ let exec instr frms stck envs =
     (*| IWr _ -> (frms, stck, envs)
     | IRd _ -> (frms, stck, envs)*)
 
-(*let wtf = ProcessSet.singleton(([], [], []))*)
 
-let run frm env = 
+let run pid frm env = 
     let rec loop = function
         (*| ([], [v], _) -> v*)
-        | ([], [v], e) -> ([], [v], e)
-        | ((IRd x ::is) :: frms, stck, envs) -> ((IRd x ::is) :: frms, stck, envs)
-        | ((IWr x ::is) :: frms, stck, envs) -> ((IWr x ::is) :: frms, stck, envs)
+        | ([], [v], e) -> (pid, [], [v], e)
+        | ((IRd (x1,x2) :: is) :: frms, stck, envs) -> (pid, (IRd (x1,x2) :: is) :: frms, stck, envs)
+        | ((IWr (h,x) :: is) :: frms, v :: stck, envs) -> (pid, (IWr (v,x) :: is) :: frms, stck, envs)
         | ((i::is) :: frms, stck, envs) -> loop (exec i (is::frms) stck envs)
         | ([] :: frms, stck, envs) -> loop (frms, stck, envs)
         | _ -> error "illegal end of program"

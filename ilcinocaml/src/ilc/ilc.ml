@@ -41,6 +41,7 @@ module ILC = Zoo.Main(struct
         | _ -> false
 
     exception Omg
+    exception Wtf of string
     let get_pids = function
         | (pid, (Machine.IWr (v, x) :: _) :: _, _, _) -> (pid, Machine.IWr (v,x))
         | (pid, (Machine.IRd (x1, x2) :: _) :: _, _, _) -> (pid, Machine.IRd (x1,x2))
@@ -50,8 +51,10 @@ module ILC = Zoo.Main(struct
         | (pid, instr) -> Printf.sprintf "(%d,%s)" pid (Machine.string_of_instr instr)
 
     let string_of_state = function
-        | (pid, [], [v], e) -> Printf.sprintf "%d: %s" pid (Machine.string_of_mvalue v)
-        | (pid, frm :: frms, _, _) -> Printf.sprintf "%d:\n%s" pid (Compile.string_of_frame frm)
+        | (pid, [], [v], e) -> Printf.sprintf "%s%d:\n%s\n" "process" pid (Machine.string_of_mvalue v)
+        | (pid, frm :: frms, _, _) -> Printf.sprintf "%s%d:\n%s" "process" pid (Compile.string_of_frame frm)
+        | (pid, [] , [], e) -> Printf.sprintf "%s%d:\n0\n" "process" pid 
+
 
     (* TODO: remove redundant pairs *)
 	let combinations l1 l2 = 
@@ -95,20 +98,48 @@ module ILC = Zoo.Main(struct
     (* TODO: Change this to use optional arguments *)
     let rec run_processes counter acc = function
         | [] -> acc
-        | frm :: rest_frms -> run_processes (counter + 1) (Machine.run counter frm [] :: acc) rest_frms
+        | frm :: rest_frms -> run_processes (counter + 1) ((Machine.run counter frm [] []) :: acc) rest_frms
+
+    let rec continue_processes = function
+        | (pid, frms, stcks, envs) -> Machine.continue pid frms stcks envs
 
     let rec string_of_processes ps = List.map string_of_state ps
+
+    (*let full_run p =
+        let processes = split (Compile.compile p) in
+        let ran_processes = run_processes 0 [] processes in
+        let comm_processes = List.filter is_blocked ran_processes in
+        let abbrev_processes = List.map get_pids comm_processes in
+        let process_pairs = combinations abbrev_processes abbrev_processes in
+        let comm_pairs = List.filter can_comm process_pairs in
+        (process_pairs, List.map (send_comm (List.hd comm_pairs)) ran_processes)*)
+
+    let full_run ps =
+        let comm_processes = List.filter is_blocked ps in
+        let abbrev_processes = List.map get_pids comm_processes in
+        let process_pairs = combinations abbrev_processes abbrev_processes in
+        let comm_pairs = List.filter can_comm process_pairs in
+        (try (process_pairs, List.map (send_comm (List.hd comm_pairs)) ps)
+        with Failure "hd" -> (process_pairs, ps))
+
+    let rec fuller_run = function
+        | ([], ps) -> ps
+        | (_, ps) -> fuller_run (full_run (List.map continue_processes ps))
 
     let exec env =  function
         | Syntax.Process p ->
             let processes = split (Compile.compile p) in
+            let ran_processes = List.rev (run_processes 0 [] processes) in
+            List.map print_endline (string_of_processes (fuller_run (full_run ran_processes))); env
+            (*List.map print_endline (string_of_processes (List.rev (full_run p))); env*)
+            (*let processes = split (Compile.compile p) in
             let ran_processes = run_processes 0 [] processes in
             let comm_processes = List.filter is_blocked ran_processes in
             let abbrev_processes = List.map get_pids comm_processes in
             let process_pairs = combinations abbrev_processes abbrev_processes in
             let comm_pairs = List.filter can_comm process_pairs in
             let updated_processes = List.map (send_comm (List.hd comm_pairs)) ran_processes in
-            List.map print_endline (string_of_processes (List.rev updated_processes)); env
+            List.map print_endline (string_of_processes (List.rev updated_processes)); env*)
 
             (*List.map print_endline (List.map string_of_pair comm_pairs);
             env*)

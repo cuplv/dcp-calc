@@ -21,6 +21,7 @@ and instr =
     | IPopEnv
     | ILet of name
     | IProc
+    | IWrH of name
     | IWr of mvalue * name
     | IRd of name * name
 and frame = instr list
@@ -117,7 +118,6 @@ let less = function
 
 let exec instr frms stck envs = 
     match instr with
-    (* Arithmetic *)
     | IAdd -> (frms, add stck, envs)
     | ISub -> (frms, sub stck, envs)
     | IMult -> (frms, mult stck, envs)
@@ -152,21 +152,35 @@ let exec instr frms stck envs =
         let (x, frm, env, v, stck') = pop_app stck in
         (frm :: frms, stck', ((x,v) :: env) :: envs)
     | IPopEnv ->
-        match envs with
+        (match envs with
         | [] -> error "no environment to pop"
-        | _ :: envs' -> (frms, stck, envs')
-    (*| IWr _ -> (frms, stck, envs)
-    | IRd _ -> (frms, stck, envs)*)
+        | _ :: envs' -> (frms, stck, envs'))
+    | _ -> error (string_of_instr instr)
 
 
-let run pid frm env = 
+let run pid frm stack env = 
     let rec loop = function
         (*| ([], [v], _) -> v*)
         | ([], [v], e) -> (pid, [], [v], e)
         | ((IRd (x1,x2) :: is) :: frms, stck, envs) -> (pid, (IRd (x1,x2) :: is) :: frms, stck, envs)
-        | ((IWr (h,x) :: is) :: frms, v :: stck, envs) -> (pid, (IWr (v,x) :: is) :: frms, stck, envs)
+        | ((IWrH x :: is) :: frms, v :: stck, envs) -> (pid, (IWr (v,x) :: is) :: frms, stck, envs)
+        | ((IWr (v,x) :: is) :: frms, stck, envs) -> (pid, (IWr (v,x) :: is) :: frms, stck, envs)
         | ((i::is) :: frms, stck, envs) -> loop (exec i (is::frms) stck envs)
         | ([] :: frms, stck, envs) -> loop (frms, stck, envs)
         | _ -> error "illegal end of program"
     in
-        loop ([frm], [], [env])
+        loop ([frm], stack, [env])
+
+let continue pid frm stack env = 
+    let rec loop = function
+        (*| ([], [v], _) -> v*)
+        | ([], [v], e) -> (pid, [], [v], e)
+        | ((IRd (x1,x2) :: is) :: frms, stck, envs) -> (pid, (IRd (x1,x2) :: is) :: frms, stck, envs)
+        | ((IWrH x :: is) :: frms, v :: stck, envs) -> (pid, (IWr (v,x) :: is) :: frms, stck, envs)
+        | ((IWr (v,x) :: is) :: frms, stck, envs) -> (pid, (IWr (v,x) :: is) :: frms, stck, envs)
+        | ((i::is) :: frms, stck, envs) -> loop (exec i (is::frms) stck envs)
+        | ([] :: frms, stck, envs) -> loop (frms, stck, envs)
+        | ([], [], e) -> (pid, [], [], e)
+        | _ -> error "illegal end of program, again"
+    in
+        loop (frm, stack, env)

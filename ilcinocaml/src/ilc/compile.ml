@@ -1,4 +1,5 @@
 open Machine
+open Printf
 
 exception Compilation_error
 
@@ -18,7 +19,7 @@ let rec compile = function
     | Syntax.Lam (x, e) -> [IClosure ("anon", x, compile e @ [IPopEnv])]
     | Syntax.App (e1, e2) -> (compile e1) @ (compile e2) @ [ICall]
     | Syntax.ParComp (e1, e2) -> (compile e1) @ [IProc] @ (compile e2)
-    | Syntax.Wr (e, x) -> (compile e) @ [IWrH x]
+    | Syntax.Wr (e, x) -> (compile e) @ [IWr (MHole, x)]
     | Syntax.Rd (x1, x2) -> [IRd (x1, x2)]
     | Syntax.Seq (e1, e2) -> (compile e1) @ (compile e2)
     | _ -> raise (Compilation_error)
@@ -27,9 +28,9 @@ let rec string_of_frame = function
     | [] -> ""
     | i::is ->
         match i with
-        | IVar x -> Printf.sprintf "IVar(%s)\n%s" x (string_of_frame is)
-        | IInt n -> Printf.sprintf "IInt(%d)\n%s" n (string_of_frame is)
-        | IBool b -> Printf.sprintf "IBool(%b)\n%s" b (string_of_frame is)
+        | IVar x -> sprintf "IVar(%s)\n%s" x (string_of_frame is)
+        | IInt n -> sprintf "IInt(%d)\n%s" n (string_of_frame is)
+        | IBool b -> sprintf "IBool(%b)\n%s" b (string_of_frame is)
         | IAdd -> "IAdd\n" ^ string_of_frame is
         | ISub -> "ISub\n" ^ string_of_frame is
         | IMult -> "IMult\n" ^ string_of_frame is
@@ -37,12 +38,12 @@ let rec string_of_frame = function
         | IMod -> "IMod\n" ^ string_of_frame is
         | ILess -> "ILess\n" ^ string_of_frame is
         | IClosure (_, x, f) ->
-             Printf.sprintf "IClosure(%s\n%s)\n%s" x (string_of_frame f) (string_of_frame is)
+             sprintf "IClosure(%s\n%s)\n%s" x (string_of_frame f) (string_of_frame is)
         | IBranch (f1, f2) ->
-             Printf.sprintf "IBranch(\n%s%s)" (string_of_frame f1) (string_of_frame f2)
+             sprintf "IBranch(\n%s%s)" (string_of_frame f1) (string_of_frame f2)
         | ICall -> "ICall\n" ^ string_of_frame is
         | IPopEnv -> "IPopEnv\n" ^ string_of_frame is
-        | ILet x -> Printf.sprintf "ILet(%s)\n%s" x (string_of_frame is)
+        | ILet x -> sprintf "ILet(%s)\n%s" x (string_of_frame is)
         | IProc -> "IProc\n" ^ string_of_frame is
-        | IWr (v, x) -> Printf.sprintf "IWr(%s,%s)\n%s" (string_of_mvalue v) x (string_of_frame is)
-        | IRd (x1,x2) -> Printf.sprintf "IRd(%s,%s)\n%s" x1 x2 (string_of_frame is)
+        | IWr (v, x) -> sprintf "IWr(%s,%s)\n%s" (string_of_mvalue v) x (string_of_frame is)
+        | IRd (x1,x2) -> sprintf "IRd(%s,%s)\n%s" x1 x2 (string_of_frame is)

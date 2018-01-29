@@ -34,6 +34,7 @@
 
 /* Precedence and assoc */
 %left PAR PARL
+%left DOT IN
 %nonassoc ELSE
 %nonassoc LESS
 %left PLUS MINUS

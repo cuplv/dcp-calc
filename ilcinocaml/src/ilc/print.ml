@@ -59,10 +59,22 @@ let string_of_instr = function
     | IPopEnv -> "IPopEnv"
     | ILet x -> sprintf "ILet(%s)" x
     | IProc -> "IProc"
+    | IProcL v -> sprintf "IProcL(%s)" (string_of_mvalue v)
     | IWr (v, x) -> sprintf "IWr(%s,%s)" (string_of_mvalue v) x
     | IRd (x1, x2) -> sprintf "IRd(%s,%s)" x1 x2 
 
 (* Convert instruction list into string *)
 let rec string_of_frame = function
+    | [] -> "\n"
+    | i::is -> string_of_instr i ^ "\n" ^ string_of_frame is
+
+let rec string_of_stack = function
     | [] -> ""
-    | i::is -> string_of_instr i ^ string_of_frame is
+    | v::vs -> string_of_mvalue v ^ "\n" ^ string_of_stack vs 
+
+let string_of_mapping = function
+    | (n, v) -> "(" ^ n ^ "," ^ string_of_mvalue v ^ ")"
+
+let rec string_of_environ = function
+    | [] -> ""
+    | m::ms -> string_of_mapping m ^ "\n" ^ string_of_environ ms

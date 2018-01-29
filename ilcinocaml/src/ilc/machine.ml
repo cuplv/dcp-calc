@@ -20,12 +20,78 @@ and instr =
     | ICall
     | IPopEnv
     | ILet of name
-    | IProc
+    | IInitP of int
+    | IEndP of int
+    | IProcL of mvalue
     | IWr of mvalue * name
     | IRd of name * name
 and frame = instr list
 and environ = (name * mvalue) list
 and stack = mvalue list
+
+open Printf
+
+(* Convert machine value into string *)
+let string_of_mvalue = function
+    | MInt n -> string_of_int n
+    | MBool b -> string_of_bool b
+    | MClosure _ -> "<fun>"
+    | MHole -> "hole"
+
+(* Convert instruction into string *)
+let string_of_instr = function 
+    | IVar x -> sprintf "IVar(%s)" x
+    | IInt n -> sprintf "IInt(%d)" n
+    | IBool b -> sprintf "IBool(%b)" b
+    | IAdd -> "IAdd"
+    | ISub -> "ISub"
+    | IMult -> "IMult"
+    | IDiv -> "IDiv"
+    | IMod -> "IMod"
+    | ILess -> "ILess"
+    | IClosure (_, x, f) ->
+         sprintf "IClosure(%s)" x 
+    | IBranch (f1, f2) ->
+         sprintf "IBranch()" 
+    | ICall -> "ICall" 
+    | IPopEnv -> "IPopEnv"
+    | ILet x -> sprintf "ILet(%s)" x
+    | IProc -> "IProc"
+    | IWr (v, x) -> sprintf "IWr(%s,%s)" (string_of_mvalue v) x
+    | IRd (x1, x2) -> sprintf "IRd(%s,%s)" x1 x2 
+
+(* Convert instruction list into string *)
+let rec string_of_frame = function
+    | [] -> ""
+    | i::is -> string_of_instr i ^ string_of_frame is
+
+let rec string_of_stack = function
+    | [] -> ""
+    | v::vs -> string_of_mvalue v ^ "\n" ^ string_of_stack vs 
+
+let string_of_mapping = function
+    | (n, v) -> "(" ^ n ^ "," ^ string_of_mvalue v ^ ")"
+
+let rec string_of_environ = function
+    | [] -> ""
+    | m::ms -> string_of_mapping m ^ "\n" ^ string_of_environ ms
+
+let string_of_frames frms =
+    let rec to_str = function
+        | [] -> ""
+        | f :: fs -> string_of_frame f ^ to_str fs
+    in
+        "[" ^ to_str frms ^ "]"
+
+let string_of_environs envs =
+    let rec to_str = function
+        | [] -> ""
+        | e :: es -> string_of_environ e ^ to_str es
+    in
+        "[" ^ to_str envs ^ "]"
+
+let string_of_state = function
+    | (f, s, e) -> string_of_frames f ^ string_of_stack s ^ string_of_environs e
 
 exception Machine_error of string
 
@@ -47,7 +113,6 @@ let pop_app = function
     | v :: MClosure (x, f, e) :: s -> (x, f, e, v, s)
     | _ -> error "value and closure expected"
 
-(* arithmetic *)
 let add = function
     | (MInt x) :: (MInt y) :: s -> MInt (y + x) :: s
     | _ -> error "int and int expected in add"
@@ -127,6 +192,6 @@ let run pid state =
         | ((i :: is) :: frms, stck, envs) ->
             loop (exec i (is :: frms) stck envs)
         | ([] :: frms, stck, envs) -> loop (frms, stck, envs)
-        | _ -> error "illegal end of program"
+        | s -> error ("illegal end of program" ^ (string_of_int pid) ^ (string_of_state s))
     in
         loop state

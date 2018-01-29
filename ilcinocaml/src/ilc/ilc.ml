@@ -29,10 +29,13 @@ module ILC = Zoo.Main(struct
         in
         add acc res
 
+    exception Process_error of string
+
     let string_of_process = function
         | (pid, ([], [v], e)) -> Printf.sprintf "%s%d:\n%s\n" "process" pid (Print.string_of_mvalue v)
         | (pid, (frm :: frms, _, _)) -> Printf.sprintf "%s%d:\n%s" "process" pid (Print.string_of_frame frm)
         | (pid, ([] , [], e)) -> Printf.sprintf "%s%d:\n0\n" "process" pid 
+        | _ -> raise (Process_error "illegal final state")
 
     let run ps = 
         let init_ps = List.mapi (fun i p -> Machine.run i ([p], [], [[]])) ps in
@@ -46,6 +49,7 @@ module ILC = Zoo.Main(struct
     let exec env = function
         | Syntax.Process p ->
             let ps = split (Compile.compile p) in
+            List.map print_endline (List.map Print.string_of_frame ps);
             List.map print_endline (List.map string_of_process (run ps)); env
 end) ;;
 

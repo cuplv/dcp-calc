@@ -16,7 +16,9 @@ let rec compile = function
     | Syntax.Let (x, e1, e2) -> (compile e1) @ [ILet x] @ (compile e2)
     | Syntax.Lam (x, e) -> [IClosure ("anon", x, compile e @ [IPopEnv])]
     | Syntax.App (e1, e2) -> (compile e1) @ (compile e2) @ [ICall]
+    | Syntax.Nu (x, e) -> (compile e)
     | Syntax.ParComp (e1, e2) -> (compile e1) @ [IProc] @ (compile e2)
+    | Syntax.ParLeft (e1, e2) -> [IProcL MHole] @ (compile e1) @ [IProc] @ (compile e2)
     | Syntax.Wr (e, x) -> (compile e) @ [IWr (MHole, x)]
     | Syntax.Rd (x1, x2) -> [IRd (x1, x2)]
     | Syntax.Seq (e1, e2) -> (compile e1) @ (compile e2)

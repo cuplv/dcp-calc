@@ -27,51 +27,9 @@ and frame = instr list
 and environ = (name * mvalue) list
 and stack = mvalue list
 
-(* Convert machine value into string *)
-let string_of_mvalue = function
-    | MInt n -> string_of_int n
-    | MBool b -> string_of_bool b
-    | MClosure _ -> "<fun>"
-    | MHole -> "hole"
-
-let string_of_instr = function 
-    | IVar x -> Printf.sprintf "IVar(%s)" x
-    | IInt n -> Printf.sprintf "IInt(%d)" n
-    | IBool b -> Printf.sprintf "IBool(%b)" b
-    | IAdd -> "IAdd"
-    | ISub -> "ISub"
-    | IMult -> "IMult"
-    | IDiv -> "IDiv"
-    | IMod -> "IMod"
-    | ILess -> "ILess"
-    | IClosure (_, x, f) ->
-         Printf.sprintf "IClosure(%s)" x 
-    | IBranch (f1, f2) ->
-         Printf.sprintf "IBranch()" 
-    | ICall -> "ICall" 
-    | IPopEnv -> "IPopEnv"
-    | ILet x -> Printf.sprintf "ILet(%s)" x
-    | IProc -> "IProc"
-    | IWr (v, x) -> Printf.sprintf "IWr(%s,%s)" (string_of_mvalue v) x
-    | IRd (x1, x2) -> Printf.sprintf "IRd(%s,%s)" x1 x2 
-
-(*let string_of_environ = function
-    | [] -> "\n"
-    | (x, MInt i) :: rest -> Printf.sprintf "(%s,%d), " x i
-    | (x, MBool b) :: rest -> Printf.sprintf "(%s,%b), " x b
-    | (x, MClosure _) :: rest -> Printf.sprintf "(%s,Closure), " x*)
-
-module ProcessSet = Set.Make(
-    struct
-        let compare = Pervasives.compare
-        type t = frame * stack * environ
-    end )
-
 exception Machine_error of string
 
 let error msg = raise (Machine_error msg)
-
-
 
 let lookup x = function
     | env::_ -> (try List.assoc x env with Not_found -> error ("unknown " ^ x))
@@ -154,16 +112,20 @@ let exec instr frms stck envs =
         (match envs with
         | [] -> error "no environment to pop"
         | _ :: envs' -> (frms, stck, envs'))
-    | _ -> error ("executing " ^ string_of_instr instr)
+    | _ -> error ("illegal instruction")
 
 let run pid state = 
     let rec loop = function
         | ([], [], e) -> (pid, ([], [], e))
         | ([], [v], e) -> (pid, ([], [v], e))
-        | ((IRd (x1,x2) :: is) :: frms, stck, envs) -> (pid, ((IRd (x1,x2) :: is) :: frms, stck, envs))
-        | ((IWr (MHole, x) :: is) :: frms, v :: stck, envs) -> (pid, ((IWr (v,x) :: is) :: frms, stck, envs))
-        | ((IWr (v,x) :: is) :: frms, stck, envs) -> (pid, ((IWr (v,x) :: is) :: frms, stck, envs))
-        | ((i::is) :: frms, stck, envs) -> loop (exec i (is::frms) stck envs)
+        | ((IRd (x1, x2) :: is) :: frms, stck, envs) ->
+            (pid, ((IRd (x1, x2) :: is) :: frms, stck, envs))
+        | ((IWr (MHole, x) :: is) :: frms, v :: stck, envs) ->
+            (pid, ((IWr (v, x) :: is) :: frms, stck, envs))
+        | ((IWr (v, x) :: is) :: frms, stck, envs) ->
+            (pid, ((IWr (v, x) :: is) :: frms, stck, envs))
+        | ((i :: is) :: frms, stck, envs) ->
+            loop (exec i (is :: frms) stck envs)
         | ([] :: frms, stck, envs) -> loop (frms, stck, envs)
         | _ -> error "illegal end of program"
     in

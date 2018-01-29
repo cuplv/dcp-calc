@@ -1,0 +1,6 @@
+List of TODOs:
+- ParL
+- Nu
+- Type system
+- Named processes
+- Better error messages

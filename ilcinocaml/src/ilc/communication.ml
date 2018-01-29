@@ -22,9 +22,6 @@ let get_comm_info = function
     | (pid, ((IRd (x1, x2) :: _) :: _, _, _)) -> (pid, IRd (x1,x2))
     | _ -> error "Process not reading or writing"
 
-let string_of_comm_info = function
-    | (pid, instr) -> Printf.sprintf "(%d,%s)" pid (string_of_instr instr)
-
 let combinations l1 l2 = 
     let res = List.fold_left (fun acc x ->
         List.fold_left (fun acc y -> (x, y) :: acc) acc l2) [] l1 in

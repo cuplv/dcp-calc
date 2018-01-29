@@ -36,7 +36,7 @@ rule token = parse
     | "true"                    { TRUE }
     | "false"                   { FALSE }
     | ['0'-'9']+                { INT (int_of_string (Lexing.lexeme lexbuf)) }
-    | ['a'-'z' 'A'-'Z']+ ['a'-'z' 'A'-'Z' '0'-'9']* { NAME (Lexing.lexeme lexbuf) }
+    | ['a'-'z' 'A'-'Z']+ ['a'-'z' 'A'-'Z' '0'-'9' '_']* { NAME (Lexing.lexeme lexbuf) }
     | eof                       { EOF }
 and comment depth = parse
     | "(*"                      { comment (depth + 1) lexbuf }

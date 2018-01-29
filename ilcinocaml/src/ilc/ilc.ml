@@ -6,15 +6,9 @@ module ILC = Zoo.Main(struct
     (* Typing context *)
     type ty_context = (Syntax.name * Syntax.ty) list
 
-    (*type store = (Syntax.name * Machine.mvalue) list
-
-    type environment = ty_context * store*)
-
     type environment = (Syntax.name * Machine.mvalue) list
 
     let options = []
-
-    (*let initial_environment = ([], [])*)
 
     let initial_environment = []
 
@@ -36,8 +30,8 @@ module ILC = Zoo.Main(struct
         add acc res
 
     let string_of_process = function
-        | (pid, ([], [v], e)) -> Printf.sprintf "%s%d:\n%s\n" "process" pid (Machine.string_of_mvalue v)
-        | (pid, (frm :: frms, _, _)) -> Printf.sprintf "%s%d:\n%s" "process" pid (Compile.string_of_frame frm)
+        | (pid, ([], [v], e)) -> Printf.sprintf "%s%d:\n%s\n" "process" pid (Print.string_of_mvalue v)
+        | (pid, (frm :: frms, _, _)) -> Printf.sprintf "%s%d:\n%s" "process" pid (Print.string_of_frame frm)
         | (pid, ([] , [], e)) -> Printf.sprintf "%s%d:\n0\n" "process" pid 
 
     let run ps = 

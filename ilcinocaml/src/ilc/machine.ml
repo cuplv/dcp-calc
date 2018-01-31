@@ -158,20 +158,24 @@ let split instrs n =
 
 let split frm n = 
     let rec aux acc = function
-        | [] -> (List.rev acc, [])
-        | IEndP n' :: rest when n=n'-> (List.rev acc, rest)
+        | IEndP n' :: rest when n=n' -> (List.rev acc, rest)
         | i::is -> aux (i::acc) is
     in
     aux [] frm
 
-let add_internal_spawns frm n =
+let get_par_processes frm n =
+    let (first_par, rest) = split frm n in
+    let (second_par, rest) = split (List.tl rest) (n+1) in
+    (first_par, second_par, rest)
+
+(*let add_internal_spawn frm n =
     let rec aux acc = function
         | [] -> List.rev acc
         | IEndP n' :: rest when n=n' -> List.rev acc @ rest
-        | IStartP m :: rest -> aux (IStartP m :: (ISpawn :: acc)) rest
+        | IStartP m :: rest -> List.rev (ISpawn :: acc) @ (IStartP m) :: rest
         | i :: rest -> aux (i :: acc) rest
     in
-    aux [] frm
+    aux [] frm*)
 
 let remove_last l = List.rev (List.tl (List.rev l))
 
@@ -216,18 +220,10 @@ let exec pid instr frms stck envs =
         | _ :: envs' -> (frms, stck, envs'))
     | IStartP n ->
         (match frms with
-        | (IStartP m :: frm) :: rest_frms ->
-            (List.filter (function
-                         | IEndP n' when n=n'-> false
-                         | _ -> true)
-                (IStartP m :: frm) :: rest_frms, stck, envs)
         | frm :: rest_frms ->
-            let split_frms = split frm n in 
-            if (List.length (snd split_frms)) = 0 then
-                ((fst split_frms) :: rest_frms, stck, envs)
-            else ((ISpawn :: (snd split_frms)) :: ((add_internal_spawns (fst split_frms) n) :: rest_frms), stck, envs))
+            let (first_par, second_par, rest) = get_par_processes frm n in
+            ([ISpawn] :: first_par :: second_par :: rest :: rest_frms, stck, envs))
     | _ -> error (string_of_instr instr)
-    (*| _ -> error ("illegal instruction")*)
 
 let run pid state = 
     let rec loop = function
@@ -239,7 +235,7 @@ let run pid state =
             (pid, ((IWr (v, x) :: is) :: frms, stck, envs))
         | ((IWr (v, x) :: is) :: frms, stck, envs) ->
             (pid, ((IWr (v, x) :: is) :: frms, stck, envs))
-        | ((ISpawn :: is) :: frms, stck, envs) -> (pid, ((ISpawn :: is) :: frms, stck, envs))
+        | ([ISpawn] :: frms, stck, envs) -> (pid, ([ISpawn] :: frms, stck, envs))
         | ((i :: is) :: frms, stck, envs) ->
             loop (exec pid i (is :: frms) stck envs)
         | ([] :: frms, stck, envs) -> loop (frms, stck, envs)

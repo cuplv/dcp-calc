@@ -18,17 +18,6 @@ module ILC = Zoo.Main(struct
 
     let toplevel_parser = Some (Parser.toplevel Lexer.token)
 
-    (*let split instrs = 
-        let add acc res = if acc<>[] then acc::res else res in
-        let (res,acc) =
-            List.fold_right (fun x (res,acc) ->
-                match x with
-                | Machine.IProc -> (add acc res, [])
-                | _ -> (res, x::acc))
-            instrs ([],[])
-        in
-        add acc res*)
-
     exception Process_error of string
 
     let string_of_process = function
@@ -40,7 +29,7 @@ module ILC = Zoo.Main(struct
     let pid_counter = ref 1
 
     let is_spawning = function
-        | (pid, ((Machine.ISpawn :: is) :: frms, stck, envs)) -> true
+        | (pid, ([Machine.ISpawn] :: frms, stck, envs)) -> true
 
     let temp_string_of_process = function
         | (pid, s) -> Printf.sprintf "Process: %d\n %s" pid (Machine.string_of_state s)
@@ -48,10 +37,10 @@ module ILC = Zoo.Main(struct
     let spawn_all ps = 
         let rec spawn old_ps new_ps = function
             | [] -> if (List.length new_ps) = 0 then (false, List.rev old_ps) else (true, ((List.rev old_ps) @ (List.rev new_ps)))
-            | (pid, ((Machine.ISpawn :: is) :: frms, stck, envs)) :: rest_ps ->
+            | (pid, ([Machine.ISpawn] :: frm1 :: frm2 :: frms, stck, envs)) :: rest_ps ->
                 let pid' = !pid_counter in
-                pid_counter := !pid_counter + 1;
-                spawn ((pid, (frms, stck, envs)) :: old_ps) ((pid', ([is], [], [[]])) :: new_ps) rest_ps
+                pid_counter := !pid_counter + 2;
+                spawn ((pid, (frms, stck, envs)) :: old_ps) ((pid'+1, ([frm2], [], envs)) :: (pid', ([frm1], [], envs)) :: new_ps) rest_ps
             | p :: rest_ps -> spawn (p :: old_ps) new_ps rest_ps
         in
         spawn [] [] ps
@@ -64,18 +53,7 @@ module ILC = Zoo.Main(struct
             | (true, ps') -> loop true (spawn_all (run_all ps'))
     in
         loop true (spawn_all ps)
-
-    (*let spawn_run_loop ps =
-        let rec loop = function
-            | (false, ps') -> ps'
-            | (true, ps') -> print_endline "spawn_running"; loop (spawn_all (List.map (function | (pid, state) -> Machine.run pid state) ps'))
-        in
-        loop (spawn_all ps)*)
-
-    (*let run p = 
-        let pid = !pid_counter in
-        pid_counter := !pid_counter + 1; Machine.run pid ([p], [], [[]])*)
-
+    
     let run ps = 
         let init_ps = Machine.run 0 ([ps], [], [[]]) in
         let rec loop = function
@@ -93,9 +71,7 @@ module ILC = Zoo.Main(struct
             (*let instrs = Compile.compile p in
             print_endline (Print.string_of_frame instrs); env*)
 
-            (*let ps = split (Compile.compile p) in*)
             let ps = Compile.compile p in
-            (*List.map print_endline (List.map temp_string_of_process (spawn_run_loop [run ps])); env*)
             List.map print_endline (List.map string_of_process (run ps)); env
 end) ;;
 

@@ -1,0 +1,1 @@
+wr (lam x . x + x) -> c | rd y <- c . (y 2)

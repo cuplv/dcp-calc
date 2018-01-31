@@ -33,7 +33,7 @@
 %token EOF
 
 /* Precedence and assoc */
-%left PAR PARL
+%right PAR PARL
 %left DOT IN
 %nonassoc ELSE
 %nonassoc LESS

@@ -21,10 +21,14 @@ and instr =
     | IPopEnv
     | ILet of name
     | IInitP of int
+    | IStartP of int
     | IEndP of int
-    | IProcL of mvalue
     | IWr of mvalue * name
     | IRd of name * name
+    | IBlock of int
+    | IUnblock of int
+    | IProc
+    | ISpawn
 and frame = instr list
 and environ = (name * mvalue) list
 and stack = mvalue list
@@ -56,9 +60,11 @@ let string_of_instr = function
     | ICall -> "ICall" 
     | IPopEnv -> "IPopEnv"
     | ILet x -> sprintf "ILet(%s)" x
-    | IProc -> "IProc"
     | IWr (v, x) -> sprintf "IWr(%s,%s)" (string_of_mvalue v) x
     | IRd (x1, x2) -> sprintf "IRd(%s,%s)" x1 x2 
+    | IStartP n -> sprintf "IStartP(%d)" n
+    | IEndP n -> sprintf "IEndP(%d)" n
+    | ISpawn -> "ISpawn"
 
 (* Convert instruction list into string *)
 let rec string_of_frame = function
@@ -138,7 +144,38 @@ let less = function
     | (MInt x) :: (MInt y) :: s -> MBool (y < x) :: s
     | _ -> error "int and int expected in less"
 
-let exec instr frms stck envs = 
+(* TODO: Change to return option *)
+let split instrs n = 
+        let add acc res = if acc<>[] then acc::res else res in
+        let (res,acc) =
+            List.fold_right (fun x (res,acc) ->
+                match x with
+                | IEndP n' when n=n' -> (add acc res, [])
+                | _ -> (res, x::acc))
+            instrs ([],[])
+        in
+        add acc res
+
+let split frm n = 
+    let rec aux acc = function
+        | [] -> (acc, [])
+        | IEndP n' :: rest when n=n'-> (List.rev acc, rest)
+        | i::is -> aux (i::acc) is
+    in
+    aux [] frm
+
+let add_internal_spawns frm n =
+    let rec aux acc = function
+        | [] -> acc
+        | IEndP n' :: rest when n=n' -> List.rev acc @ rest
+        | IStartP m :: rest -> aux (IStartP m :: (ISpawn :: acc)) rest
+        | i :: rest -> aux (i :: acc) rest
+    in
+    aux [] frm
+
+let remove_last l = List.rev (List.tl (List.rev l))
+
+let exec pid instr frms stck envs = 
     match instr with
     | IAdd -> (frms, add stck, envs)
     | ISub -> (frms, sub stck, envs)
@@ -177,7 +214,21 @@ let exec instr frms stck envs =
         (match envs with
         | [] -> error "no environment to pop"
         | _ :: envs' -> (frms, stck, envs'))
-    | _ -> error ("illegal instruction")
+    | IStartP n ->
+        (match frms with
+        | (IStartP m :: frm) :: rest_frms ->
+            (List.filter (function
+                         | IEndP n' when n=n'-> false
+                         | _ -> true)
+                (IStartP m :: frm) :: rest_frms, stck, envs)
+        | frm :: rest_frms ->
+            let split_frms = split frm n in 
+            if (List.length (snd split_frms)) = 0 then
+                (frm :: rest_frms, stck, envs)
+            else ((ISpawn :: (snd split_frms)) :: ((add_internal_spawns (fst split_frms) n) :: rest_frms), stck, envs))
+    | IEndP n -> (frms, stck, envs) (* Shouldn't be needed *)
+    | _ -> error (string_of_instr instr)
+    (*| _ -> error ("illegal instruction")*)
 
 let run pid state = 
     let rec loop = function
@@ -189,8 +240,9 @@ let run pid state =
             (pid, ((IWr (v, x) :: is) :: frms, stck, envs))
         | ((IWr (v, x) :: is) :: frms, stck, envs) ->
             (pid, ((IWr (v, x) :: is) :: frms, stck, envs))
+        | ((ISpawn :: is) :: frms, stck, envs) -> (pid, ((ISpawn :: is) :: frms, stck, envs))
         | ((i :: is) :: frms, stck, envs) ->
-            loop (exec i (is :: frms) stck envs)
+            loop (exec pid i (is :: frms) stck envs)
         | ([] :: frms, stck, envs) -> loop (frms, stck, envs)
         | s -> error ("illegal end of program" ^ (string_of_int pid) ^ (string_of_state s))
     in

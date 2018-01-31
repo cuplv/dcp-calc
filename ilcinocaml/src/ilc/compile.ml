@@ -2,6 +2,8 @@ open Machine
 
 exception Compilation_error
 
+let pid_counter = ref 0
+
 let rec compile = function
     | Syntax.Name x ->  [IVar x]
     | Syntax.Int n -> [IInt n]
@@ -17,8 +19,11 @@ let rec compile = function
     | Syntax.Lam (x, e) -> [IClosure ("anon", x, compile e @ [IPopEnv])]
     | Syntax.App (e1, e2) -> (compile e1) @ (compile e2) @ [ICall]
     | Syntax.Nu (x, e) -> (compile e)
-    | Syntax.ParComp (e1, e2) -> (compile e1) @ [IProc] @ (compile e2)
-    | Syntax.ParLeft (e1, e2) -> [IProcL MHole] @ (compile e1) @ [IProc] @ (compile e2)
+    | Syntax.ParComp (e1, e2) ->
+        let pid = !pid_counter in
+        pid_counter := pid + 2; [IStartP pid] @
+        (compile e1) @ [IEndP pid; IStartP (pid + 1)] @
+        (compile e2) @ [IEndP (pid + 1)]
     | Syntax.Wr (e, x) -> (compile e) @ [IWr (MHole, x)]
     | Syntax.Rd (x1, x2) -> [IRd (x1, x2)]
     | Syntax.Seq (e1, e2) -> (compile e1) @ (compile e2)

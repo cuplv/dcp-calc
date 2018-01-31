@@ -4,10 +4,6 @@ exception Communication_error of string
 
 let error msg = raise (Communication_error msg) 
 
-let not_spawning = function
-    | (_, ((IStartP _ :: _) :: _, _, _)) -> false
-    | _ -> true
-
 let is_blocked = function
     | (_, ((IWr _ :: _) :: _, _, _)) -> true
     | (_, ((IRd _ :: _) :: _, _, _)) -> true
@@ -42,13 +38,21 @@ let update_state comm = function
             when (pid=pid2 && x1=x1' && x2=x2') ->
                 (pid, (is :: frms, stck, ((x1,v) :: env) :: envs))
         | _ -> (pid, ((IRd (x1,x2) :: is) :: frms, stck, env :: envs)))
+    | (pid, ((IWr (MClosure (n, f, e),x) :: is) :: frms, stck, envs)) ->
+        (match comm with
+        | ((pid', IWr (MClosure (n',f',e'), x')), _)
+            when (pid=pid' && n=n' && x=x') ->
+                (pid, (is :: frms, stck, envs))
+        | _ -> (pid, ((IWr (MClosure (n,f,e),x) :: is) :: frms, stck, envs)))
     | (pid, ((IWr (v,x) :: is) :: frms, stck, envs)) ->
         (match comm with
+        | ((pid', IWr (MClosure _, x')), _) ->
+            (pid, ((IWr (v,x) :: is) :: frms, stck, envs))
         | ((pid', IWr (v', x')), _)
             when (pid=pid' && v=v' && x=x') ->
                 (pid, (is :: frms, stck, envs))
         | _ -> (pid, ((IWr (v,x) :: is) :: frms, stck, envs)))
-    | p -> p
+    | (p, state) -> (p, state)
 
 let exec_comm ps =
     let open List in
@@ -56,5 +60,5 @@ let exec_comm ps =
     let possible_comms = filter can_comm (combinations
         (filter is_writing comm_ps) (filter is_reading comm_ps)) in
     let halted = length possible_comms = 0 in 
-    if halted then (halted && (List.for_all not_spawning ps), ps)
+    if halted then (halted, ps)
     else (halted, map (update_state (hd possible_comms)) ps)

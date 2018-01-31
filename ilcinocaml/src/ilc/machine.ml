@@ -66,6 +66,10 @@ let string_of_instr = function
     | IEndP n -> sprintf "IEndP(%d)" n
     | ISpawn -> "ISpawn"
 
+let closure_equals c1 c2 =
+    match (c1, c2) with
+    | ((n1, _, _), (n2, _, _)) -> n1=n2
+
 (* Convert instruction list into string *)
 let rec string_of_frame = function
     | [] -> ""
@@ -98,6 +102,9 @@ let string_of_environs envs =
 
 let string_of_state = function
     | (f, s, e) -> string_of_frames f ^ string_of_stack s ^ string_of_environs e
+
+let string_of_process = function
+        | (pid, s) -> Printf.sprintf "Process: %d\n %s" pid (string_of_state s)
 
 exception Machine_error of string
 

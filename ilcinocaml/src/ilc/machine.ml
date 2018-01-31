@@ -158,7 +158,7 @@ let split instrs n =
 
 let split frm n = 
     let rec aux acc = function
-        | [] -> (acc, [])
+        | [] -> (List.rev acc, [])
         | IEndP n' :: rest when n=n'-> (List.rev acc, rest)
         | i::is -> aux (i::acc) is
     in
@@ -166,7 +166,7 @@ let split frm n =
 
 let add_internal_spawns frm n =
     let rec aux acc = function
-        | [] -> acc
+        | [] -> List.rev acc
         | IEndP n' :: rest when n=n' -> List.rev acc @ rest
         | IStartP m :: rest -> aux (IStartP m :: (ISpawn :: acc)) rest
         | i :: rest -> aux (i :: acc) rest
@@ -224,9 +224,8 @@ let exec pid instr frms stck envs =
         | frm :: rest_frms ->
             let split_frms = split frm n in 
             if (List.length (snd split_frms)) = 0 then
-                (frm :: rest_frms, stck, envs)
+                ((fst split_frms) :: rest_frms, stck, envs)
             else ((ISpawn :: (snd split_frms)) :: ((add_internal_spawns (fst split_frms) n) :: rest_frms), stck, envs))
-    | IEndP n -> (frms, stck, envs) (* Shouldn't be needed *)
     | _ -> error (string_of_instr instr)
     (*| _ -> error ("illegal instruction")*)
 

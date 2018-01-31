@@ -55,6 +55,6 @@ let exec_comm ps =
     let comm_ps = map get_comm_info (filter is_blocked ps) in
     let possible_comms = filter can_comm (combinations
         (filter is_writing comm_ps) (filter is_reading comm_ps)) in
-    let halted = length possible_comms = 0 in print_endline "comming";
+    let halted = length possible_comms = 0 in 
     if halted then (halted && (List.for_all not_spawning ps), ps)
     else (halted, map (update_state (hd possible_comms)) ps)

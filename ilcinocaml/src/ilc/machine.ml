@@ -1,3 +1,6 @@
+(* Abstract machine *)
+open Printf
+
 type name = Syntax.name
 
 type mvalue =
@@ -29,8 +32,6 @@ and instr =
 and frame = instr list
 and environ = (name * mvalue) list
 and stack = mvalue list
-
-open Printf
 
 (* Convert machine value into string *)
 let string_of_mvalue = function
@@ -158,9 +159,7 @@ let get_par_processes frm n =
     let (second_par, rest) = split (List.tl rest) (n+1) in
     (first_par, second_par, rest)
 
-let remove_last l = List.rev (List.tl (List.rev l))
-
-let exec pid instr frms stck envs = 
+let exec instr frms stck envs = 
     match instr with
     | IAdd -> (frms, add stck, envs)
     | ISub -> (frms, sub stck, envs)
@@ -204,24 +203,94 @@ let exec pid instr frms stck envs =
         | frm :: rest_frms ->
             let (first_par, second_par, rest) = get_par_processes frm n in
             ([ISpawn] :: first_par :: second_par :: rest :: rest_frms, stck, envs)
-        | [] -> error "no instrs to spawn")
-    | _ -> error (string_of_instr instr)
+        | [] -> error "no processes to spawn")
+    | _ -> error ("illegal instruction")
 
-let run pid state = 
+(* Execute instructions *)
+let run p = 
     let rec loop = function
-        | ([], [], e) -> (pid, ([], [], e))
-        | ([], [v], e) -> (pid, ([], [v], e))
-        | ((IRd (x1, x2) :: is) :: frms, stck, envs) ->
+        | (pid, ([], [], e)) -> (pid, ([], [], e))
+        | (pid, ([], [v], e)) -> (pid, ([], [v], e))
+        | (pid, ((IRd (x1, x2) :: is) :: frms, stck, envs)) ->
             (pid, ((IRd (x1, x2) :: is) :: frms, stck, envs))
-        | ((IWr (MHole, x) :: is) :: frms, v :: stck, envs) ->
+        | (pid, ((IWr (MHole, x) :: is) :: frms, v :: stck, envs)) ->
             (pid, ((IWr (v, x) :: is) :: frms, stck, envs))
-        | ((IWr (v, x) :: is) :: frms, stck, envs) ->
+        | (pid, ((IWr (v, x) :: is) :: frms, stck, envs)) ->
             (pid, ((IWr (v, x) :: is) :: frms, stck, envs))
-        | ([ISpawn] :: frms, stck, envs) -> (pid, ([ISpawn] :: frms, stck, envs))
-        | ((IHole n :: is) :: frms, stck, envs) -> (pid, ((IHole n :: is) :: frms, stck, envs))
-        | ((i :: is) :: frms, stck, envs) ->
-            loop (exec pid i (is :: frms) stck envs)
-        | ([] :: frms, stck, envs) -> loop (frms, stck, envs)
-        | s -> error ("illegal end of program" ^ (string_of_int pid) ^ (string_of_state s))
+        | (pid, ([ISpawn] :: frms, stck, envs)) ->
+            (pid, ([ISpawn] :: frms, stck, envs))
+        | (pid, ((IHole n :: is) :: frms, stck, envs)) ->
+            (pid, ((IHole n :: is) :: frms, stck, envs))
+        | (pid, ((i :: is) :: frms, stck, envs)) ->
+            loop (pid, (exec i (is :: frms) stck envs))
+        | (pid, ([] :: frms, stck, envs)) -> loop (pid, (frms, stck, envs))
+        | s -> error ("illegal end of program")
     in
-        loop state
+        loop p
+
+let run_all ps = List.map run ps
+
+(* Spawns new processes *)
+let pid_counter = ref 1
+
+let spawn_all ps = 
+    let rec spawn old_ps new_ps = function
+        | [] -> if List.length new_ps = 0
+                then (true, List.rev old_ps)
+                else (false, (List.rev old_ps) @ (List.rev new_ps))
+        | (pid, ([ISpawn] :: frm1 :: frm2 :: frms, stck, envs)) :: rest_ps ->
+            let pid' = !pid_counter in
+            let original_p = (pid, (frms, stck, envs)) in
+            let new_p1 = (pid', ([frm1], [], envs)) in
+            let new_p2 = (pid'+1, ([frm2], [], envs)) in
+            pid_counter := !pid_counter + 2;
+            spawn (original_p :: old_ps)
+                  (new_p2 :: new_p1 :: new_ps)
+                  rest_ps
+        | p :: rest_ps -> spawn (p :: old_ps) new_ps rest_ps
+    in
+        spawn [] [] ps
+
+(* Fill holes *)
+let is_hole = function
+    | (_, ((IHole _ :: _) :: _, _, _)) -> true
+    | _ -> false
+
+let fill_hole ps = function
+    | (pid, ((IHole n :: instrs) :: frms, stck, envs)) ->
+        let rec check_ps = function
+            | (pid', ([], [v], _)) :: _ when n=pid' ->
+                (false, (pid, (instrs :: frms, v :: stck, envs)))
+            | (pid', _) :: _ when n=pid' ->
+                (true, (pid, ((IHole n :: instrs) :: frms, stck, envs)))
+            | _ :: rest_ps -> check_ps rest_ps
+            | [] -> error ("process not found")
+        in
+        check_ps ps
+    | _ -> error ("not a hole")
+
+let fill_all ps =
+    let rec loop acc is_done = function
+        | [] -> (is_done, List.rev acc)
+        | p :: ps' ->
+            if (is_hole p)
+            then let (is_done', new_p) = fill_hole ps p in
+                 loop (new_p :: acc) is_done' ps'
+            else loop (p :: acc) is_done ps'
+    in loop [] true ps
+
+(* Executes instructions, spawns processes, and fills holes until blocked *)
+let run_until_blocked ps =  
+    let quit_loop = ref false in
+    let prev_done_spawning = ref false in
+    let prev_done_filling = ref false in
+    let ps_store = ref ps in
+    while not !quit_loop do
+        let (done_spawning, ps') = spawn_all (run_all !ps_store) in
+        let (done_filling, ps') = fill_all (run_all ps') in
+        quit_loop := done_spawning && !prev_done_spawning &&
+                     done_filling && !prev_done_filling;
+        prev_done_spawning := done_spawning;
+        prev_done_filling := done_filling;
+        ps_store := ps';
+    done; !ps_store

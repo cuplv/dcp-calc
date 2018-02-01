@@ -1,1 +1,0 @@
-let double = lam x . x + x in wr double -> c . 1 | rd y <- c . 2

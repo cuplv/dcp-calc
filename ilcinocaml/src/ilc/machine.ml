@@ -20,15 +20,12 @@ and instr =
     | ICall
     | IPopEnv
     | ILet of name
-    | IInitP of int
     | IStartP of int
     | IEndP of int
     | IWr of mvalue * name
     | IRd of name * name
-    | IBlock of int
-    | IUnblock of int
-    | IProc
     | ISpawn
+    | IHole of int
 and frame = instr list
 and environ = (name * mvalue) list
 and stack = mvalue list
@@ -65,10 +62,7 @@ let string_of_instr = function
     | IStartP n -> sprintf "IStartP(%d)" n
     | IEndP n -> sprintf "IEndP(%d)" n
     | ISpawn -> "ISpawn"
-
-let closure_equals c1 c2 =
-    match (c1, c2) with
-    | ((n1, _, _), (n2, _, _)) -> n1=n2
+    | IHole n -> sprintf "IHole(%d)" n
 
 (* Convert instruction list into string *)
 let rec string_of_frame = function
@@ -151,20 +145,9 @@ let less = function
     | (MInt x) :: (MInt y) :: s -> MBool (y < x) :: s
     | _ -> error "int and int expected in less"
 
-(* TODO: Change to return option *)
-let split instrs n = 
-        let add acc res = if acc<>[] then acc::res else res in
-        let (res,acc) =
-            List.fold_right (fun x (res,acc) ->
-                match x with
-                | IEndP n' when n=n' -> (add acc res, [])
-                | _ -> (res, x::acc))
-            instrs ([],[])
-        in
-        add acc res
-
 let split frm n = 
     let rec aux acc = function
+        | [] -> (List.rev acc, [])
         | IEndP n' :: rest when n=n' -> (List.rev acc, rest)
         | i::is -> aux (i::acc) is
     in
@@ -174,15 +157,6 @@ let get_par_processes frm n =
     let (first_par, rest) = split frm n in
     let (second_par, rest) = split (List.tl rest) (n+1) in
     (first_par, second_par, rest)
-
-(*let add_internal_spawn frm n =
-    let rec aux acc = function
-        | [] -> List.rev acc
-        | IEndP n' :: rest when n=n' -> List.rev acc @ rest
-        | IStartP m :: rest -> List.rev (ISpawn :: acc) @ (IStartP m) :: rest
-        | i :: rest -> aux (i :: acc) rest
-    in
-    aux [] frm*)
 
 let remove_last l = List.rev (List.tl (List.rev l))
 
@@ -229,7 +203,8 @@ let exec pid instr frms stck envs =
         (match frms with
         | frm :: rest_frms ->
             let (first_par, second_par, rest) = get_par_processes frm n in
-            ([ISpawn] :: first_par :: second_par :: rest :: rest_frms, stck, envs))
+            ([ISpawn] :: first_par :: second_par :: rest :: rest_frms, stck, envs)
+        | [] -> error "no instrs to spawn")
     | _ -> error (string_of_instr instr)
 
 let run pid state = 
@@ -243,6 +218,7 @@ let run pid state =
         | ((IWr (v, x) :: is) :: frms, stck, envs) ->
             (pid, ((IWr (v, x) :: is) :: frms, stck, envs))
         | ([ISpawn] :: frms, stck, envs) -> (pid, ([ISpawn] :: frms, stck, envs))
+        | ((IHole n :: is) :: frms, v :: stck, envs) -> (pid, ((IHole n :: is) :: frms, v :: stck, envs))
         | ((i :: is) :: frms, stck, envs) ->
             loop (exec pid i (is :: frms) stck envs)
         | ([] :: frms, stck, envs) -> loop (frms, stck, envs)

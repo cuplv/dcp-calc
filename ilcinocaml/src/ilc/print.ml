@@ -58,18 +58,12 @@ let string_of_instr = function
     | ICall -> "ICall" 
     | IPopEnv -> "IPopEnv"
     | ILet x -> sprintf "ILet(%s)" x
-    | IInitP n -> sprintf "IInitP(%d)" n
     | IStartP n -> sprintf "IStartP(%d)" n
     | IEndP n -> sprintf "IEndP(%d)" n
     | IWr (v, x) -> sprintf "IWr(%s,%s)" (string_of_mvalue v) x
     | IRd (x1, x2) -> sprintf "IRd(%s,%s)" x1 x2 
-    | IBlock n -> "IBlock" ^ (string_of_int n)
-    | IUnblock n -> "IUnblock" ^ (string_of_int n)
-    | IProc -> "IProc"
-    | IStartP n -> sprintf "IStartP(%d)" n
-    | IEndP n -> sprintf "IEndP(%d)" n
     | ISpawn -> "ISpawn"
-
+    | IHole n -> sprintf "IHole(%d)" n
 
 (* Convert instruction list into string *)
 let rec string_of_frame = function

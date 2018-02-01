@@ -31,6 +31,7 @@ let can_comm = function
     | ((_, IWr (_, c)), (_, IRd (_, c'))) when (c=c') -> true
     | _ -> false
 
+(* TODO: equality for closures *)
 let update_state comm = function
     | (pid, ((IRd (x1,x2) :: is) :: frms, stck, env :: envs)) ->
         (match comm with

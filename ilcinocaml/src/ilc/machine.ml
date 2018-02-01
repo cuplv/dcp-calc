@@ -99,7 +99,7 @@ let string_of_state = function
     | (f, s, e) -> string_of_frames f ^ string_of_stack s ^ string_of_environs e
 
 let string_of_process = function
-        | (pid, s) -> Printf.sprintf "Process: %d\n %s" pid (string_of_state s)
+    | (pid, s) -> Printf.sprintf "Process: %d\n %s" pid (string_of_state s)
 
 exception Machine_error of string
 
@@ -134,8 +134,9 @@ let mult = function
     | _ -> error "int and int expected in mult"
 
 let div = function
-    | (MInt x) :: (MInt y) :: s -> let res = MInt (y / x) :: s in 
-                                   if x <> 0 then res else error "division by 0"
+    | (MInt x) :: (MInt y) :: s ->
+        let res = MInt (y / x) :: s in 
+        if x <> 0 then res else error "division by 0"
     | _ -> error "int and int expected in div"
 
 let modu = function
@@ -154,10 +155,10 @@ let split frm n =
     in
     aux [] frm
 
-let get_par_processes frm n =
-    let (first_par, rest) = split frm n in
-    let (second_par, rest) = split (List.tl rest) (n+1) in
-    (first_par, second_par, rest)
+let get_par_ps frm n =
+    let (fst_frm, rest_frm) = split frm n in
+    let (snd_frm, rest_frm) = split (List.tl rest_frm) (n+1) in
+    (fst_frm, snd_frm, rest_frm)
 
 let exec instr frms stck envs = 
     match instr with
@@ -201,8 +202,8 @@ let exec instr frms stck envs =
     | IStartP n ->
         (match frms with
         | frm :: rest_frms ->
-            let (first_par, second_par, rest) = get_par_processes frm n in
-            ([ISpawn] :: first_par :: second_par :: rest :: rest_frms, stck, envs)
+            let (fst_frm, snd_frm, rest_frm) = get_par_ps frm n in
+            ([ISpawn] :: fst_frm :: snd_frm :: rest_frm :: rest_frms, stck, envs)
         | [] -> error "no processes to spawn")
     | _ -> error ("illegal instruction")
 

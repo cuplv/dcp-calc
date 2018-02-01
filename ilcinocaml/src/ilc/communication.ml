@@ -28,7 +28,7 @@ let combinations l1 l2 =
     List.rev res
 
 let can_comm = function
-    | ((_, IWr (_, c)), (_, IRd (_, c'))) when (c=c') -> true
+    | ((_, IWr (_, c)), (_, IRd (_, c'))) when c=c' -> true
     | _ -> false
 
 (* TODO: equality for closures *)
@@ -55,7 +55,7 @@ let update_state comm = function
         | _ -> (pid, ((IWr (v,x) :: is) :: frms, stck, envs)))
     | (p, state) -> (p, state)
 
-let exec_comm ps =
+let run_comm ps =
     let open List in
     let comm_ps = map get_comm_info (filter is_blocked ps) in
     let possible_comms = filter can_comm (combinations

@@ -31,6 +31,7 @@ module ILC = Zoo.Main(struct
     let temp_string_of_process = function
         | (pid, s) -> Printf.sprintf "Process: %d\n %s" pid (Machine.string_of_state s)
 
+    (* Returns true when nothing spawned *)
     let spawn_all ps = 
         let rec spawn old_ps new_ps = function
             | [] -> if (List.length new_ps) = 0 then (true, (List.rev old_ps)) else (false, ((List.rev old_ps) @ (List.rev new_ps)))
@@ -49,22 +50,23 @@ module ILC = Zoo.Main(struct
     let fill_hole ps = function
         | (pid, ((Machine.IHole n :: is ) :: frms, stck, envs)) ->
             let rec check_ps = function
-                | (pid', ([], [v], _)) :: _ when n=pid' -> (true, (pid, (is :: frms, v :: stck, envs)))
-                | (pid', _) :: _ when n=pid' -> (false, (pid, ((Machine.IHole n :: is ) :: frms, stck, envs)))
+                | (pid', ([], [v], _)) :: _ when n=pid' -> (false, (pid, (is :: frms, v :: stck, envs)))
+                | (pid', _) :: _ when n=pid' -> (true, (pid, ((Machine.IHole n :: is ) :: frms, stck, envs)))
                 | _ :: rest -> check_ps rest
                 | [] -> raise (Process_error "process not found")
             in
             check_ps ps
         | _ -> raise (Process_error "not a hole")
 
+    (* Returns true when nothing filled *)
     let fill_all ps =
-        let rec loop acc filled = function
-            | [] -> (not filled, List.rev acc)
+        let rec loop acc is_done = function
+            | [] -> (is_done, List.rev acc)
             | p :: ps' -> if (is_hole p) then
-                let (was_filled, new_p) = fill_hole ps p in
-                loop (new_p :: acc) was_filled ps'
-                          else loop (p :: acc) filled ps'
-        in loop [] false ps
+                let (is_done', new_p) = fill_hole ps p in
+                loop (new_p :: acc) is_done' ps'
+                          else loop (p :: acc) is_done ps'
+        in loop [] true ps
 
     let run_all ps = List.map (function | (pid, state) -> Machine.run pid state) ps
 

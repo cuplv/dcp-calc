@@ -1,3 +1,6 @@
+(* let GetBit : Int -> (Int @ W) *)
+(* let Read : Chan -> (Int @ R) = lam c. rd c *)
+
 let GetBit = lam x.
     nu c. (
        (rd b <- c. b)

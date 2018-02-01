@@ -6,12 +6,21 @@
 /* Identifiers and literals */
 %token <int> INT
 %token <Syntax.name> NAME
+%token <string> STRING 
 %token TRUE FALSE
 /* Operators */
 %token LARROW
 %token RARROW
 %token EQUAL
-%token LESS
+%token LT
+%token GT
+%token LEQ
+%token GEQ
+%token OR
+%token AND
+%token NOT
+%token EQ
+%token NEQ
 %token PLUS
 %token MINUS
 %token TIMES
@@ -19,6 +28,7 @@
 %token MOD
 %token PAR
 %token PARL
+%token CHOICE
 /* Reserved */
 %token LET
 %token LAM
@@ -33,12 +43,15 @@
 %token EOF
 
 /* Precedence and assoc */
-%right PAR PARL
+%right PAR PARL CHOICE
 %left DOT IN
 %nonassoc ELSE
-%nonassoc LESS
+%nonassoc OR
+%nonassoc AND
+%nonassoc LT GT LEQ GEQ EQ NEQ
 %left PLUS MINUS
 %left TIMES DIVIDE
+%left MOD
 
 %start file
 %type <Syntax.process list> file
@@ -64,6 +77,8 @@ expr:
       { Name x }
     | n = INT
       { Int n }
+    | s = STRING
+      { String s }
     | TRUE
       { Bool true }
     | FALSE
@@ -80,8 +95,24 @@ expr:
     | e1 = expr MOD e2 = expr
       { Mod (e1, e2) }
     /* Comparison */
-    | e1 = expr LESS e2 = expr
-      { Less (e1, e2) }
+    | e1 = expr LT e2 = expr
+      { Lt (e1, e2) }
+    | e1 = expr GT e2 = expr
+      { Gt (e1, e2) }
+    | e1 = expr LEQ e2 = expr
+      { Leq (e1, e2) }
+    | e1 = expr GEQ e2 = expr
+      { Geq (e1, e2) }
+    | e1 = expr OR e2 = expr
+      { Or (e1, e2) }
+    | e1 = expr AND e2 = expr
+      { And (e1, e2) }
+    | NOT e1 = expr
+      { Not e1 }
+    | e1 = expr EQ e2 = expr
+      { Eq (e1, e2) }
+    | e1 = expr NEQ e2 = expr
+      { Neq (e1, e2) }
     /* Conditionals */
     | IF b = expr THEN e1 = expr ELSE e2 = expr
       { If (b, e1, e2) }
@@ -105,6 +136,8 @@ expr:
       { ParComp (e1, e2) }
     | e1 = expr PARL e2 = expr
       { ParLeft (e1, e2) }
+    | e1 = expr CHOICE e2 = expr
+      { Choice (e1, e2) }
     | LPAREN e = expr RPAREN
       { e }
     | e1 = expr DOT e2 = expr

@@ -13,7 +13,7 @@ let rec compile = function
     | Syntax.Times (e1, e2) -> (compile e1) @ (compile e2) @ [IMult]
     | Syntax.Divide (e1, e2) -> (compile e1) @ (compile e2) @ [IDiv]
     | Syntax.Mod (e1, e2) -> (compile e1) @ (compile e2) @ [IMod]
-    | Syntax.Less (e1, e2) -> (compile e1) @ (compile e2) @ [ILess]
+    | Syntax.Lt (e1, e2) -> (compile e1) @ (compile e2) @ [ILess]
     | Syntax.If (e1, e2, e3) -> (compile e1) @ [IBranch (compile e2, compile e3)]
     | Syntax.Let (x, e1, e2) -> (compile e1) @ [ILet x] @ (compile e2)
     | Syntax.Lam (x, e) -> [IClosure ("anon", x, compile e @ [IPopEnv])]

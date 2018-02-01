@@ -218,7 +218,7 @@ let run pid state =
         | ((IWr (v, x) :: is) :: frms, stck, envs) ->
             (pid, ((IWr (v, x) :: is) :: frms, stck, envs))
         | ([ISpawn] :: frms, stck, envs) -> (pid, ([ISpawn] :: frms, stck, envs))
-        | ((IHole n :: is) :: frms, v :: stck, envs) -> (pid, ((IHole n :: is) :: frms, v :: stck, envs))
+        | ((IHole n :: is) :: frms, stck, envs) -> (pid, ((IHole n :: is) :: frms, stck, envs))
         | ((i :: is) :: frms, stck, envs) ->
             loop (exec pid i (is :: frms) stck envs)
         | ([] :: frms, stck, envs) -> loop (frms, stck, envs)

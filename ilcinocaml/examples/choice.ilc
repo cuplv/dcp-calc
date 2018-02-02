@@ -1,3 +1,5 @@
+(* Only one of the read/write pairs will execute due to parallel choice; other will block. Since nondeterminism not implemented, the channel c communication will execute and the channel d communication will be blocked.*)
+
 let GetBit = lam x.
     nu c. nu d. (
        ((rd a <- c. a) & (rd b <- d. b))

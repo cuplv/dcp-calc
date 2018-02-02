@@ -4,7 +4,6 @@
     exception SyntaxError of string
 }
 
-
 rule token = parse
     | "(*"                      { comment 1 lexbuf }
     (* Whitespace *)
@@ -42,6 +41,8 @@ rule token = parse
     | "if"                      { IF }
     | "then"                    { THEN }
     | "else"                    { ELSE }
+    | "thunk"                   { THUNK }
+    | "force"                   { FORCE }
     (* Punctuation *)
     | '.'                       { DOT }
     | '('                       { LPAREN }

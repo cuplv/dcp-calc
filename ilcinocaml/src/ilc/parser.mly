@@ -37,6 +37,7 @@
 %token RD
 %token IN
 %token IF THEN ELSE
+%token THUNK FORCE
 /* Punctuation */
 %token DOT
 %token LPAREN RPAREN
@@ -116,6 +117,11 @@ expr:
     /* Conditionals */
     | IF b = expr THEN e1 = expr ELSE e2 = expr
       { If (b, e1, e2) }
+    /* Laziness */
+    | THUNK LPAREN e = expr RPAREN
+      { Thunk e }
+    | FORCE e = expr
+      { Force e }
     /* Let */
     | LET x = NAME EQUAL e1 = expr IN e2 = expr
       { Let (x, e1, e2) }

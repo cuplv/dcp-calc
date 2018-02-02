@@ -30,6 +30,8 @@ let string_of_expr e =
         | Neq (e1, e2) -> "Neq(" ^ to_str e1 ^ "," ^ to_str e2 ^ ")"
         | If (e1, e2, e3) -> "If(" ^ to_str e1 ^ "," ^ 
           to_str e2 ^ "," ^ to_str e3 ^ ")"
+        | Thunk e1 -> "Thunk(" ^ to_str e1 ^ ")"
+        | Force e1 -> "Force(" ^ to_str e1 ^ ")"
         | Let (x, e1, e2) -> "Let(" ^ name_to_str x ^ "," ^ 
           to_str e1 ^ "," ^ to_str e2 ^ ")"
         | App (e1, e2) -> "App(" ^ to_str e1 ^ "," ^ to_str e2 ^ ")"
@@ -47,6 +49,8 @@ let string_of_expr e =
 let string_of_mvalue = function
     | MInt n -> string_of_int n
     | MBool b -> string_of_bool b
+    | MString s -> s
+    | MThunk _ -> "<thunk>"
     | MClosure _ -> "<fun>"
     | MHole -> "hole"
 
@@ -55,23 +59,34 @@ let string_of_instr = function
     | IVar x -> sprintf "IVar(%s)" x
     | IInt n -> sprintf "IInt(%d)" n
     | IBool b -> sprintf "IBool(%b)" b
+    | IString s -> sprintf "IString(%s)" s
     | IAdd -> "IAdd"
     | ISub -> "ISub"
     | IMult -> "IMult"
     | IDiv -> "IDiv"
     | IMod -> "IMod"
-    | ILess -> "ILess"
+    | ILt -> "ILt"
+    | IGt -> "IGt"
+    | ILeq -> "ILeq"
+    | IGeq -> "IGeq"
+    | IOr -> "IOr"
+    | IAnd -> "IAnd"
+    | INot -> "INot"
+    | IEq -> "IEq"
+    | INeq -> "INeq"
     | IClosure (_, x, f) ->
          sprintf "IClosure(%s)" x 
     | IBranch (f1, f2) ->
          sprintf "IBranch()" 
     | ICall -> "ICall" 
     | IPopEnv -> "IPopEnv"
+    | IThunk e -> "IThunk"
+    | IForce -> "IForce"
     | ILet x -> sprintf "ILet(%s)" x
-    | IStartP n -> sprintf "IStartP(%d)" n
-    | IEndP n -> sprintf "IEndP(%d)" n
     | IWr (v, x) -> sprintf "IWr(%s,%s)" (string_of_mvalue v) x
     | IRd (x1, x2) -> sprintf "IRd(%s,%s)" x1 x2 
+    | IStartP n -> sprintf "IStartP(%d)" n
+    | IEndP n -> sprintf "IEndP(%d)" n
     | ISpawn -> "ISpawn"
     | IHole n -> sprintf "IHole(%d)" n
 

@@ -32,6 +32,9 @@ type expr =
     | Neq of expr * expr
     (* Conditionals *)
     | If of expr * expr * expr
+    (* Laziness *)
+    | Thunk of expr
+    | Force of expr
     (* Let *)
     | Let of name * expr * expr
     (* App *)

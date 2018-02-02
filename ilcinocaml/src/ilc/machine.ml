@@ -6,22 +6,35 @@ type name = Syntax.name
 type mvalue =
     | MInt of int
     | MBool of bool
+    | MString of string
     | MClosure of name * frame * environ
+    | MThunk of frame
     | MHole
 and instr =
     | IVar of name
     | IInt of int
     | IBool of bool
+    | IString of string
     | IAdd
     | ISub
     | IMult
     | IDiv
     | IMod
-    | ILess
+    | ILt
+    | IGt
+    | ILeq
+    | IGeq
+    | IOr
+    | IAnd
+    | INot
+    | IEq
+    | INeq
     | IClosure of name * name * frame
     | IBranch of frame * frame
     | ICall
     | IPopEnv
+    | IThunk of frame
+    | IForce
     | ILet of name
     | IStartP of int
     | IEndP of int
@@ -50,7 +63,15 @@ let string_of_instr = function
     | IMult -> "IMult"
     | IDiv -> "IDiv"
     | IMod -> "IMod"
-    | ILess -> "ILess"
+    | ILt -> "ILt"
+    | IGt -> "IGt"
+    | ILeq -> "ILeq"
+    | IGeq -> "IGeq"
+    | IOr -> "IOr"
+    | IAnd -> "IAnd"
+    | INot -> "INot"
+    | IEq -> "IEq"
+    | INeq -> "INeq"
     | IClosure (_, x, f) ->
          sprintf "IClosure(%s)" x 
     | IBranch (f1, f2) ->
@@ -143,9 +164,43 @@ let modu = function
     | (MInt x) :: (MInt y) :: s -> MInt (y mod x) :: s
     | _ -> error "int and int expected in mod"
 
-let less = function
+let lt = function
     | (MInt x) :: (MInt y) :: s -> MBool (y < x) :: s
-    | _ -> error "int and int expected in less"
+    | _ -> error "int and int expected in lt"
+
+let gt = function
+    | (MInt x) :: (MInt y) :: s -> MBool (y > x) :: s
+    | _ -> error "int and int expected in gt"
+
+let leq = function
+    | (MInt x) :: (MInt y) :: s -> MBool (y <= x) :: s
+    | _ -> error "int and int expected in leq"
+
+let geq = function
+    | (MInt x) :: (MInt y) :: s -> MBool (y >= x) :: s
+    | _ -> error "int and int expected in geq"
+
+let l_or = function
+    | (MBool x) :: (MBool y) :: s -> MBool (x || y) :: s
+    | _ -> error "int and int expected in or"
+
+let l_and = function
+    | (MBool x) :: (MBool y) :: s -> MBool (x && y) :: s
+    | _ -> error "int and int expected in and"
+
+let l_not = function
+    | (MBool x) :: s -> MBool (not x) :: s
+    | _ -> error "int and int expected in not"
+
+let eq = function
+    | (MInt x) :: (MInt y) :: s -> MBool (x = y) :: s
+    | (MString x) :: (MString y) :: s -> MBool (x = y) :: s
+    | _ -> error "invalid operands in equal"
+
+let neq = function
+    | (MInt x) :: (MInt y) :: s -> MBool (x <> y) :: s
+    | (MString x) :: (MString y) :: s -> MBool (x <> y) :: s
+    | _ -> error "invalid operands in neq"
 
 let split frm n = 
     let rec aux acc = function
@@ -167,10 +222,27 @@ let exec instr frms stck envs =
     | IMult -> (frms, mult stck, envs)
     | IDiv -> (frms, div stck, envs)
     | IMod -> (frms, modu stck, envs)
-    | ILess -> (frms, less stck, envs)
+    | ILt -> (frms, lt stck, envs)
+    | IGt -> (frms, gt stck, envs)
+    | ILeq -> (frms, leq stck, envs)
+    | IGeq -> (frms, geq stck, envs)
+    | IOr -> (frms, l_or stck, envs)
+    | IAnd -> (frms, l_and stck, envs)
+    | INot -> (frms, l_not stck, envs)
+    | IEq -> (frms, eq stck, envs)
+    | INeq -> (frms, neq stck, envs)
     | IVar x -> (frms, (lookup x envs) :: stck, envs)
     | IInt n -> (frms, (MInt n) :: stck, envs)
     | IBool b -> (frms, (MBool b) :: stck, envs)
+    | IString s -> (frms, (MString s) :: stck, envs)
+    | IThunk f -> (frms, (MThunk f) :: stck, envs)
+    | IForce ->
+        (match frms with
+        | frm :: frm_rest ->
+            match pop stck with
+            | (MThunk f, stck') ->
+                (f :: frm :: frm_rest, stck', envs)
+            | _ -> error "no thunk to pop")
     | IClosure (f, x, frm) ->
         (match envs with
         | env :: _ ->

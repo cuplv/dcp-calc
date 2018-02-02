@@ -15,6 +15,7 @@ type expr =
     | Int of int
     | Bool of bool
     | String of string
+    | List of expr list
     (* Binary ops *)
     | Plus of expr * expr
     | Minus of expr * expr
@@ -55,6 +56,8 @@ type expr =
     | Choice of expr * expr
     (* Seq *)
     | Seq of expr * expr
+    (* Lists *)
+    | ListItems of expr * expr
 
 type process =
     | Process of expr

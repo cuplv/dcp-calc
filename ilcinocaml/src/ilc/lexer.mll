@@ -12,7 +12,7 @@ rule token = parse
     | "->"                      { RARROW }
     | "<-"                      { LARROW }
     | '='                       { EQUAL }
-    | "=>"                      { MARROW }
+    (*| "=>"                      { MARROW }*)
     (*| '!'                       { REPL }*)
     (* Relations *)
     | '<'                       { LT }
@@ -44,15 +44,15 @@ rule token = parse
     | "else"                    { ELSE }
     | "thunk"                   { THUNK }
     | "force"                   { FORCE }
-    | "match"                   { MATCH }
-    | "with"                    { WITH }
+    (*| "match"                   { MATCH }
+    | "with"                    { WITH }*)
     (* Punctuation *)
     | '.'                       { DOT }
     | '('                       { LPAREN }
     | ')'                       { RPAREN }
-    (*| '['                       { LBRACK }
+    | '['                       { LBRACK }
     | ']'                       { RBRACK }
-    | ','                       { COMMA }*)
+    | ','                       { COMMA }
     (* Identifiers and literals *)
     | "true"                    { TRUE }
     | "false"                   { FALSE }

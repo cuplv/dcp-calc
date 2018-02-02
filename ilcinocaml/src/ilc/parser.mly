@@ -1,5 +1,9 @@
 %{
     open Syntax
+
+    let rec flatten acc = function
+        | ListItems (e1, e2) -> flatten (e1 :: acc) e2
+        | e -> List.rev (e :: acc)
 %}
 
 /* Lexemes */
@@ -41,12 +45,15 @@
 /* Punctuation */
 %token DOT
 %token LPAREN RPAREN
+%token LBRACK RBRACK
+%token COMMA
 %token EOF
 
 /* Precedence and assoc */
 %right PAR PARL CHOICE
 %left DOT IN
 %nonassoc ELSE
+%right COMMA
 %nonassoc OR
 %nonassoc AND
 %nonassoc LT GT LEQ GEQ EQ NEQ
@@ -148,3 +155,7 @@ expr:
       { e }
     | e1 = expr DOT e2 = expr
       { Seq (e1, e2) }
+    | e1 = expr COMMA e2 = expr
+      { ListItems (e1, e2) }
+    | LBRACK e = expr RBRACK
+      { List (flatten [] e) }

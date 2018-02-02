@@ -7,6 +7,7 @@ type mvalue =
     | MInt of int
     | MBool of bool
     | MString of string
+    | MList of mvalue list
     | MClosure of name * frame * environ
     | MThunk of frame
     | MHole
@@ -44,6 +45,8 @@ and instr =
     | IRd of name * name
     | ISpawn
     | IHole of int
+    | IStartL
+    | IEndL
 and frame = instr list
 and environ = (name * mvalue) list
 and stack = mvalue list
@@ -52,6 +55,7 @@ and stack = mvalue list
 let string_of_mvalue = function
     | MInt n -> string_of_int n
     | MBool b -> string_of_bool b
+    | MList l -> "MList"
     | MClosure _ -> "<fun>"
     | MHole -> "hole"
 
@@ -143,6 +147,13 @@ let pop_bool = function
 let pop_app = function
     | v :: MClosure (x, f, e) :: s -> (x, f, e, v, s)
     | _ -> error "value and closure expected"
+
+let pop_list l = 
+    let rec pop acc = function
+        | MList [] :: s -> (List.rev acc, s)
+        | mv :: s -> pop (mv :: acc) s
+    in
+    pop [] l
 
 let add = function
     | (MInt x) :: (MInt y) :: s -> MInt (y + x) :: s
@@ -279,6 +290,10 @@ let exec instr frms stck envs =
             let (fst_frm, snd_frm, rest_frm) = get_par_ps frm n in
             ([ISpawn] :: fst_frm :: snd_frm :: rest_frm :: rest_frms, stck, envs)
         | [] -> error "no processes to spawn")
+    | IStartL -> (frms, (MList []) :: stck, envs)
+    | IEndL ->
+        let (list, stck') = pop_list stck
+        in (frms, (MList list) :: stck', envs)
     | _ -> error ("illegal instruction")
 
 (* Execute instructions *)

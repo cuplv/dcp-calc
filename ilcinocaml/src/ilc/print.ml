@@ -45,14 +45,22 @@ let string_of_expr e =
         | Seq (e1, e2) -> "Seq(" ^ to_str e1 ^ "," ^ to_str e2 ^ ")"
     in to_str e
 
+let string_of_list f l = 
+    let rec to_str acc = function
+        | [v] -> acc ^ f v ^ "]"
+        | v :: vs -> to_str (acc ^ f v ^ ",") vs
+    in
+    to_str "[" (List.rev l)
+
 (* Convert machine value into string *)
-let string_of_mvalue = function
+let rec string_of_mvalue = function
     | MInt n -> string_of_int n
     | MBool b -> string_of_bool b
     | MString s -> s
     | MThunk _ -> "<thunk>"
     | MClosure _ -> "<fun>"
     | MHole -> "hole"
+    | MList l -> string_of_list string_of_mvalue l
 
 (* Convert instruction into string *)
 let rec string_of_instr = function 

@@ -4,6 +4,10 @@ exception Compilation_error
 
 let pid_counter = ref 0
 
+let make_choice pid cid = function
+    | instr :: instrs -> IChoice(pid, cid, instr) :: instrs
+    | _ -> raise (Compilation_error)
+
 let rec compile = function
     | Syntax.Name x ->  [IVar x]
     | Syntax.Int n -> [IInt n]
@@ -40,6 +44,11 @@ let rec compile = function
         pid_counter := pid + 2; [IStartP pid] @
         (compile e1) @ [IEndP pid; IStartP (pid + 1)] @
         (compile e2) @ [IEndP (pid + 1); IHole (pid+1)]
+    | Syntax.Choice (e1, e2) -> (* TODO: Don't think this works for nested choices *)
+        let pid = !pid_counter in
+        pid_counter := pid + 2; [IStartP pid] @
+        make_choice pid 0 (compile e1) @ [IEndP pid; IStartP (pid + 1)] @
+        make_choice pid 1 (compile e2) @ [IEndP (pid + 1); IHole (pid+1)]
     | Syntax.Wr (e, x) -> (compile e) @ [IWr (MHole, x)]
     | Syntax.Rd (x1, x2) -> [IRd (x1, x2)]
     | Syntax.Seq (e1, e2) -> (compile e1) @ (compile e2)

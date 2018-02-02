@@ -55,7 +55,7 @@ let string_of_mvalue = function
     | MHole -> "hole"
 
 (* Convert instruction into string *)
-let string_of_instr = function 
+let rec string_of_instr = function 
     | IVar x -> sprintf "IVar(%s)" x
     | IInt n -> sprintf "IInt(%d)" n
     | IBool b -> sprintf "IBool(%b)" b
@@ -87,6 +87,8 @@ let string_of_instr = function
     | IRd (x1, x2) -> sprintf "IRd(%s,%s)" x1 x2 
     | IStartP n -> sprintf "IStartP(%d)" n
     | IEndP n -> sprintf "IEndP(%d)" n
+    | IChoice (p, c, i) -> sprintf "IChoice(%d,%d,%s)" p c (string_of_instr i)
+    | IBlock i -> sprintf "IBlock(%s)" (string_of_instr i)
     | ISpawn -> "ISpawn"
     | IHole n -> sprintf "IHole(%d)" n
 

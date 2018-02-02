@@ -38,6 +38,8 @@ and instr =
     | ILet of name
     | IStartP of int
     | IEndP of int
+    | IChoice of int * int * instr
+    | IBlock of instr
     | IWr of mvalue * name
     | IRd of name * name
     | ISpawn
@@ -286,6 +288,8 @@ let run p =
         | (pid, ([], [v], e)) -> (pid, ([], [v], e))
         | (pid, ((IRd (x1, x2) :: is) :: frms, stck, envs)) ->
             (pid, ((IRd (x1, x2) :: is) :: frms, stck, envs))
+        | (pid, ((IChoice(pid', cid,  (IRd (x1, x2))) :: is) :: frms, stck, envs)) ->
+            (pid, ((IChoice(pid', cid, (IRd (x1, x2))) :: is) :: frms, stck, envs))
         | (pid, ((IWr (MHole, x) :: is) :: frms, v :: stck, envs)) ->
             (pid, ((IWr (v, x) :: is) :: frms, stck, envs))
         | (pid, ((IWr (v, x) :: is) :: frms, stck, envs)) ->
@@ -294,6 +298,8 @@ let run p =
             (pid, ([ISpawn] :: frms, stck, envs))
         | (pid, ((IHole n :: is) :: frms, stck, envs)) ->
             (pid, ((IHole n :: is) :: frms, stck, envs))
+        | (pid, ((IBlock i :: is) :: frms, stck, envs)) ->
+            (pid, ((IBlock i :: is) :: frms, stck, envs))
         | (pid, ((i :: is) :: frms, stck, envs)) ->
             loop (pid, (exec i (is :: frms) stck envs))
         | (pid, ([] :: frms, stck, envs)) -> loop (pid, (frms, stck, envs))

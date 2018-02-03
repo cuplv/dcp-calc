@@ -8,10 +8,10 @@ type mvalue =
     | MBool of bool
     | MString of string
     | MList of mvalue list
+    | MTuple of mvalue list
     | MClosure of name * frame * environ
     | MThunk of frame
     | MHole
-    | MPair of mvalue * mvalue
 and instr =
     | IVar of name
     | IInt of int
@@ -50,7 +50,8 @@ and instr =
     | IStartL
     | IEndL
     | ICons
-    | IPair
+    | IStartT
+    | IEndT
     | IFst
     | ISnd
     | IRepl of frame
@@ -234,21 +235,16 @@ let cons = function
     | (MList x) :: y :: s -> print_endline (string_of_stack [MList (y::x)]); MList (y::x) :: s
     | _ -> error "no list to cons"
 
-let pair = function
-    | y :: x :: s -> MPair (x, y) :: s
-    | _ -> error "no values to pair"
-
 let do_fst = function
-    | MPair (x, y) :: s -> x :: s
+    | MTuple [x;y] :: s -> x :: s
     | _ -> error "no pair to fst"
 
 let do_snd = function
-    | MPair (x, y) :: s -> y :: s
+    | MTuple [x;y] :: s -> y :: s
     | _ -> error "no pair to snd"
 
 let rand = function
     | s -> MInt (Random.bits ()) :: s
-    | _ -> error "no pair to snd"
 
 let split frm n = 
     let rec aux acc = function
@@ -333,7 +329,10 @@ let exec instr frms stck envs =
         let (lst, stck') = pop_list stck
         in (frms, (MList lst) :: stck', envs)
     | ICons -> (frms, cons stck, envs)
-    | IPair -> (frms, pair stck, envs)
+    | IStartT -> (frms, (MList []) :: stck, envs)
+    | IEndT ->
+        let (lst, stck') = pop_list stck
+        in (frms, (MTuple lst) :: stck', envs)
     | IFst -> (frms, do_fst stck, envs)
     | ISnd -> (frms, do_snd stck, envs)
     | IRand -> (frms, rand stck, envs)

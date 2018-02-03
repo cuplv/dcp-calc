@@ -2,7 +2,7 @@
     open Syntax
 
     let rec flatten acc = function
-        | ListItems (e1, e2) -> flatten (e1 :: acc) e2
+        | CommaSep (e1, e2) -> flatten (e1 :: acc) e2
         | e -> List.rev (e :: acc)
 %}
 
@@ -158,18 +158,16 @@ expr:
       { ParLeft (e1, e2) }
     | e1 = expr CHOICE e2 = expr
       { Choice (e1, e2) }
-    | LPAREN e = expr RPAREN
-      { e }
     | e1 = expr DOT e2 = expr
       { Seq (e1, e2) }
-    | e1 = expr COMMA e2 = expr
-      { ListItems (e1, e2) }
     | LBRACK e = expr RBRACK
       { List (flatten [] e) }
+    | LPAREN e1 = expr COMMA e2 = expr RPAREN /* Change this later */
+      { Tuple (e1 :: flatten [] e2) }
+    | e1 = expr COMMA e2 = expr
+      { CommaSep (e1, e2) }
     | e1 = expr CONS e2 = expr
       { Cons (e1, e2) }
-    | LPAREN e1 = expr COMMA e2 = expr RPAREN
-      { Pair (e1, e2) }
     | FST e = expr
       { Fst e }
     | SND e = expr
@@ -178,3 +176,5 @@ expr:
       { Rand }
     | REPL e = expr
       { Repl e }
+    | LPAREN e = expr RPAREN
+      { e }

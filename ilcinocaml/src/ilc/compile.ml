@@ -55,8 +55,9 @@ let rec compile = function
     | Syntax.Seq (e1, e2) -> (compile e1) @ (compile e2)
     | Syntax.List es -> [IStartL] @ List.fold_left (fun acc e -> acc @ (compile e)) [] es @ [IEndL]
     | Syntax.Cons (e1, e2) -> (compile e1) @ (compile e2) @ [ICons]
-    | Syntax.Pair (e1, e2) -> (compile e1) @ (compile e2) @ [IPair]
+    | Syntax.Tuple es -> [IStartT] @ List.fold_left (fun acc e -> acc @ (compile e)) [] es @ [IEndT]
     | Syntax.Fst e -> (compile e) @ [IFst]
     | Syntax.Snd e -> (compile e) @ [ISnd]
     | Syntax.Repl e -> [IRepl (compile e)]
     | Syntax.Rand -> [IRand]
+    | _ -> raise (Compilation_error)

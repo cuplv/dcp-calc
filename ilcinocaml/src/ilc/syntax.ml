@@ -16,6 +16,7 @@ type expr =
     | Bool of bool
     | String of string
     | List of expr list
+    | Tuple of expr list
     (* Binary ops *)
     | Plus of expr * expr
     | Minus of expr * expr
@@ -58,10 +59,9 @@ type expr =
     (* Seq *)
     | Seq of expr * expr
     (* Lists *)
-    | ListItems of expr * expr
+    | CommaSep of expr * expr
     | Cons of expr * expr
     (* Pair *)
-    | Pair of expr * expr
     | Fst of expr
     | Snd of expr
     | Rand

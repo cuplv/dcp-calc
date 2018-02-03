@@ -14,6 +14,8 @@ let string_of_expr e =
         | Int n -> "Int(" ^ string_of_int n ^ ")"
         | Bool b -> "Bool(" ^ string_of_bool b ^ ")"
         | String s -> "String(" ^ s ^ ")"
+        | List es -> "List(" ^ List.fold_left (fun acc e -> (to_str e) ^ "," ^ acc) "" (List.rev es) ^ ")"
+        | Tuple es -> "Tuple(" ^ List.fold_left (fun acc e -> (to_str e) ^ "," ^ acc) "" (List.rev es) ^ ")"
         | Plus (e1, e2) -> "Plus(" ^ to_str e1 ^ "," ^ to_str e2 ^ ")"
         | Minus (e1, e2) -> "Minus(" ^ to_str e1 ^ "," ^ to_str e2 ^ ")"
         | Times (e1, e2) -> "Times(" ^ to_str e1 ^ "," ^ to_str e2 ^ ")"
@@ -45,16 +47,20 @@ let string_of_expr e =
         | ParLeft (e1, e2) -> "ParLeft(" ^ to_str e1 ^ "," ^ to_str e2 ^ ")"
         | Choice (e1, e2) -> "Choice(" ^ to_str e1 ^ "," ^ to_str e2 ^ ")"
         | Seq (e1, e2) -> "Seq(" ^ to_str e1 ^ "," ^ to_str e2 ^ ")"
+        | CommaSep (e1, e2) -> "CommaSep(" ^ to_str e1 ^ "," ^ to_str e2 ^ ")"
+        | Fst e -> "Fst(" ^ to_str e ^ ")"
+        | Snd e -> "Snd(" ^ to_str e ^ ")"
         | Repl e -> "Repl(" ^ to_str e ^ ")"
         | Rand -> "Rand()"
+
     in to_str e
 
 let string_of_list f l = 
     let rec to_str acc = function
-        | [v] -> acc ^ f v ^ "]"
+        | [v] -> acc ^ f v
         | v :: vs -> to_str (acc ^ f v ^ ",") vs
     in
-    to_str "[" l
+    to_str "" l
 
 (* Convert machine value into string *)
 let rec string_of_mvalue = function
@@ -64,8 +70,8 @@ let rec string_of_mvalue = function
     | MThunk _ -> "<thunk>"
     | MClosure _ -> "<fun>"
     | MHole -> "hole"
-    | MList l -> string_of_list string_of_mvalue l
-    | MPair (v1, v2) -> sprintf "(%s, %s)" (string_of_mvalue v1) (string_of_mvalue v2)
+    | MList l -> "[" ^ string_of_list string_of_mvalue l ^ "]"
+    | MTuple l -> "(" ^ string_of_list string_of_mvalue l ^ ")"
 
 (* Convert instruction into string *)
 let rec string_of_instr = function 
@@ -107,7 +113,8 @@ let rec string_of_instr = function
     | IStartL -> "IStartL"
     | IEndL -> "IEndL"
     | ICons -> "ICons"
-    | IPair -> "IPair"
+    | IStartT -> "IStartT"
+    | IEndT -> "IEndT"
     | IFst -> "IFst"
     | ISnd -> "ISnd"
     | IRepl is -> "IRepl()"

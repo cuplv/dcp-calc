@@ -11,6 +11,7 @@ type mvalue =
     | MClosure of name * frame * environ
     | MThunk of frame
     | MHole
+    | MPair of mvalue * mvalue
 and instr =
     | IVar of name
     | IInt of int
@@ -32,6 +33,7 @@ and instr =
     | INeq
     | IClosure of name * name * frame
     | IBranch of frame * frame
+    | ICond of frame
     | ICall
     | IPopEnv
     | IThunk of frame
@@ -48,6 +50,10 @@ and instr =
     | IStartL
     | IEndL
     | ICons
+    | IPair
+    | IFst
+    | ISnd
+    | IRepl of frame
 and frame = instr list
 and environ = (name * mvalue) list
 and stack = mvalue list
@@ -88,8 +94,8 @@ let string_of_instr = function
     | INeq -> "INeq"
     | IClosure (_, x, f) ->
          sprintf "IClosure(%s)" x 
-    | IBranch (f1, f2) ->
-         sprintf "IBranch()" 
+    | IBranch _ -> "IBranch"
+    | ICond _ -> "ICond"
     | ICall -> "ICall" 
     | IPopEnv -> "IPopEnv"
     | ILet x -> sprintf "ILet(%s)" x
@@ -227,6 +233,18 @@ let cons = function
     | (MList x) :: y :: s -> print_endline (string_of_stack [MList (y::x)]); MList (y::x) :: s
     | _ -> error "no list to cons"
 
+let pair = function
+    | y :: x :: s -> MPair (x, y) :: s
+    | _ -> error "no values to pair"
+
+let do_fst = function
+    | MPair (x, y) :: s -> x :: s
+    | _ -> error "no pair to fst"
+
+let do_snd = function
+    | MPair (x, y) :: s -> y :: s
+    | _ -> error "no pair to snd"
+
 let split frm n = 
     let rec aux acc = function
         | [] -> (List.rev acc, [])
@@ -289,6 +307,9 @@ let exec instr frms stck envs =
     | IBranch (f1, f2) ->
         let (b, stck') = pop_bool stck in
         ((if b then f1 else f2) :: frms, stck', envs)
+    | ICond f ->
+        let (b, stck') = pop_bool stck in
+        ((if b then f else []) :: frms, stck', envs)
     | ICall ->
         let (x, frm, env, v, stck') = pop_app stck in
         (frm :: frms, stck', ((x,v) :: env) :: envs)
@@ -307,6 +328,9 @@ let exec instr frms stck envs =
         let (lst, stck') = pop_list stck
         in (frms, (MList lst) :: stck', envs)
     | ICons -> (frms, cons stck, envs)
+    | IPair -> (frms, pair stck, envs)
+    | IFst -> (frms, do_fst stck, envs)
+    | ISnd -> (frms, do_snd stck, envs)
     | _ -> error ("illegal instruction")
 
 (* Execute instructions *)
@@ -328,6 +352,8 @@ let run p =
             (pid, ((IHole n :: is) :: frms, stck, envs))
         | (pid, ((IBlock i :: is) :: frms, stck, envs)) ->
             (pid, ((IBlock i :: is) :: frms, stck, envs))
+        | (pid, ((IRepl i :: is) :: frms, stck, envs)) ->
+            (pid, ((IRepl i :: is) :: frms, stck, envs))
         | (pid, ((i :: is) :: frms, stck, envs)) ->
             loop (pid, (exec i (is :: frms) stck envs))
         | (pid, ([] :: frms, stck, envs)) -> loop (pid, (frms, stck, envs))

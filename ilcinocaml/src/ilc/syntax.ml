@@ -32,7 +32,8 @@ type expr =
     | Eq of expr * expr
     | Neq of expr * expr
     (* Conditionals *)
-    | If of expr * expr * expr
+    | IfTE of expr * expr * expr
+    | IfT of expr * expr
     (* Laziness *)
     | Thunk of expr
     | Force of expr
@@ -59,6 +60,11 @@ type expr =
     (* Lists *)
     | ListItems of expr * expr
     | Cons of expr * expr
+    (* Pair *)
+    | Pair of expr * expr
+    | Fst of expr
+    | Snd of expr
+    | Repl of expr
 
 type process =
     | Process of expr

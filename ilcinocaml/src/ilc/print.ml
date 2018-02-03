@@ -28,8 +28,10 @@ let string_of_expr e =
         | Not e1 -> "Not(" ^ to_str e1 ^ ")"
         | Eq (e1, e2) -> "Eq(" ^ to_str e1 ^ "," ^ to_str e2 ^ ")"
         | Neq (e1, e2) -> "Neq(" ^ to_str e1 ^ "," ^ to_str e2 ^ ")"
-        | If (e1, e2, e3) -> "If(" ^ to_str e1 ^ "," ^ 
+        | IfTE (e1, e2, e3) -> "IfTE(" ^ to_str e1 ^ "," ^ 
           to_str e2 ^ "," ^ to_str e3 ^ ")"
+        | IfT (e1, e2) -> "IfT(" ^ to_str e1 ^ "," ^ 
+          to_str e2 ^ ")"
         | Thunk e1 -> "Thunk(" ^ to_str e1 ^ ")"
         | Force e1 -> "Force(" ^ to_str e1 ^ ")"
         | Let (x, e1, e2) -> "Let(" ^ name_to_str x ^ "," ^ 
@@ -43,6 +45,7 @@ let string_of_expr e =
         | ParLeft (e1, e2) -> "ParLeft(" ^ to_str e1 ^ "," ^ to_str e2 ^ ")"
         | Choice (e1, e2) -> "Choice(" ^ to_str e1 ^ "," ^ to_str e2 ^ ")"
         | Seq (e1, e2) -> "Seq(" ^ to_str e1 ^ "," ^ to_str e2 ^ ")"
+        | Repl e -> "Repl(" ^ to_str e ^ ")"
     in to_str e
 
 let string_of_list f l = 
@@ -61,6 +64,7 @@ let rec string_of_mvalue = function
     | MClosure _ -> "<fun>"
     | MHole -> "hole"
     | MList l -> string_of_list string_of_mvalue l
+    | MPair (v1, v2) -> sprintf "(%s, %s)" (string_of_mvalue v1) (string_of_mvalue v2)
 
 (* Convert instruction into string *)
 let rec string_of_instr = function 
@@ -84,8 +88,8 @@ let rec string_of_instr = function
     | INeq -> "INeq"
     | IClosure (_, x, f) ->
          sprintf "IClosure(%s)" x 
-    | IBranch (f1, f2) ->
-         sprintf "IBranch()" 
+    | IBranch _ -> "IBranch"
+    | ICond _ -> "ICond"
     | ICall -> "ICall" 
     | IPopEnv -> "IPopEnv"
     | IThunk e -> "IThunk"
@@ -99,6 +103,13 @@ let rec string_of_instr = function
     | IBlock i -> sprintf "IBlock(%s)" (string_of_instr i)
     | ISpawn -> "ISpawn"
     | IHole n -> sprintf "IHole(%d)" n
+    | IStartL -> "IStartL"
+    | IEndL -> "IEndL"
+    | ICons -> "ICons"
+    | IPair -> "IPair"
+    | IFst -> "IFst"
+    | ISnd -> "ISnd"
+    | IRepl is -> "IRepl()"
 
 (* Convert instruction list into string *)
 let rec string_of_frame = function

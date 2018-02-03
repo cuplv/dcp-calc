@@ -16,6 +16,7 @@
 %token LARROW
 %token RARROW
 %token EQUAL
+%token REPL
 %token CONS
 %token LT
 %token GT
@@ -43,6 +44,7 @@
 %token IN
 %token IF THEN ELSE
 %token THUNK FORCE
+%token FST SND
 /* Punctuation */
 %token DOT
 %token LPAREN RPAREN
@@ -124,7 +126,9 @@ expr:
       { Neq (e1, e2) }
     /* Conditionals */
     | IF b = expr THEN e1 = expr ELSE e2 = expr
-      { If (b, e1, e2) }
+      { IfTE (b, e1, e2) }
+    | IF b = expr THEN e1 = expr
+      { IfT (b, e1) }
     /* Laziness */
     | THUNK LPAREN e = expr RPAREN
       { Thunk e }
@@ -162,3 +166,11 @@ expr:
       { List (flatten [] e) }
     | e1 = expr CONS e2 = expr
       { Cons (e1, e2) }
+    | LPAREN e1 = expr COMMA e2 = expr RPAREN
+      { Pair (e1, e2) }
+    | FST e = expr
+      { Fst e }
+    | SND e = expr
+      { Snd e }
+    | REPL e = expr
+      { Repl e }

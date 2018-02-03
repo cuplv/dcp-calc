@@ -13,7 +13,7 @@ rule token = parse
     | "<-"                      { LARROW }
     | '='                       { EQUAL }
     (*| "=>"                      { MARROW }*)
-    (*| '!'                       { REPL }*)
+    | '!'                       { REPL }
     | "::"                      { CONS }
     (* Relations *)
     | '<'                       { LT }
@@ -45,6 +45,8 @@ rule token = parse
     | "else"                    { ELSE }
     | "thunk"                   { THUNK }
     | "force"                   { FORCE }
+    | "fst"                     { FST }
+    | "snd"                     { SND }
     (*| "match"                   { MATCH }
     | "with"                    { WITH }*)
     (* Punctuation *)

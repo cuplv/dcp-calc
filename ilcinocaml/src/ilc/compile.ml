@@ -27,7 +27,8 @@ let rec compile = function
     | Syntax.Not e -> (compile e)  @ [INot]
     | Syntax.Eq (e1, e2) -> (compile e1) @ (compile e2) @ [IEq]
     | Syntax.Neq (e1, e2) -> (compile e1) @ (compile e2) @ [INeq]
-    | Syntax.If (e1, e2, e3) -> (compile e1) @ [IBranch (compile e2, compile e3)]
+    | Syntax.IfTE (e1, e2, e3) -> (compile e1) @ [IBranch (compile e2, compile e3)]
+    | Syntax.IfT (e1, e2) -> (compile e1) @ [ICond (compile e2)]
     | Syntax.Thunk e -> [IThunk (compile e)]
     | Syntax.Force e -> (compile e) @ [IForce]
     | Syntax.Let (x, e1, e2) -> (compile e1) @ [ILet x] @ (compile e2)
@@ -54,3 +55,7 @@ let rec compile = function
     | Syntax.Seq (e1, e2) -> (compile e1) @ (compile e2)
     | Syntax.List es -> [IStartL] @ List.fold_left (fun acc e -> acc @ (compile e)) [] es @ [IEndL]
     | Syntax.Cons (e1, e2) -> (compile e1) @ (compile e2) @ [ICons]
+    | Syntax.Pair (e1, e2) -> (compile e1) @ (compile e2) @ [IPair]
+    | Syntax.Fst e -> (compile e) @ [IFst]
+    | Syntax.Snd e -> (compile e) @ [ISnd]
+    | Syntax.Repl e -> [IRepl (compile e)]

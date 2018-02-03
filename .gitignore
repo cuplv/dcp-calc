@@ -131,3 +131,6 @@ sympy-plots-for-*.tex/
 _build
 *.native
 *.output
+*.make
+*.d
+*/ilc-paper.pdf

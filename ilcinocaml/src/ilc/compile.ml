@@ -59,3 +59,4 @@ let rec compile = function
     | Syntax.Fst e -> (compile e) @ [IFst]
     | Syntax.Snd e -> (compile e) @ [ISnd]
     | Syntax.Repl e -> [IRepl (compile e)]
+    | Syntax.Rand -> [IRand]

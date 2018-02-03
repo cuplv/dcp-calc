@@ -1,0 +1,1 @@
+!(rd x <- c . wr x -> d) | (wr 1 -> c . rd x <- d) | (wr 2 -> c . rd x <- d)

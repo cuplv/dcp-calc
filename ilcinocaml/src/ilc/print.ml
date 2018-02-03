@@ -46,6 +46,7 @@ let string_of_expr e =
         | Choice (e1, e2) -> "Choice(" ^ to_str e1 ^ "," ^ to_str e2 ^ ")"
         | Seq (e1, e2) -> "Seq(" ^ to_str e1 ^ "," ^ to_str e2 ^ ")"
         | Repl e -> "Repl(" ^ to_str e ^ ")"
+        | Rand -> "Rand()"
     in to_str e
 
 let string_of_list f l = 
@@ -110,6 +111,7 @@ let rec string_of_instr = function
     | IFst -> "IFst"
     | ISnd -> "ISnd"
     | IRepl is -> "IRepl()"
+    | IRand -> "IRand()"
 
 (* Convert instruction list into string *)
 let rec string_of_frame = function

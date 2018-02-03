@@ -47,6 +47,7 @@ rule token = parse
     | "force"                   { FORCE }
     | "fst"                     { FST }
     | "snd"                     { SND }
+    | "rand"                    { RAND }
     (*| "match"                   { MATCH }
     | "with"                    { WITH }*)
     (* Punctuation *)

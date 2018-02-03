@@ -45,6 +45,7 @@
 %token IF THEN ELSE
 %token THUNK FORCE
 %token FST SND
+%token RAND
 /* Punctuation */
 %token DOT
 %token LPAREN RPAREN
@@ -54,6 +55,7 @@
 
 /* Precedence and assoc */
 %right PAR PARL CHOICE
+%left REPL
 %left DOT IN
 %nonassoc ELSE
 %right COMMA
@@ -172,5 +174,7 @@ expr:
       { Fst e }
     | SND e = expr
       { Snd e }
+    | RAND
+      { Rand }
     | REPL e = expr
       { Repl e }

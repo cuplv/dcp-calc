@@ -54,6 +54,7 @@ and instr =
     | IFst
     | ISnd
     | IRepl of frame
+    | IRand
 and frame = instr list
 and environ = (name * mvalue) list
 and stack = mvalue list
@@ -245,6 +246,10 @@ let do_snd = function
     | MPair (x, y) :: s -> y :: s
     | _ -> error "no pair to snd"
 
+let rand = function
+    | s -> MInt (Random.bits ()) :: s
+    | _ -> error "no pair to snd"
+
 let split frm n = 
     let rec aux acc = function
         | [] -> (List.rev acc, [])
@@ -331,6 +336,7 @@ let exec instr frms stck envs =
     | IPair -> (frms, pair stck, envs)
     | IFst -> (frms, do_fst stck, envs)
     | ISnd -> (frms, do_snd stck, envs)
+    | IRand -> (frms, rand stck, envs)
     | _ -> error ("illegal instruction")
 
 (* Execute instructions *)

@@ -45,37 +45,40 @@ let update_state comm = function
         (match comm with
         | ((pid1, IWr (v, x)), (pid2, IRd (x1', x2')))
             when (pid=pid2 && x1=x1' && x2=x2') ->
-                (pid, (is :: frms, stck, ((x1,v) :: env) :: envs))
-        | _ -> (pid, ((IRd (x1,x2) :: is) :: frms, stck, env :: envs)))
+                [(pid, (is :: frms, stck, ((x1,v) :: env) :: envs))]
+        | _ -> [(pid, ((IRd (x1,x2) :: is) :: frms, stck, env :: envs))])
     | (pid, ((IRepl (IRd (x1,x2) :: rest_frm) :: is) :: frms, stck, env :: envs)) ->
         (match comm with
         | ((pid1, IWr (v, x)), (pid2, IRepl (IRd (x1', x2') :: rest_frm')))
             when (pid=pid2 && x1=x1' && x2=x2') ->
-                (pid, (rest_frm :: is :: frms, stck, ((x1,v) :: env) :: envs))
-        | _ -> (pid, ((IRepl (IRd (x1,x2) :: rest_frm) :: is) :: frms, stck, env :: envs)))
+                let new_pid = !pid_counter in
+                pid_counter := !pid_counter + 1;
+                [(pid, (rest_frm :: is :: frms, stck, ((x1,v) :: env) :: envs));
+                 (new_pid, ((IRepl (IRd (x1,x2) :: rest_frm) :: is) :: frms, stck, env :: envs))]
+        | _ -> [(pid, ((IRepl (IRd (x1,x2) :: rest_frm) :: is) :: frms, stck, env :: envs))])
     | (pid, ((IChoice (cpid, cid, (IRd (x1,x2))) :: is) :: frms, stck, env :: envs)) ->
         (match comm with
         | ((pid1, IWr (v, x)), (pid2, IChoice(cpid', cid', IRd (x1', x2'))))
             when (pid=pid2 && x1=x1' && x2=x2' && cpid=cpid' && cid=cid') ->
-                (pid, (is :: frms, stck, ((x1,v) :: env) :: envs))
+                [(pid, (is :: frms, stck, ((x1,v) :: env) :: envs))]
         | ((pid1, IWr (v, x)), (pid2, IChoice(cpid', cid', IRd (x1', x2')))) ->
-                (pid, ((IBlock(IRd (x1', x2')) :: is) :: frms, stck, env :: envs))
-        | _ -> (pid, ((IRd (x1,x2) :: is) :: frms, stck, env :: envs)))
+                [(pid, ((IBlock(IRd (x1', x2')) :: is) :: frms, stck, env :: envs))]
+        | _ -> [(pid, ((IRd (x1,x2) :: is) :: frms, stck, env :: envs))])
     | (pid, ((IWr (MClosure (n, f, e),x) :: is) :: frms, stck, envs)) ->
         (match comm with
         | ((pid', IWr (MClosure (n',f',e'), x')), _)
             when (pid=pid' && n=n' && x=x') ->
-                (pid, (is :: frms, stck, envs))
-        | _ -> (pid, ((IWr (MClosure (n,f,e),x) :: is) :: frms, stck, envs)))
+                [(pid, (is :: frms, stck, envs))]
+        | _ -> [(pid, ((IWr (MClosure (n,f,e),x) :: is) :: frms, stck, envs))])
     | (pid, ((IWr (v,x) :: is) :: frms, stck, envs)) ->
         (match comm with
         | ((pid', IWr (MClosure _, x')), _) ->
-            (pid, ((IWr (v,x) :: is) :: frms, stck, envs))
+                [(pid, ((IWr (v,x) :: is) :: frms, stck, envs))]
         | ((pid', IWr (v', x')), _)
             when (pid=pid' && v=v' && x=x') ->
-                (pid, (is :: frms, stck, envs))
-        | _ -> (pid, ((IWr (v,x) :: is) :: frms, stck, envs)))
-    | (p, state) -> (p, state)
+                [(pid, (is :: frms, stck, envs))]
+        | _ -> [(pid, ((IWr (v,x) :: is) :: frms, stck, envs))])
+    | (p, state) -> [(p, state)]
 
 let run_comm ps =
     let open List in
@@ -84,4 +87,5 @@ let run_comm ps =
         (filter is_writing comm_ps) (filter is_reading comm_ps)) in
     let halted = length possible_comms = 0 in 
     if halted then (halted, ps)
-    else (halted, map (update_state (hd possible_comms)) ps)
+    else (halted, fold_left (fun acc x -> (update_state (hd possible_comms) x) @ acc ) [] (rev ps))
+    (*else (halted, map (update_state (hd possible_comms)) ps)*)

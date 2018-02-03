@@ -14,6 +14,7 @@ rule token = parse
     | '='                       { EQUAL }
     (*| "=>"                      { MARROW }*)
     (*| '!'                       { REPL }*)
+    | "::"                      { CONS }
     (* Relations *)
     | '<'                       { LT }
     | '>'                       { GT }

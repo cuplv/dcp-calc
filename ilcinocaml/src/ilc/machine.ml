@@ -47,17 +47,25 @@ and instr =
     | IHole of int
     | IStartL
     | IEndL
+    | ICons
 and frame = instr list
 and environ = (name * mvalue) list
 and stack = mvalue list
 
+let string_of_list f l = 
+    let rec to_str acc = function
+        | [v] -> acc ^ f v ^ "]"
+        | v :: vs -> to_str (acc ^ f v ^ ",") vs
+    in
+    to_str "[" l
+
 (* Convert machine value into string *)
-let string_of_mvalue = function
+let rec string_of_mvalue = function
     | MInt n -> string_of_int n
     | MBool b -> string_of_bool b
-    | MList l -> "MList"
     | MClosure _ -> "<fun>"
     | MHole -> "hole"
+    | MList l -> string_of_list string_of_mvalue l
 
 (* Convert instruction into string *)
 let string_of_instr = function 
@@ -150,7 +158,7 @@ let pop_app = function
 
 let pop_list l = 
     let rec pop acc = function
-        | MList [] :: s -> (List.rev acc, s)
+        | MList [] :: s -> (acc, s)
         | mv :: s -> pop (mv :: acc) s
     in
     pop [] l
@@ -214,6 +222,10 @@ let neq = function
     | (MInt x) :: (MInt y) :: s -> MBool (x <> y) :: s
     | (MString x) :: (MString y) :: s -> MBool (x <> y) :: s
     | _ -> error "invalid operands in neq"
+
+let cons = function
+    | (MList x) :: y :: s -> print_endline (string_of_stack [MList (y::x)]); MList (y::x) :: s
+    | _ -> error "no list to cons"
 
 let split frm n = 
     let rec aux acc = function
@@ -292,8 +304,9 @@ let exec instr frms stck envs =
         | [] -> error "no processes to spawn")
     | IStartL -> (frms, (MList []) :: stck, envs)
     | IEndL ->
-        let (list, stck') = pop_list stck
-        in (frms, (MList list) :: stck', envs)
+        let (lst, stck') = pop_list stck
+        in (frms, (MList lst) :: stck', envs)
+    | ICons -> (frms, cons stck, envs)
     | _ -> error ("illegal instruction")
 
 (* Execute instructions *)

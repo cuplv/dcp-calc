@@ -58,6 +58,7 @@ type expr =
     | Seq of expr * expr
     (* Lists *)
     | ListItems of expr * expr
+    | Cons of expr * expr
 
 type process =
     | Process of expr

@@ -16,6 +16,7 @@
 %token LARROW
 %token RARROW
 %token EQUAL
+%token CONS
 %token LT
 %token GT
 %token LEQ
@@ -159,3 +160,5 @@ expr:
       { ListItems (e1, e2) }
     | LBRACK e = expr RBRACK
       { List (flatten [] e) }
+    | e1 = expr CONS e2 = expr
+      { Cons (e1, e2) }

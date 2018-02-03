@@ -50,7 +50,7 @@ let string_of_list f l =
         | [v] -> acc ^ f v ^ "]"
         | v :: vs -> to_str (acc ^ f v ^ ",") vs
     in
-    to_str "[" (List.rev l)
+    to_str "[" l
 
 (* Convert machine value into string *)
 let rec string_of_mvalue = function

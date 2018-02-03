@@ -53,3 +53,4 @@ let rec compile = function
     | Syntax.Rd (x1, x2) -> [IRd (x1, x2)]
     | Syntax.Seq (e1, e2) -> (compile e1) @ (compile e2)
     | Syntax.List es -> [IStartL] @ List.fold_left (fun acc e -> acc @ (compile e)) [] es @ [IEndL]
+    | Syntax.Cons (e1, e2) -> (compile e1) @ (compile e2) @ [ICons]

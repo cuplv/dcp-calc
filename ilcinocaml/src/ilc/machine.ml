@@ -51,6 +51,7 @@ and instr =
     | IStartL
     | IEndL
     | ICons
+    | IConcat
     | IStartT
     | IEndT
     | IFst
@@ -233,8 +234,12 @@ let neq = function
     | _ -> error "invalid operands in neq"
 
 let cons = function
-    | (MList x) :: y :: s -> print_endline (string_of_stack [MList (y::x)]); MList (y::x) :: s
+    | (MList x) :: y :: s -> MList (y::x) :: s
     | _ -> error "no list to cons"
+
+let concat = function
+    | (MString x) :: (MString y) :: s -> MString (y ^ x) :: s
+    | _ -> error "no strings to concat"
 
 let do_fst = function
     | MTuple [x;y] :: s -> x :: s
@@ -341,6 +346,7 @@ let exec instr frms stck envs =
         let (lst, stck') = pop_list stck
         in (frms, (MList lst) :: stck', envs)
     | ICons -> (frms, cons stck, envs)
+    | IConcat -> (frms, concat stck, envs)
     | IStartT -> (frms, (MList []) :: stck, envs)
     | IEndT ->
         let (lst, stck') = pop_list stck

@@ -15,7 +15,7 @@ rule token = parse
     (*| "=>"                      { MARROW }*)
     | '!'                       { REPL }
     | "::"                      { CONS }
-    (* Relations *)
+    | "++"                      { CONCAT }
     | '<'                       { LT }
     | '>'                       { GT }
     | "<="                      { LEQ }

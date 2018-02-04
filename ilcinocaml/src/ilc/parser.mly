@@ -30,6 +30,7 @@
 %token EQUAL
 %token REPL
 %token CONS
+%token CONCAT
 %token LT
 %token GT
 %token LEQ
@@ -182,6 +183,8 @@ expr:
       { CommaSep (e1, e2) }
     | e1 = expr CONS e2 = expr
       { Cons (e1, e2) }
+    | e1 = expr CONCAT e2 = expr
+      { Concat (e1, e2) }
     | FST e = expr
       { Fst e }
     | SND e = expr

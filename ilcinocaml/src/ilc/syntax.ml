@@ -62,6 +62,7 @@ type expr =
     (* Lists *)
     | CommaSep of expr * expr
     | Cons of expr * expr
+    | Concat of expr * expr
     (* Pair *)
     | Fst of expr
     | Snd of expr

@@ -67,6 +67,7 @@ type expr =
     | Fst of expr
     | Snd of expr
     | Rand
+    | Show of expr
     | Repl of expr
 
 type process =

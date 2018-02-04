@@ -1,1 +1,1 @@
-wr (1, "hello") -> c . 0 | let (pid, msg) = rd x <- c . x in "message: " ++ msg
+wr (1, "hello") -> c . 0 | let (pid, msg) = rd x <- c . x in msg ++ " from " ++ show pid

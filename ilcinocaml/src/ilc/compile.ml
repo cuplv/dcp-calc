@@ -62,4 +62,5 @@ let rec compile = function
     | Syntax.Snd e -> (compile e) @ [ISnd]
     | Syntax.Repl e -> [IRepl (compile e)]
     | Syntax.Rand -> [IRand]
+    | Syntax.Show e -> (compile e) @ [IShow]
     | _ -> raise (Compilation_error)

@@ -59,6 +59,7 @@
 %token THUNK FORCE
 %token FST SND
 %token RAND
+%token SHOW
 /* Punctuation */
 %token DOT
 %token LPAREN RPAREN
@@ -191,6 +192,8 @@ expr:
       { Snd e }
     | RAND
       { Rand }
+    | SHOW e = expr
+      { Show e }
     | REPL e = expr
       { Repl e }
     | LPAREN e = expr RPAREN

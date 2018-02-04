@@ -48,6 +48,7 @@ rule token = parse
     | "fst"                     { FST }
     | "snd"                     { SND }
     | "rand"                    { RAND }
+    | "show"                    { SHOW }
     (*| "match"                   { MATCH }
     | "with"                    { WITH }*)
     (* Punctuation *)

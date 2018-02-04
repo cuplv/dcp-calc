@@ -63,7 +63,7 @@ let string_of_expr e =
         | Snd e -> "Snd(" ^ to_str e ^ ")"
         | Repl e -> "Repl(" ^ to_str e ^ ")"
         | Rand -> "Rand()"
-
+        | Show e -> "Show(" ^ to_str e ^ ")"
     in to_str e
 
 let string_of_list f l = 
@@ -130,8 +130,9 @@ let rec string_of_instr = function
     | IEndT -> "IEndT"
     | IFst -> "IFst"
     | ISnd -> "ISnd"
-    | IRepl is -> "IRepl()"
-    | IRand -> "IRand()"
+    | IRepl _ -> "IRepl"
+    | IRand -> "IRand"
+    | IShow -> "IShow"
 
 (* Convert instruction list into string *)
 let rec string_of_frame = function

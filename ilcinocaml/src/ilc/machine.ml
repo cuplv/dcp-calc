@@ -58,6 +58,7 @@ and instr =
     | ISnd
     | IRepl of frame
     | IRand
+    | IShow
 and frame = instr list
 and environ = (name * mvalue) list
 and stack = mvalue list
@@ -252,6 +253,9 @@ let do_snd = function
 let rand = function
     | s -> MInt (Random.bits ()) :: s
 
+let show = function
+    | (MInt x) :: s -> MString (string_of_int x) :: s
+
 let split frm n = 
     let rec aux acc = function
         | [] -> (List.rev acc, [])
@@ -354,6 +358,7 @@ let exec instr frms stck envs =
     | IFst -> (frms, do_fst stck, envs)
     | ISnd -> (frms, do_snd stck, envs)
     | IRand -> (frms, rand stck, envs)
+    | IShow -> (frms, show stck, envs)
     | _ -> error ("illegal instruction")
 
 (* Execute instructions *)

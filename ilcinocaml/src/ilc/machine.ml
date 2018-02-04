@@ -310,7 +310,10 @@ let exec instr frms stck envs =
         (match envs with
         | env :: env_tail ->
             let (MTuple values, stck') = pop stck in
-            let new_mappings = List.combine xs values in
+            let new_mappings =
+                (try List.combine xs values with
+                | Invalid_argument _ ->
+                    error "invalid number of arguments in pattern match") in
             let updated_env = new_mappings @ env in
             (frms, stck', updated_env :: env_tail)
         | [] -> error "no environment for variable")

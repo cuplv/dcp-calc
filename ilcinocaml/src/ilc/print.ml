@@ -7,6 +7,13 @@ open Syntax
 let name_to_str = function
     | x -> "Name(" ^ x ^ ")"
 
+let str_of_list f es = 
+    let rec to_str acc = function
+        | [e] -> acc ^ (f e)
+        | e :: es -> to_str (acc ^ (f e) ^ ",") es
+    in
+    to_str "" es
+
 let string_of_expr e =
     let rec to_str e = 
         match e with
@@ -14,8 +21,8 @@ let string_of_expr e =
         | Int n -> "Int(" ^ string_of_int n ^ ")"
         | Bool b -> "Bool(" ^ string_of_bool b ^ ")"
         | String s -> "String(" ^ s ^ ")"
-        | List es -> "List(" ^ List.fold_left (fun acc e -> (to_str e) ^ "," ^ acc) "" (List.rev es) ^ ")"
-        | Tuple es -> "Tuple(" ^ List.fold_left (fun acc e -> (to_str e) ^ "," ^ acc) "" (List.rev es) ^ ")"
+        | List es -> "List(" ^ str_of_list to_str es ^ ")"
+        | Tuple es -> "Tuple(" ^ str_of_list to_str es ^ ")"
         | Plus (e1, e2) -> "Plus(" ^ to_str e1 ^ "," ^ to_str e2 ^ ")"
         | Minus (e1, e2) -> "Minus(" ^ to_str e1 ^ "," ^ to_str e2 ^ ")"
         | Times (e1, e2) -> "Times(" ^ to_str e1 ^ "," ^ to_str e2 ^ ")"
@@ -37,6 +44,8 @@ let string_of_expr e =
         | Thunk e1 -> "Thunk(" ^ to_str e1 ^ ")"
         | Force e1 -> "Force(" ^ to_str e1 ^ ")"
         | Let (x, e1, e2) -> "Let(" ^ name_to_str x ^ "," ^ 
+          to_str e1 ^ "," ^ to_str e2 ^ ")"
+        | LetP (p, e1, e2) -> "LetP(" ^ "(" ^ str_of_list (fun x -> x) p ^ ")," ^ 
           to_str e1 ^ "," ^ to_str e2 ^ ")"
         | App (e1, e2) -> "App(" ^ to_str e1 ^ "," ^ to_str e2 ^ ")"
         | Lam (x, e) -> "Lam(" ^ name_to_str x ^ "," ^ to_str e ^ ")"
@@ -102,6 +111,7 @@ let rec string_of_instr = function
     | IThunk e -> "IThunk"
     | IForce -> "IForce"
     | ILet x -> sprintf "ILet(%s)" x
+    | ILetP _ -> "ILetP"
     | IWr (v, x) -> sprintf "IWr(%s,%s)" (string_of_mvalue v) x
     | IRd (x1, x2) -> sprintf "IRd(%s,%s)" x1 x2 
     | IStartP n -> sprintf "IStartP(%d)" n

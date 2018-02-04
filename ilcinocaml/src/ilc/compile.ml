@@ -32,6 +32,7 @@ let rec compile = function
     | Syntax.Thunk e -> [IThunk (compile e)]
     | Syntax.Force e -> (compile e) @ [IForce]
     | Syntax.Let (x, e1, e2) -> (compile e1) @ [ILet x] @ (compile e2)
+    | Syntax.LetP (p, e1, e2) -> (compile e1) @ [ILetP p] @ (compile e2)
     | Syntax.Lam (x, e) -> [IClosure ("anon", x, compile e @ [IPopEnv])]
     | Syntax.App (e1, e2) -> (compile e1) @ (compile e2) @ [ICall]
     | Syntax.Nu (x, e) -> (compile e) (* TODO: This is a no-op for now *)

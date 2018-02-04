@@ -1,9 +1,21 @@
 %{
     open Syntax
 
+    exception Parsing_error
+
     let rec flatten acc = function
         | CommaSep (e1, e2) -> flatten (e1 :: acc) e2
         | e -> List.rev (e :: acc)
+
+    let untuplify = function
+        | Tuple names ->
+            List.fold_left
+            (fun acc x ->
+                match x with
+                | Name x -> x :: acc
+                | _ -> raise Parsing_error)
+            [] (List.rev names)
+        | _ -> raise Parsing_error
 %}
 
 /* Lexemes */
@@ -139,6 +151,8 @@ expr:
     /* Let */
     | LET x = NAME EQUAL e1 = expr IN e2 = expr
       { Let (x, e1, e2) }
+    | LET p = expr EQUAL e1 = expr IN e2 = expr
+      { LetP (untuplify p, e1, e2) }
     /* App */
     | e1 = expr e2 = expr
       { App (e1, e2) }

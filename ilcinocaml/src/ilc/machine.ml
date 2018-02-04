@@ -39,6 +39,7 @@ and instr =
     | IThunk of frame
     | IForce
     | ILet of name
+    | ILetP of name list
     | IStartP of int
     | IEndP of int
     | IChoice of int * int * instr
@@ -303,6 +304,14 @@ let exec instr frms stck envs =
         | env :: env_tail ->
             let (x', stck') = pop stck in
             let updated_env = (x, x') :: env in
+            (frms, stck', updated_env :: env_tail)
+        | [] -> error "no environment for variable")
+    | ILetP xs ->
+        (match envs with
+        | env :: env_tail ->
+            let (MTuple values, stck') = pop stck in
+            let new_mappings = List.combine xs values in
+            let updated_env = new_mappings @ env in
             (frms, stck', updated_env :: env_tail)
         | [] -> error "no environment for variable")
     | IBranch (f1, f2) ->

@@ -1,0 +1,1 @@
+let f = thunk (rd x <- c . wr x -> d . force f) in force f | (wr 1 -> c . rd x <- d . x) | (wr 2 -> c . rd x <- d . x)

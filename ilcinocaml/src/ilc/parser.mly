@@ -170,7 +170,9 @@ expr:
     | WR e = expr RARROW x = NAME
       { Wr (e, x) }
     | RD x1 = NAME LARROW x2 = NAME
-      { Rd (x1, x2) }
+      { RdBind (x1, x2) }
+    | RD x1 = NAME
+      { Rd x1 }
     | NU x = NAME DOT e = expr
       { Nu (x, e) }
     | e1 = expr PAR e2 = expr

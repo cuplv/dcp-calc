@@ -60,7 +60,8 @@ let rec compile = function
         make_choice pid 0 (compile e1) @ [IEndP pid; IStartP (pid + 1)] @
         make_choice pid 1 (compile e2) @ [IEndP (pid + 1); IHole (pid+1)]
     | Syntax.Wr (e, x) -> (compile e) @ [IWr (MHole, x)]
-    | Syntax.Rd (x1, x2) -> [IRd (x1, x2)]
+    | Syntax.Rd x -> [IRd x]
+    | Syntax.RdBind (x1, x2) -> [IRdBind (x1, x2)]
     | Syntax.Seq (e1, e2) -> (compile e1) @ (compile e2)
     | Syntax.List es -> [IStartL] @ List.fold_left (fun acc e -> acc @ (compile e)) [] es @ [IEndL]
     | Syntax.Cons (e1, e2) -> (compile e1) @ (compile e2) @ [ICons]

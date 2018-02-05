@@ -52,7 +52,8 @@ let string_of_expr e =
         | App (e1, e2) -> "App(" ^ to_str e1 ^ "," ^ to_str e2 ^ ")"
         | Lam (x, e) -> "Lam(" ^ name_to_str x ^ "," ^ to_str e ^ ")"
         | Wr (e, x) -> "Wr(" ^ to_str e ^ "," ^ name_to_str x ^ ")"
-        | Rd (x1, x2) -> "Rd(" ^ name_to_str x1 ^ "," ^ name_to_str x2 ^ ")"
+        | RdBind (x1, x2) -> "RdBind(" ^ name_to_str x1 ^ "," ^ name_to_str x2 ^ ")"
+        | Rd x -> "Rd(" ^ name_to_str x ^ ")"
         | Nu (x, e) -> "Nu(" ^ name_to_str x ^ "," ^ to_str e ^ ")"
         | ParComp (e1, e2) -> "ParComp(" ^ to_str e1 ^ "," ^ to_str e2 ^ ")"
         | ParLeft (e1, e2) -> "ParLeft(" ^ to_str e1 ^ "," ^ to_str e2 ^ ")"
@@ -118,7 +119,8 @@ let rec string_of_instr = function
     (*| ILetRec x -> sprintf "ILetRec(%s)" x*)
     | ILetP _ -> "ILetP"
     | IWr (v, x) -> sprintf "IWr(%s,%s)" (string_of_mvalue v) x
-    | IRd (x1, x2) -> sprintf "IRd(%s,%s)" x1 x2 
+    | IRdBind (x1, x2) -> sprintf "IRdBind(%s,%s)" x1 x2 
+    | IRd x -> sprintf "IRd(%s)" x
     | IStartP n -> sprintf "IStartP(%d)" n
     | IEndP n -> sprintf "IEndP(%d)" n
     | IChoice (p, c, i) -> sprintf "IChoice(%d,%d,%s)" p c (string_of_instr i)

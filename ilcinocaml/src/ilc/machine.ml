@@ -45,7 +45,8 @@ and instr =
     | IChoice of int * int * instr
     | IBlock of instr
     | IWr of mvalue * name
-    | IRd of name * name
+    | IRdBind of name * name
+    | IRd of name
     | ISpawn
     | IHole of int
     | IStartL
@@ -105,7 +106,7 @@ let string_of_instr = function
     | IPopEnv -> "IPopEnv"
     | ILet x -> sprintf "ILet(%s)" x
     | IWr (v, x) -> sprintf "IWr(%s,%s)" (string_of_mvalue v) x
-    | IRd (x1, x2) -> sprintf "IRd(%s,%s)" x1 x2 
+    | IRdBind (x1, x2) -> sprintf "IRdBind(%s,%s)" x1 x2 
     | IStartP n -> sprintf "IStartP(%d)" n
     | IEndP n -> sprintf "IEndP(%d)" n
     | ISpawn -> "ISpawn"
@@ -362,14 +363,19 @@ let exec instr frms stck envs =
     | _ -> error ("illegal instruction")
 
 (* Execute instructions *)
+(* TODO: Generalize read instructions *)
 let run p = 
     let rec loop = function
         | (pid, ([], [], e)) -> (pid, ([], [], e))
         | (pid, ([], [v], e)) -> (pid, ([], [v], e))
-        | (pid, ((IRd (x1, x2) :: is) :: frms, stck, envs)) ->
-            (pid, ((IRd (x1, x2) :: is) :: frms, stck, envs))
-        | (pid, ((IChoice(pid', cid,  (IRd (x1, x2))) :: is) :: frms, stck, envs)) ->
-            (pid, ((IChoice(pid', cid, (IRd (x1, x2))) :: is) :: frms, stck, envs))
+        | (pid, ((IRdBind (x1, x2) :: is) :: frms, stck, envs)) ->
+            (pid, ((IRdBind (x1, x2) :: is) :: frms, stck, envs))
+        | (pid, ((IChoice(pid', cid,  (IRdBind (x1, x2))) :: is) :: frms, stck, envs)) ->
+            (pid, ((IChoice(pid', cid, (IRdBind (x1, x2))) :: is) :: frms, stck, envs))
+        | (pid, ((IRd x :: is) :: frms, stck, envs)) ->
+            (pid, ((IRd x :: is) :: frms, stck, envs))
+        | (pid, ((IChoice(pid', cid,  (IRd x)) :: is) :: frms, stck, envs)) ->
+            (pid, ((IChoice(pid', cid, (IRd x)) :: is) :: frms, stck, envs))
         | (pid, ((IWr (MHole, x) :: is) :: frms, v :: stck, envs)) ->
             (pid, ((IWr (v, x) :: is) :: frms, stck, envs))
         | (pid, ((IWr (v, x) :: is) :: frms, stck, envs)) ->

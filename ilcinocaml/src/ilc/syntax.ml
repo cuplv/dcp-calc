@@ -49,7 +49,8 @@ type expr =
     (* Write to channel *)
     | Wr of expr * name
     (* Read from channel *)
-    | Rd of name * name
+    | Rd of name
+    | RdBind of name * name
     (* Restriction *)
     | Nu of name * expr
     (* Parallel composition *)

@@ -40,6 +40,7 @@ type expr =
     | Force of expr
     (* Let *)
     | Let of name * expr * expr
+    | LetRec of name * expr * expr
     | LetP of name list * expr * expr
     (* App *)
     | App of expr * expr

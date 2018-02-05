@@ -50,6 +50,7 @@
 %token CHOICE
 /* Reserved */
 %token LET
+%token LETREC
 %token LAM
 %token NU
 %token WR
@@ -71,6 +72,7 @@
 %right PAR PARL CHOICE
 %left REPL
 %left DOT IN
+%left FORCE
 %nonassoc ELSE
 %right COMMA
 %nonassoc OR
@@ -155,6 +157,8 @@ expr:
       { Let (x, e1, e2) }
     | LET p = expr EQUAL e1 = expr IN e2 = expr
       { LetP (untuplify p, e1, e2) }
+    | LETREC x = NAME EQUAL e1 = expr IN e2 = expr
+      { LetRec (x, e1, e2) }
     /* App */
     | e1 = expr e2 = expr
       { App (e1, e2) }

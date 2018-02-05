@@ -45,6 +45,8 @@ let string_of_expr e =
         | Force e1 -> "Force(" ^ to_str e1 ^ ")"
         | Let (x, e1, e2) -> "Let(" ^ name_to_str x ^ "," ^ 
           to_str e1 ^ "," ^ to_str e2 ^ ")"
+        | LetRec (x, e1, e2) -> "LetRec(" ^ name_to_str x ^ "," ^ 
+          to_str e1 ^ "," ^ to_str e2 ^ ")"
         | LetP (p, e1, e2) -> "LetP(" ^ "(" ^ str_of_list (fun x -> x) p ^ ")," ^ 
           to_str e1 ^ "," ^ to_str e2 ^ ")"
         | App (e1, e2) -> "App(" ^ to_str e1 ^ "," ^ to_str e2 ^ ")"
@@ -110,9 +112,10 @@ let rec string_of_instr = function
     | ICond _ -> "ICond"
     | ICall -> "ICall" 
     | IPopEnv -> "IPopEnv"
-    | IThunk e -> "IThunk"
+    | IThunk e -> "IThunk" ^ List.fold_left (fun acc x -> acc ^ "," ^ string_of_instr x) "" e
     | IForce -> "IForce"
     | ILet x -> sprintf "ILet(%s)" x
+    (*| ILetRec x -> sprintf "ILetRec(%s)" x*)
     | ILetP _ -> "ILetP"
     | IWr (v, x) -> sprintf "IWr(%s,%s)" (string_of_mvalue v) x
     | IRd (x1, x2) -> sprintf "IRd(%s,%s)" x1 x2 

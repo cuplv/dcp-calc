@@ -312,8 +312,8 @@ let exec instr frms stck envs =
         (match envs with
         | env :: env_tail ->
             let (x', stck') = pop stck in
-            let updated_env = (x, x') :: env in
-            (frms, stck', updated_env :: env_tail)
+            let new_mapping = (x, x') :: env in
+            (frms, stck', new_mapping :: env_tail)
         | [] -> error "no environment for variable")
     | ILetP xs ->
         (match envs with

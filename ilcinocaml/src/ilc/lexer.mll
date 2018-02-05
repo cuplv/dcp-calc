@@ -35,6 +35,7 @@ rule token = parse
     | '&'                       { CHOICE }
     (* Reserved words *)
     | "let"                     { LET }
+    | "letrec"                  { LETREC }
     | "lam"                     { LAM }
     | "nu"                      { NU }
     | "wr"                      { WR }

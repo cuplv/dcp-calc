@@ -1,0 +1,1 @@
+letrec f = (rd x <- c . wr x -> d . f) in f | (wr 1 -> c . rd x <- d . x) | (wr 2 -> c . rd x <- d . x)

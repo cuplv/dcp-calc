@@ -8,6 +8,12 @@ let make_choice pid cid = function
     | instr :: instrs -> IChoice(pid, cid, instr) :: instrs
     | _ -> raise (Compilation_error)
 
+let var_to_force x = function
+    | IVar x' when x=x' -> [IVar x; IForce]
+    | instr -> [instr]
+
+let force_thunks x = List.fold_left (fun acc instr -> acc @ (var_to_force x instr)) []
+
 let rec compile = function
     | Syntax.Name x ->  [IVar x]
     | Syntax.Int n -> [IInt n]
@@ -32,6 +38,8 @@ let rec compile = function
     | Syntax.Thunk e -> [IThunk (compile e)]
     | Syntax.Force e -> (compile e) @ [IForce]
     | Syntax.Let (x, e1, e2) -> (compile e1) @ [ILet x] @ (compile e2)
+    | Syntax.LetRec (x, e1, e2) ->
+        [IThunk (force_thunks x (compile e1))] @ [ILet x] @ (force_thunks x (compile e2))
     | Syntax.LetP (p, e1, e2) -> (compile e1) @ [ILetP p] @ (compile e2)
     | Syntax.Lam (x, e) -> [IClosure ("anon", x, compile e @ [IPopEnv])]
     | Syntax.App (e1, e2) -> (compile e1) @ (compile e2) @ [ICall]

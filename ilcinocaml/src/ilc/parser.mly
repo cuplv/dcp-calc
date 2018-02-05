@@ -72,7 +72,8 @@
 %right PAR PARL CHOICE
 %left REPL
 %left DOT IN
-%left FORCE
+%left CONCAT
+%left FORCE SHOW
 %nonassoc ELSE
 %right COMMA
 %nonassoc OR

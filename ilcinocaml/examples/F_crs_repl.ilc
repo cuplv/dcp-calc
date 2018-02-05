@@ -1,0 +1,9 @@
+let (pid, sid) = rd x <- p2f . x in
+  let d = rand in
+    wr (pid, d) -> f2p .
+    !(let (pid, sid) = rd x <- p2f . x in
+      wr (pid, d) -> f2p)
+| wr (1, 0) -> p2f . let (pid, d) = rd x <- f2p . x in
+    show pid ++ " received " ++ show d
+| wr (1, 1) -> p2f . let (pid, d) = rd x <- f2p . x in
+    show pid ++ " received " ++ show d

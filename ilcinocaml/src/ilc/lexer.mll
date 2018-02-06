@@ -2,8 +2,10 @@
     open Parser
 
     exception SyntaxError of string
+    
+    (* Support functions *)
 
-    let stringBuffer = ref (String.create 2048)
+    let stringBuffer = ref (Bytes.create 2048)
     let stringEnd = ref 0
 
     let resetStr () = stringEnd := 0
@@ -13,15 +15,15 @@
     in
         if x = String.length buffer then
             begin
-                let newBuffer = String.create (x*2) in
-                String.blit buffer 0 newBuffer 0 x;
-                String.set newBuffer x ch;
+                let newBuffer = Bytes.create (x*2) in
+                Bytes.blit_string buffer 0 newBuffer 0 x;
+                Bytes.set newBuffer x ch;
                 stringBuffer := newBuffer;
                 stringEnd := x+1
             end
         else
             begin
-                String.set buffer x ch;
+                Bytes.set buffer x ch;
                 stringEnd := x+1
             end
 
@@ -29,68 +31,79 @@
 }
 
 rule token = parse
-    | "(*"                      { comment 1 lexbuf }
     (* Whitespace *)
     | [' ' '\t' '\r' '\n']      { token lexbuf }
-    (* Operators *)
-    | "->"                      { RARROW }
-    | "<-"                      { LARROW }
-    | '='                       { EQUAL }
-    (*| "=>"                      { MARROW }*)
-    | '!'                       { REPL }
-    | "::"                      { CONS }
-    | "++"                      { CONCAT }
-    | '<'                       { LT }
-    | '>'                       { GT }
-    | "<="                      { LEQ }
-    | ">="                      { GEQ }
-    | "||"                      { OR }
-    | "&&"                      { AND }
-    | "not"                     { NOT }
-    | "=="                      { EQ }
-    | "<>"                      { NEQ }
-    | '+'                       { PLUS }
-    | '-'                       { MINUS }
-    | '*'                       { TIMES }
-    | '/'                       { DIVIDE }
-    | '%'                       { MOD }
-    | '|'                       { PAR }
-    | ".|"                      { PARL }
-    | '&'                       { CHOICE }
+
+    (* Comments *)
+    | "(*"                      { comment 1 lexbuf }
+
     (* Reserved words *)
     | "let"                     { LET }
+    | "in"                      { IN }
     | "letrec"                  { LETREC }
     | "lam"                     { LAM }
     | "nu"                      { NU }
     | "wr"                      { WR }
     | "rd"                      { RD }
-    | "in"                      { IN }
     | "if"                      { IF }
     | "then"                    { THEN }
     | "else"                    { ELSE }
+    | "true"                    { TRUE }
+    | "false"                   { FALSE }
     | "thunk"                   { THUNK }
     | "force"                   { FORCE }
+
+    (* Operators *)
+    | "="                       { EQUAL }
+    | "->"                      { RARROW }
+    | "<-"                      { LARROW }
+    | "!"                       { REPL }
+    | "|"                       { PAR }
+    | ".|"                      { PARL }
+    | "&"                       { CHOICE }
+
+    (* Arithmetic operators *)
+    | "+"                       { PLUS }
+    | "-"                       { MINUS }
+    | "*"                       { TIMES }
+    | "/"                       { DIVIDE }
+    | "%"                       { MOD }
+    
+    (* Logical operators *)
+    | "||"                      { OR }
+    | "&&"                      { AND }
+    | "not"                     { NOT }
+
+    (* Relations *)
+    | "<"                       { LT }
+    | ">"                       { GT }
+    | "<="                      { LEQ }
+    | ">="                      { GEQ }
+    | "=="                      { EQ }
+    | "<>"                      { NEQ }
+        
+    (* Built-in functions *)
     | "fst"                     { FST }
     | "snd"                     { SND }
     | "rand"                    { RAND }
     | "show"                    { SHOW }
-    (*| "match"                   { MATCH }
-    | "with"                    { WITH }*)
+    | "::"                      { CONS }
+    | "++"                      { CONCAT }
+
     (* Punctuation *)
-    | '.'                       { DOT }
-    | '('                       { LPAREN }
-    | ')'                       { RPAREN }
-    | '['                       { LBRACK }
-    | ']'                       { RBRACK }
-    | ','                       { COMMA }
-    (* Identifiers and literals *)
-    | "true"                    { TRUE }
-    | "false"                   { FALSE }
-    | "\""                       { resetStr (); string lexbuf }
-    (*| '"'                       { read_string (Buffer.create 17) lexbuf }*)
-    | ['0'-'9']+                { INT (int_of_string (Lexing.lexeme lexbuf)) }
+    | "."                       { DOT }
+    | "("                       { LPAREN }
+    | ")"                       { RPAREN }
+    | "["                       { LBRACK }
+    | "]"                       { RBRACK }
+    | ","                       { COMMA }
+
+    (* Identifier and constants *)
     | ['a'-'z' 'A'-'Z']
-      ['a'-'z' 'A'-'Z' '0'-'9' '_' '\'']* { NAME (Lexing.lexeme lexbuf) }
+      ['a'-'z' 'A'-'Z' '0'-'9' '_' '\'']*
+                                { NAME (Lexing.lexeme lexbuf) }
+    | ['0'-'9']+                { INT (int_of_string (Lexing.lexeme lexbuf)) }
+    | "\""                      { resetStr (); string lexbuf }
     | eof                       { EOF }
 and comment depth = parse
     | "(*"                      { comment (succ depth) lexbuf }
@@ -99,17 +112,17 @@ and comment depth = parse
                                   else comment (pred depth) lexbuf }
     | _                         { comment depth lexbuf }
 and string = parse
-    | '"' { STRING (getStr ()) }
-    | '\\' { addStr(escaped lexbuf); string lexbuf }
-    | '\n' { addStr '\n'; string lexbuf }
-    | eof { raise (SyntaxError "String not terminated") }
-    | _ { addStr (Lexing.lexeme_char lexbuf 0); string lexbuf }
+    | '"'                       { STRING (getStr ()) }
+    | '\\'                      { addStr(escaped lexbuf); string lexbuf }
+    | '\n'                      { addStr '\n'; string lexbuf }
+    | eof                       { raise (SyntaxError "String not terminated") }
+    | _                         { addStr (Lexing.lexeme_char lexbuf 0); string lexbuf }
 and escaped = parse
-    | 'n' { '\n' }
-    | 't' { '\t' }
-    | '\\' { '\\' }
-    | '"' { '\034' }
-    | '\'' { '\'' }
+    | 'n'                       { '\n' }
+    | 't'                       { '\t' }
+    | '\\'                      { '\\' }
+    | '"'                       { '\034' }
+    | '\''                      { '\'' }
     | ['0'-'9'] ['0'-'9'] ['0'-'9']
       {
         let x = int_of_string (Lexing.lexeme lexbuf) in
@@ -119,19 +132,4 @@ and escaped = parse
             Char.chr x
       }
     | [^ '"' '\\' 't' 'n' '\'']
-        { raise (SyntaxError "Illegal character constant") }
-(*and read_string buf = parse
-    | '"'       { STRING (Buffer.contents buf) }
-    | '\\' '/'  { Buffer.add_char buf '/'; read_string buf lexbuf }
-    | '\\' '\\' { Buffer.add_char buf '\\'; read_string buf lexbuf }
-    | '\\' 'b'  { Buffer.add_char buf '\b'; read_string buf lexbuf }
-    | '\\' 'f'  { Buffer.add_char buf '\012'; read_string buf lexbuf }
-    | '\\' 'n'  { Buffer.add_char buf '\n'; read_string buf lexbuf }
-    | '\\' 'r'  { Buffer.add_char buf '\r'; read_string buf lexbuf }
-    | '\\' 't'  { Buffer.add_char buf '\t'; read_string buf lexbuf }
-    | [^ '"' '\\']+
-    { Buffer.add_string buf (Lexing.lexeme lexbuf);
-      read_string buf lexbuf
-    }
-    | _ { raise (SyntaxError ("Illegal string character: " ^ Lexing.lexeme lexbuf)) }
-    | eof { raise (SyntaxError ("String is not terminated")) }*)
+      { raise (SyntaxError "Illegal character constant") }

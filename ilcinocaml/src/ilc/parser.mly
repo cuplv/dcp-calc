@@ -18,54 +18,70 @@
         | _ -> raise Parsing_error
 %}
 
-/* Lexemes */
-/* Identifiers and literals */
-%token <int> INT
+/* Identifier and constants */
 %token <Syntax.name> NAME
+%token <int> INT
 %token <string> STRING 
-%token TRUE FALSE
 
-/* Operators */
-%token LARROW
-%token RARROW
-%token EQUAL
-%token REPL
-%token CONS
-%token CONCAT
-%token LT
-%token GT
-%token LEQ
-%token GEQ
-%token OR
-%token AND
-%token NOT
-%token EQ
-%token NEQ
-%token PLUS
-%token MINUS
-%token TIMES
-%token DIVIDE
-%token MOD
-%token PAR
-%token PARL
-%token CHOICE
-/* Reserved */
+/* Reserved words */
 %token LET
+%token IN
 %token LETREC
 %token LAM
 %token NU
 %token WR
 %token RD
-%token IN
-%token IF THEN ELSE
-%token THUNK FORCE
-%token FST SND
+%token IF
+%token THEN
+%token ELSE
+%token TRUE
+%token FALSE
+%token THUNK
+%token FORCE
+
+/* Operators */
+%token EQUAL
+%token LARROW
+%token RARROW
+%token REPL
+%token PAR
+%token PARL
+%token CHOICE
+
+/* Arithmetic operators */
+%token PLUS
+%token MINUS
+%token TIMES
+%token DIVIDE
+%token MOD
+
+/* Logical operators */
+%token OR
+%token AND
+%token NOT
+
+/* Relations */
+%token LT
+%token GT
+%token LEQ
+%token GEQ
+%token EQ
+%token NEQ
+
+/* Built-in functions */
+%token FST
+%token SND
 %token RAND
 %token SHOW
+%token CONS
+%token CONCAT
+
 /* Punctuation */
 %token DOT
-%token LPAREN RPAREN
-%token LBRACK RBRACK
+%token LPAREN
+%token RPAREN
+%token LBRACK
+%token RBRACK
 %token COMMA
 %token EOF
 

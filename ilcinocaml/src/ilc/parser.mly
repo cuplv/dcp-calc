@@ -3,17 +3,6 @@
 
     exception Parsing_error
 
-    (* Support functions *)
-    
-    let untuplify = function
-        | Tuple names ->
-            List.fold_left
-            (fun acc x ->
-                match x with
-                | Name x -> x :: acc
-                | _ -> raise Parsing_error)
-            [] (List.rev names)
-        | _ -> raise Parsing_error
 %}
 
 /* Identifier and constants */
@@ -84,24 +73,23 @@
 %token EOF
 
 /* Precedence and assoc */
-%nonassoc LARROW RARROW
 %right PAR PARL CHOICE
 %left REPL
-%left DOT IN
-%left FORCE
-%nonassoc SHOW
-%left FST SND
+%nonassoc IN
+%right DOT
 %left CONS CONCAT
+%nonassoc FORCE
+%nonassoc THUNK
+%nonassoc FST SND
+%nonassoc RAND
+%nonassoc SHOW
 %nonassoc ELSE
-%left COMMA
 %nonassoc OR
 %nonassoc AND
 %nonassoc NOT
 %nonassoc LT GT LEQ GEQ EQ NEQ
-%nonassoc MOD
 %left PLUS MINUS
-%left TIMES DIVIDE
-%nonassoc NU
+%left TIMES DIVIDE MOD
 
 %start file
 %type <Syntax.process list> file
@@ -137,8 +125,11 @@ expr:
       { e }
     | LET x = NAME EQUAL e1 = expr IN e2 = expr
       { Let (x, e1, e2) }
-    | LET p = expr EQUAL e1 = expr IN e2 = expr
-      { LetP (untuplify p, e1, e2) }
+    | LET LPAREN p = comma_list RPAREN EQUAL e1 = expr IN e2 = expr
+      { LetP (List.map (function
+          | Name x -> x
+          | _ -> raise Parsing_error)
+      p, e1, e2) }
     | LETREC x = NAME EQUAL e1 = expr IN e2 = expr
       { LetRec (x, e1, e2) }
     | IF b = expr THEN e1 = expr ELSE e2 = expr
@@ -147,12 +138,12 @@ expr:
       { IfT (b, e1) }
     | LAM x = NAME DOT e = expr
       { Lam (x, e) }
+    | LBRACK e = comma_list RBRACK
+      { List e }
+    | LPAREN e = comma_list RPAREN
+      { Tuple e }
     | e1 = expr DOT e2 = expr
       { Seq (e1, e2) }
-    | LBRACK e = comma_sep_list RBRACK
-      { List e }
-    | LPAREN e = comma_sep_list RPAREN
-      { Tuple e }
     | LPAREN e = expr RPAREN
       { e }
     
@@ -167,6 +158,8 @@ atom_expr:
       { Bool true }
     | FALSE
       { Bool false }
+    | RAND
+      { Rand }
 
 arith_expr:
     | e1 = expr PLUS e2 = expr
@@ -232,8 +225,6 @@ app_expr:
       { Fst e }
     | SND e = expr
       { Snd e }
-    | RAND
-      { Rand }
     | SHOW e = expr
       { Show e }
     | e1 = expr CONS e2 = expr
@@ -241,8 +232,9 @@ app_expr:
     | e1 = expr CONCAT e2 = expr
       { Concat (e1, e2) }
     
-comma_sep_list:
-    | e1 = expr COMMA e2 = comma_sep_list
-      { e1 :: e2 }
+comma_list:
     | e = expr
       { [e] }
+    | e1 = expr COMMA e2 = comma_list
+      { e1 :: e2 }
+    

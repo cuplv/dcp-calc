@@ -68,6 +68,7 @@ type expr =
     (* Pair *)
     | Fst of expr
     | Snd of expr
+    (* Built-in functions *)
     | Rand
     | Show of expr
     | Repl of expr

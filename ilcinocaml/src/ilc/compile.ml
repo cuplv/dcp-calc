@@ -4,15 +4,16 @@ exception Compilation_error
 
 let pid_counter = ref 0
 
-let make_choice pid cid = function
+let convert_to_choice pid cid = function
     | instr :: instrs -> IChoice(pid, cid, instr) :: instrs
     | _ -> raise (Compilation_error)
 
-let var_to_force x = function
+let add_force x = function
     | IVar x' when x=x' -> [IVar x; IForce]
     | instr -> [instr]
 
-let force_thunks x = List.fold_left (fun acc instr -> acc @ (var_to_force x instr)) []
+let force_thunks x = List.fold_left (fun acc instr ->
+    acc @ (add_force x instr)) []
 
 let rec compile = function
     | Syntax.Name x ->  [IVar x]
@@ -33,13 +34,15 @@ let rec compile = function
     | Syntax.Not e -> (compile e)  @ [INot]
     | Syntax.Eq (e1, e2) -> (compile e1) @ (compile e2) @ [IEq]
     | Syntax.Neq (e1, e2) -> (compile e1) @ (compile e2) @ [INeq]
-    | Syntax.IfTE (e1, e2, e3) -> (compile e1) @ [IBranch (compile e2, compile e3)]
+    | Syntax.IfTE (e1, e2, e3) ->
+        (compile e1) @ [IBranch (compile e2, compile e3)]
     | Syntax.IfT (e1, e2) -> (compile e1) @ [ICond (compile e2)]
     | Syntax.Thunk e -> [IThunk (compile e)]
     | Syntax.Force e -> (compile e) @ [IForce]
     | Syntax.Let (x, e1, e2) -> (compile e1) @ [ILet x] @ (compile e2)
     | Syntax.LetRec (x, e1, e2) ->
-        [IThunk (force_thunks x (compile e1))] @ [ILet x] @ (force_thunks x (compile e2))
+        [IThunk (force_thunks x (compile e1))] @
+        [ILet x] @ (force_thunks x (compile e2))
     | Syntax.LetP (p, e1, e2) -> (compile e1) @ [ILetP p] @ (compile e2)
     | Syntax.Lam (x, e) -> [IClosure ("anon", x, compile e @ [IPopEnv])]
     | Syntax.App (e1, e2) -> (compile e1) @ (compile e2) @ [ICall]
@@ -47,26 +50,30 @@ let rec compile = function
     | Syntax.ParComp (e1, e2) ->
         let pid = !pid_counter in
         pid_counter := pid + 2; [IStartP pid] @
-        (compile e1) @ [IEndP pid; IStartP (pid + 1)] @
-        (compile e2) @ [IEndP (pid + 1)]
+        (compile e1) @ [IEndP pid; IStartP (succ pid)] @
+        (compile e2) @ [IEndP (succ pid)]
     | Syntax.ParLeft (e1, e2) ->
         let pid = !pid_counter in
         pid_counter := pid + 2; [IStartP pid] @
-        (compile e1) @ [IEndP pid; IStartP (pid + 1)] @
-        (compile e2) @ [IEndP (pid + 1); IHole (pid+1)]
+        (compile e1) @ [IEndP pid; IStartP (succ pid)] @
+        (compile e2) @ [IEndP (succ pid); IHole (succ pid)]
     | Syntax.Choice (e1, e2) -> (* TODO: Don't think this works for nested choices *)
         let pid = !pid_counter in
         pid_counter := pid + 2; [IStartP pid] @
-        make_choice pid 0 (compile e1) @ [IEndP pid; IStartP (pid + 1)] @
-        make_choice pid 1 (compile e2) @ [IEndP (pid + 1); IHole (pid+1)]
+        convert_to_choice pid 0 (compile e1) @ [IEndP pid; IStartP (succ pid)] @
+        convert_to_choice pid 1 (compile e2) @ [IEndP (succ pid); IHole (succ pid)]
     | Syntax.Wr (e, x) -> (compile e) @ [IWr (MHole, x)]
     | Syntax.Rd x -> [IRd x]
     | Syntax.RdBind (x1, x2) -> [IRdBind (x1, x2)]
     | Syntax.Seq (e1, e2) -> (compile e1) @ (compile e2)
-    | Syntax.List es -> [IStartL] @ List.fold_left (fun acc e -> acc @ (compile e)) [] es @ [IEndL]
+    | Syntax.List es ->
+        [IStartL] @ List.fold_left (fun acc e -> acc @ (compile e))
+        [] es @ [IEndL]
     | Syntax.Cons (e1, e2) -> (compile e1) @ (compile e2) @ [ICons]
     | Syntax.Concat (e1, e2) -> (compile e1) @ (compile e2) @ [IConcat]
-    | Syntax.Tuple es -> [IStartT] @ List.fold_left (fun acc e -> acc @ (compile e)) [] es @ [IEndT]
+    | Syntax.Tuple es ->
+        [IStartT] @ List.fold_left (fun acc e -> acc @ (compile e))
+        [] es @ [IEndT]
     | Syntax.Fst e -> (compile e) @ [IFst]
     | Syntax.Snd e -> (compile e) @ [ISnd]
     | Syntax.Repl e -> [IRepl (compile e)]

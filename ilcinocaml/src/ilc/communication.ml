@@ -44,7 +44,6 @@ let can_comm = function
     | ((_, IWr (_, c)), (_, IRd c')) when c=c' -> true
     | ((_, IWr (_, c)), (_, (IChoice (_, _, IRd c')))) when c=c' -> true
     | ((_, IWr (_, c)), (_, (IRepl (IRd c' :: _)))) when c=c' -> true
-
     | _ -> false
 
 (* TODO: Generalize reads! *)
@@ -62,7 +61,7 @@ let update_state comm = function
         | ((pid1, IWr (v, x)), (pid2, IRepl (IRdBind (x1', x2') :: rest_frm')))
             when (pid=pid2 && x1=x1' && x2=x2') ->
                 let new_pid = !pid_counter in
-                pid_counter := !pid_counter + 1;
+                incr pid_counter;
                 [(pid, (rest_frm :: is :: frms, stck, ((x1,v) :: env) :: envs));
                  (new_pid, ((IRepl (IRdBind (x1,x2) :: rest_frm) :: is) :: frms, stck, env :: envs))]
         | _ -> [(pid, ((IRepl (IRdBind (x1,x2) :: rest_frm) :: is) :: frms, stck, env :: envs))])
@@ -86,7 +85,7 @@ let update_state comm = function
         | ((pid1, IWr (v, x)), (pid2, IRepl (IRd x1' :: rest_frm')))
             when (pid=pid2 && x1=x1') ->
                 let new_pid = !pid_counter in
-                pid_counter := !pid_counter + 1;
+                incr pid_counter;
                 [(pid, (rest_frm :: is :: frms, v :: stck, envs));
                  (new_pid, ((IRepl (IRd x1' :: rest_frm) :: is) :: frms, stck, envs))]
         | _ -> [(pid, ((IRepl (IRd x1 :: rest_frm) :: is) :: frms, stck, envs))])
@@ -122,5 +121,5 @@ let run_comm ps =
         (filter is_writing comm_ps) (filter is_reading comm_ps)) in
     let halted = length possible_comms = 0 in 
     if halted then (halted, ps)
-    else (halted, fold_left (fun acc x -> (update_state (hd possible_comms) x) @ acc ) [] (rev ps))
-    (*else (halted, map (update_state (hd possible_comms)) ps)*)
+    else (halted, fold_left (fun acc x -> (update_state (hd possible_comms) x) @
+        acc ) [] (rev ps))

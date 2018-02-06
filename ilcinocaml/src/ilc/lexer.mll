@@ -64,7 +64,8 @@ rule token = parse
     | "false"                   { FALSE }
     | '"'                       { read_string (Buffer.create 17) lexbuf }
     | ['0'-'9']+                { INT (int_of_string (Lexing.lexeme lexbuf)) }
-    | ['a'-'z' 'A'-'Z']+ ['a'-'z' 'A'-'Z' '0'-'9' '_']* { NAME (Lexing.lexeme lexbuf) }
+    | ['a'-'z' 'A'-'Z']
+      ['a'-'z' 'A'-'Z' '0'-'9' '_' '\'']* { NAME (Lexing.lexeme lexbuf) }
     | eof                       { EOF }
 and comment depth = parse
     | "(*"                      { comment (depth + 1) lexbuf }

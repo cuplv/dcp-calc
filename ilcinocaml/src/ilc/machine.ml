@@ -267,7 +267,7 @@ let split frm n =
 
 let get_par_ps frm n =
     let (fst_frm, rest_frm) = split frm n in
-    let (snd_frm, rest_frm) = split (List.tl rest_frm) (n+1) in
+    let (snd_frm, rest_frm) = split (List.tl rest_frm) (succ n) in
     (fst_frm, snd_frm, rest_frm)
 
 let exec instr frms stck envs = 
@@ -409,7 +409,7 @@ let spawn_all ps =
             let pid' = !pid_counter in
             let original_p = (pid, (frms, stck, envs)) in
             let new_p1 = (pid', ([frm1], [], envs)) in
-            let new_p2 = (pid'+1, ([frm2], [], envs)) in
+            let new_p2 = (succ pid', ([frm2], [], envs)) in
             pid_counter := !pid_counter + 2;
             spawn (original_p :: old_ps)
                   (new_p2 :: new_p1 :: new_ps)

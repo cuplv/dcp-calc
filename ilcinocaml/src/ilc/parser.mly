@@ -24,6 +24,7 @@
 %token <Syntax.name> NAME
 %token <string> STRING 
 %token TRUE FALSE
+
 /* Operators */
 %token LARROW
 %token RARROW

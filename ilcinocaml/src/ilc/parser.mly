@@ -3,10 +3,8 @@
 
     exception Parsing_error
 
-    let rec flatten acc = function
-        | CommaSep (e1, e2) -> flatten (e1 :: acc) e2
-        | e -> List.rev (e :: acc)
-
+    (* Support functions *)
+    
     let untuplify = function
         | Tuple names ->
             List.fold_left
@@ -86,19 +84,24 @@
 %token EOF
 
 /* Precedence and assoc */
+%nonassoc LARROW RARROW
 %right PAR PARL CHOICE
 %left REPL
 %left DOT IN
-%left CONCAT
-%left FORCE SHOW
+%left FORCE
+%nonassoc SHOW
+%left FST SND
+%left CONS CONCAT
 %nonassoc ELSE
-%right COMMA
+%left COMMA
 %nonassoc OR
 %nonassoc AND
+%nonassoc NOT
 %nonassoc LT GT LEQ GEQ EQ NEQ
+%nonassoc MOD
 %left PLUS MINUS
 %left TIMES DIVIDE
-%left MOD
+%nonassoc NU
 
 %start file
 %type <Syntax.process list> file
@@ -120,6 +123,40 @@ toplevel:
       { Process e }
 
 expr:
+    | e = atom_expr
+      { e }
+    | e = arith_expr
+      { e }
+    | e = bool_expr
+      { e }
+    | e = comm_expr
+      { e }
+    | e = proc_expr
+      { e }
+    | e = app_expr
+      { e }
+    | LET x = NAME EQUAL e1 = expr IN e2 = expr
+      { Let (x, e1, e2) }
+    | LET p = expr EQUAL e1 = expr IN e2 = expr
+      { LetP (untuplify p, e1, e2) }
+    | LETREC x = NAME EQUAL e1 = expr IN e2 = expr
+      { LetRec (x, e1, e2) }
+    | IF b = expr THEN e1 = expr ELSE e2 = expr
+      { IfTE (b, e1, e2) }
+    | IF b = expr THEN e1 = expr
+      { IfT (b, e1) }
+    | LAM x = NAME DOT e = expr
+      { Lam (x, e) }
+    | e1 = expr DOT e2 = expr
+      { Seq (e1, e2) }
+    | LBRACK e = comma_sep_list RBRACK
+      { List e }
+    | LPAREN e = comma_sep_list RPAREN
+      { Tuple e }
+    | LPAREN e = expr RPAREN
+      { e }
+    
+atom_expr:
     | x = NAME
       { Name x }
     | n = INT
@@ -130,7 +167,8 @@ expr:
       { Bool true }
     | FALSE
       { Bool false }
-    /* Arithmetic */
+
+arith_expr:
     | e1 = expr PLUS e2 = expr
       { Plus (e1, e2) }
     | e1 = expr MINUS e2 = expr
@@ -141,7 +179,8 @@ expr:
       { Divide (e1, e2) }
     | e1 = expr MOD e2 = expr
       { Mod (e1, e2) }
-    /* Comparison */
+
+bool_expr:
     | e1 = expr LT e2 = expr
       { Lt (e1, e2) }
     | e1 = expr GT e2 = expr
@@ -160,30 +199,9 @@ expr:
       { Eq (e1, e2) }
     | e1 = expr NEQ e2 = expr
       { Neq (e1, e2) }
-    /* Conditionals */
-    | IF b = expr THEN e1 = expr ELSE e2 = expr
-      { IfTE (b, e1, e2) }
-    | IF b = expr THEN e1 = expr
-      { IfT (b, e1) }
-    /* Laziness */
-    | THUNK LPAREN e = expr RPAREN
-      { Thunk e }
-    | FORCE e = expr
-      { Force e }
-    /* Let */
-    | LET x = NAME EQUAL e1 = expr IN e2 = expr
-      { Let (x, e1, e2) }
-    | LET p = expr EQUAL e1 = expr IN e2 = expr
-      { LetP (untuplify p, e1, e2) }
-    | LETREC x = NAME EQUAL e1 = expr IN e2 = expr
-      { LetRec (x, e1, e2) }
-    /* App */
-    | e1 = expr e2 = expr
-      { App (e1, e2) }
-    /* Lam */
-    | LAM x = NAME DOT e = expr
-      { Lam (x, e) }
-    /* Wr */
+
+
+comm_expr:
     | WR e = expr RARROW x = NAME
       { Wr (e, x) }
     | RD x1 = NAME LARROW x2 = NAME
@@ -192,24 +210,24 @@ expr:
       { Rd x1 }
     | NU x = NAME DOT e = expr
       { Nu (x, e) }
+
+proc_expr:
+    | REPL e = expr
+      { Repl e }
     | e1 = expr PAR e2 = expr
       { ParComp (e1, e2) }
     | e1 = expr PARL e2 = expr
       { ParLeft (e1, e2) }
     | e1 = expr CHOICE e2 = expr
       { Choice (e1, e2) }
-    | e1 = expr DOT e2 = expr
-      { Seq (e1, e2) }
-    | LBRACK e = expr RBRACK
-      { List (flatten [] e) }
-    | LPAREN e1 = expr COMMA e2 = expr RPAREN /* Change this later */
-      { Tuple (e1 :: flatten [] e2) }
-    | e1 = expr COMMA e2 = expr
-      { CommaSep (e1, e2) }
-    | e1 = expr CONS e2 = expr
-      { Cons (e1, e2) }
-    | e1 = expr CONCAT e2 = expr
-      { Concat (e1, e2) }
+
+app_expr:
+    | e1 = expr e2 = expr
+      { App (e1, e2) }
+    | THUNK LPAREN e = expr RPAREN
+      { Thunk e }
+    | FORCE e = expr
+      { Force e }
     | FST e = expr
       { Fst e }
     | SND e = expr
@@ -218,7 +236,13 @@ expr:
       { Rand }
     | SHOW e = expr
       { Show e }
-    | REPL e = expr
-      { Repl e }
-    | LPAREN e = expr RPAREN
-      { e }
+    | e1 = expr CONS e2 = expr
+      { Cons (e1, e2) }
+    | e1 = expr CONCAT e2 = expr
+      { Concat (e1, e2) }
+    
+comma_sep_list:
+    | e1 = expr COMMA e2 = comma_sep_list
+      { e1 :: e2 }
+    | e = expr
+      { [e] }

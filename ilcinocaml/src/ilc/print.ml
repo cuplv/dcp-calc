@@ -9,6 +9,7 @@ let name_to_str = function
 
 let str_of_list f es = 
     let rec to_str acc = function
+        | [] -> acc
         | [e] -> acc ^ (f e)
         | e :: es -> to_str (acc ^ (f e) ^ ",") es
     in
@@ -71,6 +72,7 @@ let string_of_expr e =
 
 let string_of_list f l = 
     let rec to_str acc = function
+        | [] -> acc
         | [v] -> acc ^ f v
         | v :: vs -> to_str (acc ^ f v ^ ",") vs
     in

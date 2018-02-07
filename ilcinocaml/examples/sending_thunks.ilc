@@ -1,1 +1,1 @@
-wr thunk (let double = lam x . x + x in double 2) -> c . "fin" | rd y <- c . 1 + (force y)
+nu c . (wr thunk (let double = lam x . x + x in double 2) -> c . "fin" | rd y <- c . 1 + (force y))

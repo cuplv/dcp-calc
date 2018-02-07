@@ -97,6 +97,8 @@ rule token = parse
     | ")"                       { RPAREN }
     | "["                       { LBRACK }
     | "]"                       { RBRACK }
+    | "{"                       { LBRACE }
+    | "}"                       { RBRACE }
     | ","                       { COMMA }
 
     (* Identifier and constants *)

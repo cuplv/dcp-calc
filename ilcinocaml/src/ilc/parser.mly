@@ -70,6 +70,8 @@
 %token RPAREN
 %token LBRACK
 %token RBRACK
+%token LBRACE
+%token RBRACE
 %token COMMA
 %token EOF
 
@@ -197,7 +199,6 @@ bool_expr:
     | e1 = expr NEQ e2 = expr
       { Neq (e1, e2) }
 
-
 comm_expr:
     | WR e = expr RARROW x = NAME
       { Wr (e, x) }
@@ -206,7 +207,12 @@ comm_expr:
     | RD x1 = NAME
       { Rd x1 }
     | NU x = NAME DOT e = expr
-      { Nu (x, e) }
+      { Nu ([x], e) }
+    | NU LBRACE x = comma_list RBRACE DOT e = expr
+      { Nu (List.map (function
+          | Name x -> x
+          | _ -> raise Parsing_error)
+        x, e) }
 
 proc_expr:
     | REPL e = expr

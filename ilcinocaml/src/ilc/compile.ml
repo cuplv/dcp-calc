@@ -50,7 +50,7 @@ let rec compile = function
     | LetP (p, e1, e2) -> (compile e1) @ [ILetP p] @ (compile e2)
     | Lam (x, e) -> [IClosure ("anon", x, compile e @ [IPopEnv])]
     | App (e1, e2) -> (compile e1) @ (compile e2) @ [ICall]
-    | Nu (x, e) -> (compile e) (* TODO: This is a no-op for now *)
+    | Nu (x, e) -> [INu x] @ (compile e)
     | ParComp (e1, e2) ->
         let pid = !pid_counter in
         pid_counter := pid + 2; [IStartP pid] @
@@ -83,5 +83,5 @@ let rec compile = function
     | Repl e -> [IRepl (compile e)]
     | Rand -> [IRand]
     | Show e -> (compile e) @ [IShow]
-    | Lookup (e1, e2) -> (compile e1) @ (compile e2) @[ILookup]
+    | Lookup (e1, e2) -> (compile e1) @ (compile e2) @[IShow]
     | _ -> raise (Compilation_error)

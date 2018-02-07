@@ -1,1 +1,1 @@
-wr 3 -> c . 2 + 2 | rd y <- c . let add_one = lam x . x + 1 in (add_one y) | wr true -> d . rd y <- d . y | rd y <- d . if y then wr true -> d else 1
+nu c . nu d. (wr 3 -> c . 2 + 2 | rd y <- c . let add_one = lam x . x + 1 in (add_one y) | wr true -> d . rd y <- d . y | rd y <- d . if y then wr true -> d else 1)

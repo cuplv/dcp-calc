@@ -52,7 +52,7 @@ type expr =
     | Rd of name
     | RdBind of name * name
     (* Restriction *)
-    | Nu of name * expr
+    | Nu of name list * expr
     (* Parallel composition *)
     | ParComp of expr * expr
     (* Parallel left *)
@@ -131,7 +131,7 @@ let string_of_expr e =
         | Wr (e, x) -> "Wr(" ^ to_str e ^ "," ^ name_to_str x ^ ")"
         | RdBind (x1, x2) -> "RdBind(" ^ name_to_str x1 ^ "," ^ name_to_str x2 ^ ")"
         | Rd x -> "Rd(" ^ name_to_str x ^ ")"
-        | Nu (x, e) -> "Nu(" ^ name_to_str x ^ "," ^ to_str e ^ ")"
+        | Nu (x, e) -> "Nu(" ^ str_of_list name_to_str x ^ "," ^ to_str e ^ ")"
         | ParComp (e1, e2) -> "ParComp(" ^ to_str e1 ^ "," ^ to_str e2 ^ ")"
         | ParLeft (e1, e2) -> "ParLeft(" ^ to_str e1 ^ "," ^ to_str e2 ^ ")"
         | Choice (e1, e2) -> "Choice(" ^ to_str e1 ^ "," ^ to_str e2 ^ ")"

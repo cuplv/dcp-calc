@@ -37,6 +37,7 @@ and instr =
     | IBranch of frame * frame
     | ICond of frame
     | ICall
+    | INu of name list
     | IPopEnv
     | IThunk of frame
     | IForce
@@ -112,6 +113,7 @@ let rec string_of_instr = function
     | IBranch _ -> "IBranch"
     | ICond _ -> "ICond"
     | ICall -> "ICall" 
+    | INu _ -> "INu" (* TODO: Print *)
     | IPopEnv -> "IPopEnv"
     | IThunk e -> "IThunk" ^ List.fold_left (fun acc x -> acc ^ "," ^ string_of_instr x) "" e
     | IForce -> "IForce"
@@ -373,6 +375,13 @@ let exec instr frms stck envs =
             let updated_env = new_mappings @ env in
             (frms, stck', updated_env :: env_tail)
         | [] -> error "no environment for variable")
+    | INu xs ->
+        (match envs with
+        | env :: env_tail ->
+            let new_mapping =
+                List.fold_left (fun acc x -> (x, MHole) :: acc) [] (List.rev xs) in
+            (frms, stck, new_mapping :: env :: env_tail)
+        | [] -> error "no environment for variable")
     | IBranch (f1, f2) ->
         let (b, stck') = pop_bool stck in
         ((if b then f1 else f2) :: frms, stck', envs)
@@ -416,17 +425,29 @@ let run p =
         | (pid, ([], [], e)) -> (pid, ([], [], e))
         | (pid, ([], [v], e)) -> (pid, ([], [v], e))
         | (pid, ((IRdBind (x1, x2) :: is) :: frms, stck, envs)) ->
-            (pid, ((IRdBind (x1, x2) :: is) :: frms, stck, envs))
+            if List.mem_assoc x2 (List.hd envs)
+            then (pid, ((IRdBind (x1, x2) :: is) :: frms, stck, envs))
+            else error "channel not allocated"
         | (pid, ((IChoice(pid', cid,  (IRdBind (x1, x2))) :: is) :: frms, stck, envs)) ->
-            (pid, ((IChoice(pid', cid, (IRdBind (x1, x2))) :: is) :: frms, stck, envs))
+            if List.mem_assoc x2 (List.hd envs)
+            then (pid, ((IChoice(pid', cid, (IRdBind (x1, x2))) :: is) :: frms, stck, envs))
+            else error "channel not allocated"
         | (pid, ((IRd x :: is) :: frms, stck, envs)) ->
-            (pid, ((IRd x :: is) :: frms, stck, envs))
+            if List.mem_assoc x (List.hd envs)
+            then (pid, ((IRd x :: is) :: frms, stck, envs))
+            else error "channel not allocated"
         | (pid, ((IChoice(pid', cid,  (IRd x)) :: is) :: frms, stck, envs)) ->
-            (pid, ((IChoice(pid', cid, (IRd x)) :: is) :: frms, stck, envs))
+            if List.mem_assoc x (List.hd envs)
+            then (pid, ((IChoice(pid', cid, (IRd x)) :: is) :: frms, stck, envs))
+            else error "channel not allocated"
         | (pid, ((IWr (MHole, x) :: is) :: frms, v :: stck, envs)) ->
-            (pid, ((IWr (v, x) :: is) :: frms, stck, envs))
+            if List.mem_assoc x (List.hd envs)
+            then (pid, ((IWr (v, x) :: is) :: frms, stck, envs))
+            else error "channel not allocated"
         | (pid, ((IWr (v, x) :: is) :: frms, stck, envs)) ->
-            (pid, ((IWr (v, x) :: is) :: frms, stck, envs))
+            if List.mem_assoc x (List.hd envs)
+            then (pid, ((IWr (v, x) :: is) :: frms, stck, envs))
+            else error "channel not allocated"
         | (pid, ([ISpawn] :: frms, stck, envs)) ->
             (pid, ([ISpawn] :: frms, stck, envs))
         | (pid, ((IHole n :: is) :: frms, stck, envs)) ->

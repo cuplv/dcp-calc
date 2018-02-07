@@ -1,1 +1,2 @@
-letrec f = (rd x <- c . wr x -> d . f) in f | (wr 1 -> c . rd x <- d . x) | (wr 2 -> c . rd x <- d . x)
+nu c . nu d . 
+(letrec f = (rd x <- c . wr x -> d . f) in f | (wr 1 -> c . rd d) | (wr 2 -> c . rd d))

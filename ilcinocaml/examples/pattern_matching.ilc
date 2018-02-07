@@ -1,1 +1,1 @@
-wr (1, "hello") -> c . 0 | let (pid, msg) = rd c in msg ++ " from " ++ show pid
+nu c . (wr (1, "hello") -> c . 0 | let (pid, msg) = rd c in msg ++ " from " ++ show pid)

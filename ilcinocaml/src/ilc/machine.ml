@@ -42,7 +42,7 @@ and instr =
     | IThunk of frame
     | IForce
     | ILet of name
-    | ILetP of name list
+    | ILetP
     | IStartP of int
     | IEndP of int
     | IChoice of int * int * instr
@@ -360,7 +360,7 @@ let exec instr frms stck envs =
             let new_mapping = (x, x') :: env in
             (frms, stck', new_mapping :: env_tail)
         | [] -> error "no environment for variable")
-    | ILetP xs ->
+    (*| ILetP xs ->
         (match envs with
         | env :: env_tail ->
             let (tuple, stck') = pop stck in
@@ -372,6 +372,34 @@ let exec instr frms stck envs =
                 (try List.combine xs values with
                 | Invalid_argument _ ->
                     error "pattern match failed") in
+            let updated_env = new_mappings @ env in
+            (frms, stck', updated_env :: env_tail)
+        | [] -> error "no environment for variable")*)
+    | ILetP ->
+        (match envs with
+        | env :: env_tail ->
+            let (tuple, stck') = pop stck in
+            let (pattern, stck') = pop stck' in
+            let values =
+                (match tuple with
+                | MTuple vs -> vs
+                | _ -> error "pattern match failed") in
+            let keys = 
+                (match pattern with
+                | MList ks -> ks
+                | _ -> error "pattern match failed") in
+            let new_mappings =
+                (try List.combine keys values with
+                | Invalid_argument _ ->
+                    error "pattern match failed") in
+            let new_mappings = 
+                List.fold_left (fun acc x ->
+                    match x with 
+                    | (IVar x, y) -> (x, y) :: acc
+                    | (IString x, IString y) when x=y -> acc
+                    | (IInt x, IInt y) when x=y -> acc
+                    | _ -> error "pattern match failed")
+                [] (List.rev new_mappings) in
             let updated_env = new_mappings @ env in
             (frms, stck', updated_env :: env_tail)
         | [] -> error "no environment for variable")

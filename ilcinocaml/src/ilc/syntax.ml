@@ -41,7 +41,7 @@ type expr =
     (* Let *)
     | Let of name * expr * expr
     | LetRec of name * expr * expr
-    | LetP of name list * expr * expr
+    | LetP of expr list * expr * expr
     (* App *)
     | App of expr * expr
     (* Lam *)
@@ -124,7 +124,7 @@ let string_of_expr e =
           to_str e1 ^ "," ^ to_str e2 ^ ")"
         | LetRec (x, e1, e2) -> "LetRec(" ^ name_to_str x ^ "," ^ 
           to_str e1 ^ "," ^ to_str e2 ^ ")"
-        | LetP (p, e1, e2) -> "LetP(" ^ "(" ^ str_of_list (fun x -> x) p ^ ")," ^ 
+        | LetP (p, e1, e2) -> "LetP(" ^ "(" ^ str_of_list to_str p ^ ")," ^ 
           to_str e1 ^ "," ^ to_str e2 ^ ")"
         | App (e1, e2) -> "App(" ^ to_str e1 ^ "," ^ to_str e2 ^ ")"
         | Lam (x, e) -> "Lam(" ^ name_to_str x ^ "," ^ to_str e ^ ")"

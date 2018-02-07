@@ -2,7 +2,6 @@
     open Syntax
 
     exception Parsing_error
-
 %}
 
 /* Identifier and constants */
@@ -130,10 +129,7 @@ expr:
     | LET x = NAME EQUAL e1 = expr IN e2 = expr
       { Let (x, e1, e2) }
     | LET LPAREN p = comma_list RPAREN EQUAL e1 = expr IN e2 = expr
-      { LetP (List.map (function
-          | Name x -> x
-          | _ -> raise Parsing_error)
-      p, e1, e2) }
+      { LetP (p, e1, e2) }
     | LETREC x = NAME EQUAL e1 = expr IN e2 = expr
       { LetRec (x, e1, e2) }
     | IF b = expr THEN e1 = expr ELSE e2 = expr

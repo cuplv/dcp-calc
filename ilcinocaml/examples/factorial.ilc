@@ -1,1 +1,1 @@
-let fact = lam x . if x == 1 then 1 else x * fact (x - 1) in fact 10
+let fact = lam x . if x == 1 then 1 else x * fact (x - 1) in fact 20

@@ -93,6 +93,7 @@
 %nonassoc LT GT LEQ GEQ EQ NEQ
 %left PLUS MINUS
 %left TIMES DIVIDE MOD
+%left APP
 
 %start file
 %type <Syntax.process list> file
@@ -221,7 +222,7 @@ proc_expr:
       { Choice (e1, e2) }
 
 app_expr:
-    | e1 = expr e2 = expr
+    | e1 = expr e2 = expr %prec APP
       { App (e1, e2) }
     | THUNK LPAREN e = expr RPAREN
       { Thunk e }

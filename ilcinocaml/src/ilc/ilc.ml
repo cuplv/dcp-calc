@@ -22,9 +22,9 @@ module ILC = Zoo.Main(struct
 
     let string_of_finished_p = function
         | (pid, ([], [v], _)) ->
-            Printf.sprintf "%s%d:\n%s\n" "process" pid (Print.string_of_mvalue v)
+            Printf.sprintf "%s%d:\n%s\n" "process" pid (Machine.string_of_mvalue v)
         | (pid, (frm :: _, _, _)) ->
-            Printf.sprintf "%s%d:\n%s" "process" pid (Print.string_of_frame frm)
+            Printf.sprintf "%s%d:\n%s" "process" pid (Machine.string_of_frame frm)
         | (pid, ([], [], _)) ->
             Printf.sprintf "%s%d:\n0\n" "process" pid 
         | _ -> raise (Process_error "illegal final state")
@@ -42,7 +42,7 @@ module ILC = Zoo.Main(struct
     let exec env = function
         | Syntax.Process p ->
             (* Print ast *)
-            (*print_endline (Print.string_of_expr p); env*)
+            (*print_endline (Syntax.string_of_expr p); env*)
 
             (* Print IR *)
             (*let instrs = Compile.compile p in

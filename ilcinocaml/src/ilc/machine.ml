@@ -1,4 +1,6 @@
+(* -------------------------------------------------------------------------- *)
 (* Abstract machine *)
+
 open Printf
 
 type name = Syntax.name
@@ -64,26 +66,32 @@ and frame = instr list
 and environ = (name * mvalue) list
 and stack = mvalue list
 
+(* -------------------------------------------------------------------------- *)
+(* Printing *)
+
 let string_of_list f l = 
     let rec to_str acc = function
-        | [v] -> acc ^ f v ^ "]"
+        | [] -> acc
+        | [v] -> acc ^ f v
         | v :: vs -> to_str (acc ^ f v ^ ",") vs
     in
-    to_str "[" l
+    to_str "" l
 
-(* Convert machine value into string *)
 let rec string_of_mvalue = function
     | MInt n -> string_of_int n
     | MBool b -> string_of_bool b
+    | MString s -> s
+    | MThunk _ -> "<thunk>"
     | MClosure _ -> "<fun>"
     | MHole -> "hole"
-    | MList l -> string_of_list string_of_mvalue l
+    | MList l -> "[" ^ string_of_list string_of_mvalue l ^ "]"
+    | MTuple l -> "(" ^ string_of_list string_of_mvalue l ^ ")"
 
-(* Convert instruction into string *)
-let string_of_instr = function 
+let rec string_of_instr = function 
     | IVar x -> sprintf "IVar(%s)" x
     | IInt n -> sprintf "IInt(%d)" n
     | IBool b -> sprintf "IBool(%b)" b
+    | IString s -> sprintf "IString(%s)" s
     | IAdd -> "IAdd"
     | ISub -> "ISub"
     | IMult -> "IMult"
@@ -104,18 +112,34 @@ let string_of_instr = function
     | ICond _ -> "ICond"
     | ICall -> "ICall" 
     | IPopEnv -> "IPopEnv"
+    | IThunk e -> "IThunk" ^ List.fold_left (fun acc x -> acc ^ "," ^ string_of_instr x) "" e
+    | IForce -> "IForce"
     | ILet x -> sprintf "ILet(%s)" x
+    | ILetP _ -> "ILetP"
     | IWr (v, x) -> sprintf "IWr(%s,%s)" (string_of_mvalue v) x
     | IRdBind (x1, x2) -> sprintf "IRdBind(%s,%s)" x1 x2 
+    | IRd x -> sprintf "IRd(%s)" x
     | IStartP n -> sprintf "IStartP(%d)" n
     | IEndP n -> sprintf "IEndP(%d)" n
+    | IChoice (p, c, i) -> sprintf "IChoice(%d,%d,%s)" p c (string_of_instr i)
+    | IBlock i -> sprintf "IBlock(%s)" (string_of_instr i)
     | ISpawn -> "ISpawn"
     | IHole n -> sprintf "IHole(%d)" n
+    | IStartL -> "IStartL"
+    | IEndL -> "IEndL"
+    | ICons -> "ICons"
+    | IConcat -> "IConcat"
+    | IStartT -> "IStartT"
+    | IEndT -> "IEndT"
+    | IFst -> "IFst"
+    | ISnd -> "ISnd"
+    | IRepl _ -> "IRepl"
+    | IRand -> "IRand"
+    | IShow -> "IShow"
 
-(* Convert instruction list into string *)
 let rec string_of_frame = function
-    | [] -> ""
-    | i::is -> string_of_instr i ^ string_of_frame is
+    | [] -> "\n"
+    | i::is -> string_of_instr i ^ "\n" ^ string_of_frame is
 
 let rec string_of_stack = function
     | [] -> ""
@@ -148,6 +172,9 @@ let string_of_state = function
 let string_of_process = function
     | (pid, s) -> Printf.sprintf "Process: %d\n %s" pid (string_of_state s)
 
+(* -------------------------------------------------------------------------- *)
+(* Abstract machine *)
+
 exception Machine_error of string
 
 let error msg = raise (Machine_error msg)
@@ -172,6 +199,7 @@ let pop_list l =
     let rec pop acc = function
         | MList [] :: s -> (acc, s)
         | mv :: s -> pop (mv :: acc) s
+        | _ -> error "no list to pop"
     in
     pop [] l
 
@@ -256,6 +284,7 @@ let rand = function
 
 let show = function
     | (MInt x) :: s -> MString (string_of_int x) :: s
+    | _ -> error "no int to show"
 
 let split frm n = 
     let rec aux acc = function
@@ -294,10 +323,11 @@ let exec instr frms stck envs =
     | IForce ->
         (match frms with
         | frm :: frm_rest ->
-            match pop stck with
+            (match pop stck with
             | (MThunk f, stck') ->
                 (f :: frm :: frm_rest, stck', envs)
             | _ -> error "no thunk to pop")
+        | _ -> error "no frames")
     | IClosure (f, x, frm) ->
         (match envs with
         | env :: _ ->
@@ -319,11 +349,15 @@ let exec instr frms stck envs =
     | ILetP xs ->
         (match envs with
         | env :: env_tail ->
-            let (MTuple values, stck') = pop stck in
+            let (tuple, stck') = pop stck in
+            let values =
+                (match tuple with
+                | MTuple vs -> vs
+                | _ -> error "pattern match failed") in
             let new_mappings =
                 (try List.combine xs values with
                 | Invalid_argument _ ->
-                    error "invalid number of arguments in pattern match") in
+                    error "pattern match failed") in
             let updated_env = new_mappings @ env in
             (frms, stck', updated_env :: env_tail)
         | [] -> error "no environment for variable")

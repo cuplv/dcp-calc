@@ -1,4 +1,8 @@
+(* -------------------------------------------------------------------------- *)
+(* Compile to stack-based language *)
+
 open Machine
+open Syntax
 
 exception Compilation_error
 
@@ -16,67 +20,67 @@ let force_thunks x = List.fold_left (fun acc instr ->
     acc @ (add_force x instr)) []
 
 let rec compile = function
-    | Syntax.Name x ->  [IVar x]
-    | Syntax.Int n -> [IInt n]
-    | Syntax.Bool b -> [IBool b]
-    | Syntax.String s -> [IString s]
-    | Syntax.Plus (e1, e2) -> (compile e1) @ (compile e2) @ [IAdd]
-    | Syntax.Minus (e1, e2) -> (compile e1) @ (compile e2) @ [ISub]
-    | Syntax.Times (e1, e2) -> (compile e1) @ (compile e2) @ [IMult]
-    | Syntax.Divide (e1, e2) -> (compile e1) @ (compile e2) @ [IDiv]
-    | Syntax.Mod (e1, e2) -> (compile e1) @ (compile e2) @ [IMod]
-    | Syntax.Lt (e1, e2) -> (compile e1) @ (compile e2) @ [ILt]
-    | Syntax.Gt (e1, e2) -> (compile e1) @ (compile e2) @ [IGt]
-    | Syntax.Leq (e1, e2) -> (compile e1) @ (compile e2) @ [ILeq]
-    | Syntax.Geq (e1, e2) -> (compile e1) @ (compile e2) @ [IGeq]
-    | Syntax.Or (e1, e2) -> (compile e1) @ (compile e2) @ [IOr]
-    | Syntax.And (e1, e2) -> (compile e1) @ (compile e2) @ [IAnd]
-    | Syntax.Not e -> (compile e)  @ [INot]
-    | Syntax.Eq (e1, e2) -> (compile e1) @ (compile e2) @ [IEq]
-    | Syntax.Neq (e1, e2) -> (compile e1) @ (compile e2) @ [INeq]
-    | Syntax.IfTE (e1, e2, e3) ->
+    | Name x ->  [IVar x]
+    | Int n -> [IInt n]
+    | Bool b -> [IBool b]
+    | String s -> [IString s]
+    | Plus (e1, e2) -> (compile e1) @ (compile e2) @ [IAdd]
+    | Minus (e1, e2) -> (compile e1) @ (compile e2) @ [ISub]
+    | Times (e1, e2) -> (compile e1) @ (compile e2) @ [IMult]
+    | Divide (e1, e2) -> (compile e1) @ (compile e2) @ [IDiv]
+    | Mod (e1, e2) -> (compile e1) @ (compile e2) @ [IMod]
+    | Lt (e1, e2) -> (compile e1) @ (compile e2) @ [ILt]
+    | Gt (e1, e2) -> (compile e1) @ (compile e2) @ [IGt]
+    | Leq (e1, e2) -> (compile e1) @ (compile e2) @ [ILeq]
+    | Geq (e1, e2) -> (compile e1) @ (compile e2) @ [IGeq]
+    | Or (e1, e2) -> (compile e1) @ (compile e2) @ [IOr]
+    | And (e1, e2) -> (compile e1) @ (compile e2) @ [IAnd]
+    | Not e -> (compile e)  @ [INot]
+    | Eq (e1, e2) -> (compile e1) @ (compile e2) @ [IEq]
+    | Neq (e1, e2) -> (compile e1) @ (compile e2) @ [INeq]
+    | IfTE (e1, e2, e3) ->
         (compile e1) @ [IBranch (compile e2, compile e3)]
-    | Syntax.IfT (e1, e2) -> (compile e1) @ [ICond (compile e2)]
-    | Syntax.Thunk e -> [IThunk (compile e)]
-    | Syntax.Force e -> (compile e) @ [IForce]
-    | Syntax.Let (x, e1, e2) -> (compile e1) @ [ILet x] @ (compile e2)
-    | Syntax.LetRec (x, e1, e2) ->
+    | IfT (e1, e2) -> (compile e1) @ [ICond (compile e2)]
+    | Thunk e -> [IThunk (compile e)]
+    | Force e -> (compile e) @ [IForce]
+    | Let (x, e1, e2) -> (compile e1) @ [ILet x] @ (compile e2)
+    | LetRec (x, e1, e2) ->
         [IThunk (force_thunks x (compile e1))] @
         [ILet x] @ (force_thunks x (compile e2))
-    | Syntax.LetP (p, e1, e2) -> (compile e1) @ [ILetP p] @ (compile e2)
-    | Syntax.Lam (x, e) -> [IClosure ("anon", x, compile e @ [IPopEnv])]
-    | Syntax.App (e1, e2) -> (compile e1) @ (compile e2) @ [ICall]
-    | Syntax.Nu (x, e) -> (compile e) (* TODO: This is a no-op for now *)
-    | Syntax.ParComp (e1, e2) ->
+    | LetP (p, e1, e2) -> (compile e1) @ [ILetP p] @ (compile e2)
+    | Lam (x, e) -> [IClosure ("anon", x, compile e @ [IPopEnv])]
+    | App (e1, e2) -> (compile e1) @ (compile e2) @ [ICall]
+    | Nu (x, e) -> (compile e) (* TODO: This is a no-op for now *)
+    | ParComp (e1, e2) ->
         let pid = !pid_counter in
         pid_counter := pid + 2; [IStartP pid] @
         (compile e1) @ [IEndP pid; IStartP (succ pid)] @
         (compile e2) @ [IEndP (succ pid)]
-    | Syntax.ParLeft (e1, e2) ->
+    | ParLeft (e1, e2) ->
         let pid = !pid_counter in
         pid_counter := pid + 2; [IStartP pid] @
         (compile e1) @ [IEndP pid; IStartP (succ pid)] @
         (compile e2) @ [IEndP (succ pid); IHole (succ pid)]
-    | Syntax.Choice (e1, e2) -> (* TODO: Don't think this works for nested choices *)
+    | Choice (e1, e2) -> (* TODO: Don't think this works for nested choices *)
         let pid = !pid_counter in
         pid_counter := pid + 2; [IStartP pid] @
         convert_to_choice pid 0 (compile e1) @ [IEndP pid; IStartP (succ pid)] @
         convert_to_choice pid 1 (compile e2) @ [IEndP (succ pid); IHole (succ pid)]
-    | Syntax.Wr (e, x) -> (compile e) @ [IWr (MHole, x)]
-    | Syntax.Rd x -> [IRd x]
-    | Syntax.RdBind (x1, x2) -> [IRdBind (x1, x2)]
-    | Syntax.Seq (e1, e2) -> (compile e1) @ (compile e2)
-    | Syntax.List es ->
+    | Wr (e, x) -> (compile e) @ [IWr (MHole, x)]
+    | Rd x -> [IRd x]
+    | RdBind (x1, x2) -> [IRdBind (x1, x2)]
+    | Seq (e1, e2) -> (compile e1) @ (compile e2)
+    | List es ->
         [IStartL] @ List.fold_left (fun acc e -> acc @ (compile e))
         [] es @ [IEndL]
-    | Syntax.Cons (e1, e2) -> (compile e1) @ (compile e2) @ [ICons]
-    | Syntax.Concat (e1, e2) -> (compile e1) @ (compile e2) @ [IConcat]
-    | Syntax.Tuple es ->
+    | Cons (e1, e2) -> (compile e1) @ (compile e2) @ [ICons]
+    | Concat (e1, e2) -> (compile e1) @ (compile e2) @ [IConcat]
+    | Tuple es ->
         [IStartT] @ List.fold_left (fun acc e -> acc @ (compile e))
         [] es @ [IEndT]
-    | Syntax.Fst e -> (compile e) @ [IFst]
-    | Syntax.Snd e -> (compile e) @ [ISnd]
-    | Syntax.Repl e -> [IRepl (compile e)]
-    | Syntax.Rand -> [IRand]
-    | Syntax.Show e -> (compile e) @ [IShow]
+    | Fst e -> (compile e) @ [IFst]
+    | Snd e -> (compile e) @ [ISnd]
+    | Repl e -> [IRepl (compile e)]
+    | Rand -> [IRand]
+    | Show e -> (compile e) @ [IShow]
     | _ -> raise (Compilation_error)

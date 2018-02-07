@@ -1,3 +1,6 @@
+(* -------------------------------------------------------------------------- *)
+(* Message passing *)
+
 open Machine
 
 exception Communication_error of string

@@ -398,7 +398,7 @@ let exec instr frms stck envs =
         | env :: env_tail ->
             let new_mapping =
                 List.fold_left (fun acc x -> (x, MHole) :: acc) [] (List.rev xs) in
-            (frms, stck, new_mapping :: env :: env_tail)
+            (frms, stck, (new_mapping @ env) :: env_tail)
         | [] -> error "no environment for variable")
     | IBranch (f1, f2) ->
         let (b, stck') = pop_bool stck in

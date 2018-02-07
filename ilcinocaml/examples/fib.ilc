@@ -1,1 +1,1 @@
-let fib = lam n . if n < 3 then 1 else fib (n - 1) + fib (n - 2) in fib 35
+let fib = lam n . (if n < 3 then 1 else fib (n - 1) + fib (n - 2)) in fib 35

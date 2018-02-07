@@ -75,9 +75,14 @@
 %token EOF
 
 /* Precedence and assoc */
+%nonassoc NU_PREC
+%right PAR PARL CHOICE
+%right DOT
 %nonassoc LET_PREC
 %nonassoc THEN
 %nonassoc ELSE
+%right CONS CONCAT
+%nonassoc SHOW
 %nonassoc OR
 %nonassoc AND
 %nonassoc NOT
@@ -115,6 +120,10 @@ expr:
       { e }
     | e = app_expr
       { e }
+    | e = comm_expr
+      { e }
+    | e = proc_expr
+      { e }
     | LET x = NAME EQUAL e1 = expr IN e2 = expr %prec LET_PREC
       { Let (x, e1, e2) }
     | LET LPAREN p = comma_list RPAREN EQUAL e1 = expr IN e2 = expr %prec LET_PREC
@@ -125,6 +134,10 @@ expr:
       { IfT (b, e1) }
     | IF b = expr THEN e1 = expr ELSE e2 = expr
       { IfTE (b, e1, e2) }
+    | e1 = expr DOT e2 = expr
+      { Seq (e1, e2) }
+    | LPAREN e = expr RPAREN
+      { e }
 
 atom_expr:
     | x = NAME
@@ -137,6 +150,12 @@ atom_expr:
       { Bool true }
     | FALSE
       { Bool false }
+    | LBRACK RBRACK
+      { List [] }
+    | LBRACK e = comma_list RBRACK
+      { List e }
+    | LPAREN e1 = expr COMMA e2 = comma_list RPAREN
+      { Tuple (e1::e2) }
     | RAND
       { Rand }
     
@@ -187,10 +206,67 @@ app_expr:
       { App (l, e) }
     | l = lam_expr LPAREN e = expr RPAREN
       { App (l, e) }
+    | THUNK e = atom_expr 
+      { Thunk e }
+    | THUNK LPAREN e = expr RPAREN
+      { Thunk e }
+    | FORCE e = atom_expr
+      { Force e }
+    | FORCE LPAREN e = expr RPAREN
+      { Force e }
+    | FST e = atom_expr
+      { Fst e }
+    | FST LPAREN e = expr RPAREN
+      { Fst e }
+    | SND e = atom_expr
+      { Snd e }
+    | SND LPAREN e = expr RPAREN
+      { Snd e }
+    | SHOW e = expr
+      { Show e }
+    /* TODO: Fix redundancy */
+    | e1 = expr CONS e2 = expr
+      { Cons (e1, e2) }
+    | e1 = expr CONCAT e2 = expr
+      { Concat (e1, e2) }
+    | LOOKUP e1 = atom_expr e2 = atom_expr
+      { Lookup (e1, e2) }
+    | LOOKUP e1 = atom_expr LPAREN e2 = expr RPAREN
+      { Lookup (e1, e2) }
+    | LOOKUP LPAREN e1 = expr RPAREN e2 = atom_expr
+      { Lookup (e1, e2) }
+    | LOOKUP LPAREN e1 = expr RPAREN LPAREN e2 = expr RPAREN
+      { Lookup (e1, e2) }
+
+comm_expr:
+    | WR e = expr RARROW c = NAME
+      { Wr (e, c) }
+    | RD x = NAME LARROW c = NAME
+      { RdBind (x, c) }
+    | RD c = NAME
+      { Rd c }
+    | NU x = NAME DOT e = expr %prec NU_PREC
+      { Nu ([x], e) }
+    | NU LBRACE x = comma_list RBRACE DOT e = expr %prec NU_PREC
+      { Nu (List.map (function
+          | Name x -> x
+          | _ -> raise Parsing_error)
+        x, e) }
+
+proc_expr:
+    | REPL e = atom_expr
+      { Repl e }
+    | REPL LPAREN e = expr RPAREN
+      { Repl e }
+    | e1 = expr PAR e2 = expr
+      { ParComp (e1, e2) }
+    | e1 = expr PARL e2 = expr
+      { ParLeft (e1, e2) }
+    | e1 = expr CHOICE e2 = expr
+      { Choice (e1, e2) }
 
 comma_list:
     | e = expr
       { [e] }
     | e1 = expr COMMA e2 = comma_list
       { e1 :: e2 }
-

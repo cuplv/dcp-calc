@@ -1,5 +1,5 @@
-nu p2f . nu f2p .
-(let (pid, sid) = rd p2f in
+nu {p2f, f2p} .
+let (pid, sid) = rd p2f in
   let d = rand in
     wr (pid, d) -> f2p .
     letrec loop = (let (pid, sid) = rd p2f in
@@ -7,4 +7,4 @@ nu p2f . nu f2p .
 | wr (1, 0) -> p2f . let (pid, d) = rd f2p in
     show pid ++ " received " ++ show d
 | wr (1, 1) -> p2f . let (pid, d) = rd f2p in
-    show pid ++ " received " ++ show d)
+    show pid ++ " received " ++ show d

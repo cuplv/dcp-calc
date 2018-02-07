@@ -3,8 +3,8 @@
 (* let Read : Chan -> (Int @ R) = lam c. rd c *)
 
 let GetBit = lam x.
-    nu c. (
-       (rd b <- c. b)
-    .| (wr 1 -> c. 0)
-    .| (wr 0 -> c. 0)) in
-(GetBit 1)
+    (nu c. 
+       rd b <- c. b
+    .| wr 1 -> c. 0
+    .| wr 0 -> c. 0) in
+GetBit 1

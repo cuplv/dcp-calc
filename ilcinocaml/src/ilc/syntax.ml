@@ -2,7 +2,6 @@
 (* Abstract syntax tree *)
 
 type name = string
-type chan = string
 
 (* Types *)
 type ty = 

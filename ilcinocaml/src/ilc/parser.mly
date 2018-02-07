@@ -142,6 +142,8 @@ expr:
       { Lam (x, e) }
     | LBRACK e = comma_list RBRACK
       { List e }
+    | LBRACK RBRACK
+      { List [] }
     | LPAREN e = comma_list RPAREN
       { Tuple e }
     | e1 = expr DOT e2 = expr

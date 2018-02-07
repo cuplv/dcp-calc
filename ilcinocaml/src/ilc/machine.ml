@@ -14,7 +14,9 @@ type mvalue =
     | MClosure of name * frame * environ
     | MThunk of frame
     | MHole
+    | MVarP of name
 and instr =
+    | IVarP of name
     | IVar of name
     | IInt of int
     | IBool of bool
@@ -88,9 +90,11 @@ let rec string_of_mvalue = function
     | MHole -> "hole"
     | MList l -> "[" ^ string_of_list string_of_mvalue l ^ "]"
     | MTuple l -> "(" ^ string_of_list string_of_mvalue l ^ ")"
+    | MVarP p -> p
 
 let rec string_of_instr = function 
     | IVar x -> sprintf "IVar(%s)" x
+    | IVarP x -> sprintf "IVarP(%s)" x
     | IInt n -> sprintf "IInt(%d)" n
     | IBool b -> sprintf "IBool(%b)" b
     | IString s -> sprintf "IString(%s)" s
@@ -118,7 +122,7 @@ let rec string_of_instr = function
     | IThunk e -> "IThunk" ^ List.fold_left (fun acc x -> acc ^ "," ^ string_of_instr x) "" e
     | IForce -> "IForce"
     | ILet x -> sprintf "ILet(%s)" x
-    | ILetP _ -> "ILetP"
+    | ILetP -> "ILetP"
     | IWr (v, x) -> sprintf "IWr(%s,%s)" (string_of_mvalue v) x
     | IRdBind (x1, x2) -> sprintf "IRdBind(%s,%s)" x1 x2 
     | IRd x -> sprintf "IRd(%s)" x
@@ -330,6 +334,7 @@ let exec instr frms stck envs =
     | IEq -> (frms, eq stck, envs)
     | INeq -> (frms, neq stck, envs)
     | IVar x -> (frms, (lookup x envs) :: stck, envs)
+    | IVarP x -> (frms, (MVarP x) :: stck, envs)
     | IInt n -> (frms, (MInt n) :: stck, envs)
     | IBool b -> (frms, (MBool b) :: stck, envs)
     | IString s -> (frms, (MString s) :: stck, envs)
@@ -360,26 +365,11 @@ let exec instr frms stck envs =
             let new_mapping = (x, x') :: env in
             (frms, stck', new_mapping :: env_tail)
         | [] -> error "no environment for variable")
-    (*| ILetP xs ->
-        (match envs with
-        | env :: env_tail ->
-            let (tuple, stck') = pop stck in
-            let values =
-                (match tuple with
-                | MTuple vs -> vs
-                | _ -> error "pattern match failed") in
-            let new_mappings =
-                (try List.combine xs values with
-                | Invalid_argument _ ->
-                    error "pattern match failed") in
-            let updated_env = new_mappings @ env in
-            (frms, stck', updated_env :: env_tail)
-        | [] -> error "no environment for variable")*)
     | ILetP ->
         (match envs with
         | env :: env_tail ->
-            let (tuple, stck') = pop stck in
-            let (pattern, stck') = pop stck' in
+            let (pattern, stck') = pop stck in
+            let (tuple, stck') = pop stck' in
             let values =
                 (match tuple with
                 | MTuple vs -> vs
@@ -395,9 +385,9 @@ let exec instr frms stck envs =
             let new_mappings = 
                 List.fold_left (fun acc x ->
                     match x with 
-                    | (IVar x, y) -> (x, y) :: acc
-                    | (IString x, IString y) when x=y -> acc
-                    | (IInt x, IInt y) when x=y -> acc
+                    | (MVarP x, y) -> (x, y) :: acc
+                    | (MString x, MString y) when x=y -> acc
+                    | (MInt x, MInt y) when x=y -> acc
                     | _ -> error "pattern match failed")
                 [] (List.rev new_mappings) in
             let updated_env = new_mappings @ env in

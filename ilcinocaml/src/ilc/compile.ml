@@ -48,8 +48,12 @@ let rec compile = function
         [IThunk (force_thunks x (compile e1))] @
         [ILet x] @ (force_thunks x (compile e2))
     | LetP (p, e1, e2) -> (compile e1) @
-        [IStartL] @ List.fold_left (fun acc e -> acc @ (compile e))
-        [] p @ [IEndL] @ [ILetP] @ (compile e2)
+        [IStartL] @ List.fold_left (fun acc e ->
+            match e with
+            | IVar x -> IVarP x :: acc
+            | instr -> instr :: acc)
+        [] (List.rev (List.fold_left (fun acc e -> acc @ (compile e))
+        [] p)) @ [IEndL] @ [ILetP] @ (compile e2)
     | Lam (x, e) -> [IClosure ("anon", x, compile e @ [IPopEnv])]
     | App (e1, e2) -> (compile e1) @ (compile e2) @ [ICall]
     | Nu (x, e) -> [INu x] @ (compile e)

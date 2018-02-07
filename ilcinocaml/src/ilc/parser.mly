@@ -77,6 +77,7 @@
 /* Precedence and assoc */
 %nonassoc NU_PREC
 %right PAR PARL CHOICE
+%nonassoc REPL
 %right DOT
 %nonassoc LET_PREC
 %nonassoc THEN
@@ -89,6 +90,7 @@
 %nonassoc LT GT LEQ GEQ EQ NEQ
 %left PLUS MINUS
 %left TIMES DIVIDE MOD
+%left APP
 
 %start file
 %type <Syntax.process list> file
@@ -116,14 +118,14 @@ expr:
       { e }
     | e = bool_expr
       { e }
-    | e = lam_expr
-      { e }
     | e = app_expr
       { e }
     | e = comm_expr
       { e }
     | e = proc_expr
       { e }
+    | LAM x = NAME DOT e = expr
+      { Lam (x, e) }
     | LET x = NAME EQUAL e1 = expr IN e2 = expr %prec LET_PREC
       { Let (x, e1, e2) }
     | LET LPAREN p = comma_list RPAREN EQUAL e1 = expr IN e2 = expr %prec LET_PREC
@@ -136,8 +138,6 @@ expr:
       { IfTE (b, e1, e2) }
     | e1 = expr DOT e2 = expr
       { Seq (e1, e2) }
-    | LPAREN e = expr RPAREN
-      { e }
 
 atom_expr:
     | x = NAME
@@ -158,6 +158,8 @@ atom_expr:
       { Tuple (e1::e2) }
     | RAND
       { Rand }
+    | LPAREN e = expr RPAREN
+      { e }
     
 arith_expr:
     | e1 = expr PLUS e2 = expr
@@ -191,51 +193,34 @@ bool_expr:
     | e1 = expr NEQ e2 = expr
       { Neq (e1, e2) }
 
-lam_expr:
-    | LAM x = NAME DOT e = atom_expr
-      { Lam (x, e) }
-    | LAM x = NAME DOT LPAREN e = expr RPAREN
-      { Lam (x, e) }
-
 app_expr:
-    | x = NAME e = atom_expr
+    | x = NAME e = expr %prec APP
       { App (Name x, e) }
-    | x = NAME LPAREN e = expr RPAREN
-      { App (Name x, e) }
-    | l = lam_expr e = atom_expr
-      { App (l, e) }
-    | l = lam_expr LPAREN e = expr RPAREN
-      { App (l, e) }
-    | THUNK e = atom_expr 
-      { Thunk e }
+    | LPAREN x = expr RPAREN e = expr %prec APP
+      { App (x, e) }
+    | THUNK x = NAME
+      { Thunk (Name x) }
     | THUNK LPAREN e = expr RPAREN
       { Thunk e }
-    | FORCE e = atom_expr
-      { Force e }
+    | FORCE x = NAME
+      { Force (Name x) }
     | FORCE LPAREN e = expr RPAREN
       { Force e }
-    | FST e = atom_expr
-      { Fst e }
+    | FST x = NAME
+      { Fst (Name x) }
     | FST LPAREN e = expr RPAREN
       { Fst e }
-    | SND e = atom_expr
-      { Snd e }
+    | SND x = NAME
+      { Snd (Name x) }
     | SND LPAREN e = expr RPAREN
       { Snd e }
     | SHOW e = expr
       { Show e }
-    /* TODO: Fix redundancy */
     | e1 = expr CONS e2 = expr
       { Cons (e1, e2) }
     | e1 = expr CONCAT e2 = expr
       { Concat (e1, e2) }
-    | LOOKUP e1 = atom_expr e2 = atom_expr
-      { Lookup (e1, e2) }
-    | LOOKUP e1 = atom_expr LPAREN e2 = expr RPAREN
-      { Lookup (e1, e2) }
-    | LOOKUP LPAREN e1 = expr RPAREN e2 = atom_expr
-      { Lookup (e1, e2) }
-    | LOOKUP LPAREN e1 = expr RPAREN LPAREN e2 = expr RPAREN
+    | LOOKUP e1 = expr IN e2 = expr %prec LET_PREC
       { Lookup (e1, e2) }
 
 comm_expr:
@@ -254,9 +239,7 @@ comm_expr:
         x, e) }
 
 proc_expr:
-    | REPL e = atom_expr
-      { Repl e }
-    | REPL LPAREN e = expr RPAREN
+    | REPL e = expr
       { Repl e }
     | e1 = expr PAR e2 = expr
       { ParComp (e1, e2) }

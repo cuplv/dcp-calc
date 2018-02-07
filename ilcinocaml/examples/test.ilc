@@ -2,7 +2,7 @@
    so (P.| Q) returns the value of P *)
 (* let Double : Int -> Int in .... *)
 
-let Double = lam x. (x + x) in
+let Double = lam x. x + x in
 nu {c, d} .
 5 + (
      wr 3 -> c. rd x <- d. Double x .|

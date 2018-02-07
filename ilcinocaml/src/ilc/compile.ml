@@ -83,4 +83,5 @@ let rec compile = function
     | Repl e -> [IRepl (compile e)]
     | Rand -> [IRand]
     | Show e -> (compile e) @ [IShow]
+    | Lookup (e1, e2) -> (compile e1) @ (compile e2) @[ILookup]
     | _ -> raise (Compilation_error)

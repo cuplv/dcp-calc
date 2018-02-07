@@ -62,6 +62,7 @@ and instr =
     | IRepl of frame
     | IRand
     | IShow
+    | ILookup
 and frame = instr list
 and environ = (name * mvalue) list
 and stack = mvalue list
@@ -136,6 +137,7 @@ let rec string_of_instr = function
     | IRepl _ -> "IRepl"
     | IRand -> "IRand"
     | IShow -> "IShow"
+    | ILookup -> "ILookup"
 
 let rec string_of_frame = function
     | [] -> "\n"
@@ -286,6 +288,16 @@ let show = function
     | (MInt x) :: s -> MString (string_of_int x) :: s
     | _ -> error "no int to show"
 
+let assoc_lookup = function
+    | (MList xs) :: x :: s ->
+        let rec find = function
+            | [] -> error "not found in assoc list"
+            | MTuple [k;v] :: ts when x=k -> v
+            | _ :: ts -> find ts
+        in
+        (find xs) :: s
+    | _ -> error "no assoc list"
+
 let split frm n = 
     let rec aux acc = function
         | [] -> (List.rev acc, [])
@@ -394,6 +406,7 @@ let exec instr frms stck envs =
     | ISnd -> (frms, do_snd stck, envs)
     | IRand -> (frms, rand stck, envs)
     | IShow -> (frms, show stck, envs)
+    | ILookup -> (frms, assoc_lookup stck, envs)
     | _ -> error ("illegal instruction")
 
 (* Execute instructions *)

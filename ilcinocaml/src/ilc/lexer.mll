@@ -89,6 +89,7 @@ rule token = parse
     | "show"                    { SHOW }
     | "::"                      { CONS }
     | "++"                      { CONCAT }
+    | "lookup"                  { LOOKUP }
 
     (* Punctuation *)
     | "."                       { DOT }

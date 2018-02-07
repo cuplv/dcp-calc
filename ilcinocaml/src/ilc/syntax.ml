@@ -73,6 +73,7 @@ type expr =
     | Rand
     | Show of expr
     | Repl of expr
+    | Lookup of expr * expr
 
 type process =
     | Process of expr
@@ -144,4 +145,5 @@ let string_of_expr e =
         | Repl e -> "Repl(" ^ to_str e ^ ")"
         | Rand -> "Rand()"
         | Show e -> "Show(" ^ to_str e ^ ")"
+        | Lookup (e1, e2) -> "Lookup(" ^ to_str e1 ^ "," ^ to_str e2 ^ ")"
     in to_str e

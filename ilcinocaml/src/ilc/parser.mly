@@ -62,6 +62,7 @@
 %token SHOW
 %token CONS
 %token CONCAT
+%token LOOKUP
 
 /* Punctuation */
 %token DOT
@@ -77,7 +78,8 @@
 %left REPL
 %nonassoc IN
 %right DOT
-%left CONS CONCAT
+%right CONS
+%left CONCAT
 %nonassoc FORCE
 %nonassoc THUNK
 %nonassoc FST SND
@@ -231,6 +233,8 @@ app_expr:
       { Cons (e1, e2) }
     | e1 = expr CONCAT e2 = expr
       { Concat (e1, e2) }
+    | LOOKUP e1 = expr e2 = expr
+      { Lookup (e1, e2) }
     
 comma_list:
     | e = expr

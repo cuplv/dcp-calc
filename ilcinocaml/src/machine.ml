@@ -484,7 +484,7 @@ let run p =
 let run_all ps = List.map run ps
 
 (* Spawns new processes *)
-let pid_counter = ref 0
+let pid_counter = ref 0 (* For communication purposes only *)
 
 let init_pid_counter n = pid_counter := n
 

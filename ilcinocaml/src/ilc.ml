@@ -47,6 +47,7 @@ module ILC = Zoo.Main(struct
                 ps in
                 List.iter print_endline
                 (List.map string_of_finished_p (run_full ps))
+
             (*(match p with
             | Syntax.Process p -> 
                 (* Print ast *)
@@ -58,7 +59,6 @@ module ILC = Zoo.Main(struct
 
                 let p = Compile.compile p in
                 List.iter print_endline (List.map string_of_finished_p (run_full p)))*)
-        | [] -> print_newline ()
 end) ;;
 
 ILC.main ()

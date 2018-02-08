@@ -1,8 +1,6 @@
-(* Again, what is S *)
 (* Cleaner way to supply multiple args to function *)
-(* Distinguish recipients on f2p? *)
 
 nu { p2f, f2p } .
 let ("Prove", x, w, B) = rd p2f in
-    wr (A, B, x, (R x) w) -> f2p.S .
-    if rd p2f == "ok" then wr ("Verified", A, x, (R x) w) -> f2p.B
+    wr ((A, B, x, (R x) w), S) -> f2p .
+    if rd p2f == "ok" then wr (("Verified", A, x, (R x) w), B) -> f2p

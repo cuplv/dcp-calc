@@ -178,8 +178,8 @@ struct
   let use_file (filename, interactive) =
     match L.file_parser with
     | Some f ->
-       let cmds = read_file (wrap_syntax_errors f) filename in
-       L.exec cmds
+       let processes = read_file (wrap_syntax_errors f) filename in
+       L.exec processes
     | None ->
        fatal_error "Cannot load files, only interactive shell is available"
 

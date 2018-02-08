@@ -86,7 +86,7 @@ sig
   val toplevel_parser : (Lexing.lexbuf -> process list) option
   val print_ast : process list -> unit
   val print_ir : process list -> unit
-  val exec : process list -> unit
+  val exec : bool -> process list -> unit
 end
 
 module Main (L : LANGUAGE) =
@@ -98,11 +98,11 @@ struct
   (** The command-line wrappers that we look for. *)
   let wrapper = ref (Some ["rlwrap"; "ledit"])
 
-  (* Print ast? *)
   let print_ast = ref false
 
-  (* Print ir? *)
   let print_ir = ref false
+
+  let verbose = ref false
 
   (** The usage message. *)
   let usage = 
@@ -141,7 +141,9 @@ struct
     ("--ir",
      Arg.Unit (fun () -> print_ir := true),
      "Print intermediate representation of source");
-
+    ("--verbose",
+     Arg.Unit (fun () -> verbose := true),
+     "Print verbose execution output");
   ] @
   L.options
 
@@ -197,7 +199,7 @@ struct
        (match (!print_ast, !print_ir) with
        | (true, _) -> L.print_ast processes
        | (_, true) -> L.print_ir processes
-       | _ -> L.exec processes)
+       | _ -> L.exec !verbose processes)
     | None ->
        fatal_error "Cannot load files, only interactive shell is available"
 
@@ -219,7 +221,7 @@ struct
           while true do
             try
               let cmd = read_toplevel (wrap_syntax_errors toplevel_parser) () in
-              ctx := L.exec cmd;
+              ctx := L.exec !verbose cmd;
             with
               (*| Error err -> print_error err*)
               | Sys.Break -> prerr_endline "Interrupted."

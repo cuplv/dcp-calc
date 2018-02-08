@@ -30,18 +30,24 @@ module ILC = Zoo.Main(struct
         | _ -> raise (Process_error "illegal final state")
 
     (* Run everything, including communication *)
-    let run_full p = 
-        let init_p = [Machine.run (0, ([p], [], [[]]))] in
+    let run_full ps = 
+        let init_ps = List.mapi (fun i p ->
+            Machine.run (i, ([p], [], [[]]))) ps in
         let rec loop = function
             | (true, ps') -> ps'
             | (false, ps') ->
                 loop (Communication.run_comm (Machine.run_until_blocked ps'))
         in
-            loop (Communication.run_comm (Machine.run_until_blocked init_p))
+            Machine.init_pid_counter (List.length init_ps); loop (Communication.run_comm (Machine.run_until_blocked init_ps))
 
     let exec = function
-        | p :: ps -> 
-            (match p with
+        | ps -> 
+            let ps =
+                List.map (function | Syntax.Process p -> Compile.compile p) 
+                ps in
+                List.iter print_endline
+                (List.map string_of_finished_p (run_full ps))
+            (*(match p with
             | Syntax.Process p -> 
                 (* Print ast *)
                 (*print_endline (Syntax.string_of_expr p); env*)
@@ -51,7 +57,7 @@ module ILC = Zoo.Main(struct
                 print_endline (Machine.string_of_frame instrs); env*)
 
                 let p = Compile.compile p in
-                List.iter print_endline (List.map string_of_finished_p (run_full p)))
+                List.iter print_endline (List.map string_of_finished_p (run_full p)))*)
         | [] -> print_newline ()
 end) ;;
 

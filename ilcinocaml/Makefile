@@ -1,25 +1,13 @@
-OCAMLBUILD=ocamlbuild
+.PHONY: clean
 
-# Should we build native or bytecode by default?
-BUILD=native
-# BUILD=byte
+OCB_FLAGS = -use-menhir -menhir "menhir --explain" -libs unix -I src
+OCB = ocamlbuild $(OCB_FLAGS)
 
-LANGS = $(shell find src -mindepth 1 -maxdepth 1 -type d -exec basename {} \;)
-SRCDIR = src
-
-.PHONY: $(LANGS)
+BUILD = native
+LANG = ilc
 
 default:
-	@echo "To compile all languages run:                 make all"
-	@echo "To compile a single language <lang> run:      make <lang>"
-	@echo "To compile bytecode add BUILD=byte:           make BUILD=byte ..."
-	@echo "Available languages:"
-	@echo "$(sort $(LANGS))"
-
-all: $(LANGS)
-
-$(LANGS): % :
-	$(OCAMLBUILD) -use-menhir -menhir "menhir --explain" -libs unix -I $(SRCDIR) src/$@/$@.$(BUILD)
+	$(OCB) $(LANG).$(BUILD)
 
 clean:
-	$(OCAMLBUILD) -clean
+	$(OCB) -clean

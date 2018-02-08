@@ -96,7 +96,7 @@
 %start file
 %type <Syntax.process list> file
 %start toplevel
-%type <Syntax.process> toplevel
+%type <Syntax.process list> toplevel
 
 %%
 
@@ -112,7 +112,7 @@ file:
 
 toplevel:
     | e = expr EOF
-      { Process e }
+      { [Process e] }
 
 expr:
     | e = atom_expr

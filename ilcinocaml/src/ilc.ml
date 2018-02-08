@@ -39,8 +39,11 @@ module ILC = Zoo.Main(struct
         in
             loop (Communication.run_comm (Machine.run_until_blocked init_p))
 
-    let exec env = function
-        | Syntax.Process p -> 
+    let exec = function
+        | p :: ps -> 
+            match p with
+            | Syntax.Process p -> 
+
             (*print_endline (string_of_int (List.length p));*)
             (* Print ast *)
             (*print_endline (Syntax.string_of_expr p); env*)
@@ -49,9 +52,8 @@ module ILC = Zoo.Main(struct
             (*let instrs = Compile.compile p in
             print_endline (Machine.string_of_frame instrs); env*)
 
-            (*let p = Compile.compile p in
-            List.map print_endline (List.map string_of_finished_p (run_full p));*)
-            env
+                let p = Compile.compile p in
+                List.map print_endline (List.map string_of_finished_p (run_full p)); print_newline ()
 end) ;;
 
 ILC.main ()

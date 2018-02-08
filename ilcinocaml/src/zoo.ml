@@ -83,8 +83,8 @@ sig
   val initial_environment : environment 
   val read_more : string -> bool
   val file_parser : (Lexing.lexbuf -> process list) option 
-  val toplevel_parser : (Lexing.lexbuf -> process) option
-  val exec : environment -> process -> environment 
+  val toplevel_parser : (Lexing.lexbuf -> process list) option
+  val exec : process list -> unit
 end
 
 module Main (L : LANGUAGE) =
@@ -102,12 +102,11 @@ struct
     | Some _ -> "Usage: " ^ L.name ^ " [option] ... [file] ..."
     | None   -> "Usage:" ^ L.name ^ " [option] ..."
 
-  (** A list of files to be loaded and run. *)
-  let files = ref []
+  let file = ref None
 
   (** Add a file to the list of files to be loaded, and record whether it should
       be processed in interactive mode. *)
-  let add_file interactive filename = (files := (filename, interactive) :: !files)
+  let add_file interactive filename = (file := Some (filename, interactive))
 
   (** Command-line options *)
   let options = Arg.align [
@@ -131,7 +130,7 @@ struct
   ] @
   L.options
 
-  (** Treat anonymous arguments as files to be run. *)
+  (** Treat anonymous arguments as file to be run. *)
   let anonymous str =
     add_file true str;
     interactive_shell := false
@@ -176,11 +175,11 @@ struct
         syntax_error ~loc:(location_of_lex lex) "general confusion"
 
   (** Load directives from the given file. *)
-  let use_file ctx (filename, interactive) =
+  let use_file (filename, interactive) =
     match L.file_parser with
     | Some f ->
        let cmds = read_file (wrap_syntax_errors f) filename in
-        List.fold_left L.exec ctx cmds
+       L.exec cmds
     | None ->
        fatal_error "Cannot load files, only interactive shell is available"
 
@@ -202,9 +201,9 @@ struct
           while true do
             try
               let cmd = read_toplevel (wrap_syntax_errors toplevel_parser) () in
-                ctx := L.exec !ctx cmd
+              ctx := L.exec cmd;
             with
-              | Error err -> print_error err
+              (*| Error err -> print_error err*)
               | Sys.Break -> prerr_endline "Interrupted."
           done
       with End_of_file -> ()
@@ -232,15 +231,13 @@ struct
                 with Unix.Unix_error _ -> ())
               lst
       end;
-    (* Files were listed in the wrong order, so we reverse them *)
-    files := List.rev !files;
     (* Set the maximum depth of pretty-printing, after which it prints ellipsis. *)
     Format.set_max_boxes 42 ;
     Format.set_ellipsis_text "..." ;
     try
-      (* Run and load all the specified files. *)
-      let ctx = List.fold_left use_file L.initial_environment !files in
-        if !interactive_shell then toplevel ctx
+        match !file with
+        | Some f -> use_file f
+        | None -> if !interactive_shell then toplevel ()
     with
         Error err -> print_error err; exit 1
 end

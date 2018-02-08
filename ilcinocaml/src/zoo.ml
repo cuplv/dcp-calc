@@ -84,6 +84,8 @@ sig
   val read_more : string -> bool
   val file_parser : (Lexing.lexbuf -> process list) option 
   val toplevel_parser : (Lexing.lexbuf -> process list) option
+  val print_ast : process list -> unit
+  val print_ir : process list -> unit
   val exec : process list -> unit
 end
 
@@ -95,6 +97,12 @@ struct
 
   (** The command-line wrappers that we look for. *)
   let wrapper = ref (Some ["rlwrap"; "ledit"])
+
+  (* Print ast? *)
+  let print_ast = ref false
+
+  (* Print ir? *)
+  let print_ir = ref false
 
   (** The usage message. *)
   let usage = 
@@ -126,7 +134,14 @@ struct
      " Do not run the interactive toplevel");
     ("-l",
      Arg.String (fun str -> add_file false str),
-     "<file> Load <file> into the initial environment")
+     "<file> Load <file> into the initial environment");
+    ("--ast",
+     Arg.Unit (fun () -> print_ast := true),
+     "Print abstract syntax tree of source");
+    ("--ir",
+     Arg.Unit (fun () -> print_ir := true),
+     "Print intermediate representation of source");
+
   ] @
   L.options
 
@@ -179,7 +194,10 @@ struct
     match L.file_parser with
     | Some f ->
        let processes = read_file (wrap_syntax_errors f) filename in
-       L.exec processes
+       (match (!print_ast, !print_ir) with
+       | (true, _) -> L.print_ast processes
+       | (_, true) -> L.print_ir processes
+       | _ -> L.exec processes)
     | None ->
        fatal_error "Cannot load files, only interactive shell is available"
 

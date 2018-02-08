@@ -40,6 +40,22 @@ module ILC = Zoo.Main(struct
         in
             Machine.init_pid_counter (List.length init_ps); loop (Communication.run_comm (Machine.run_until_blocked init_ps))
 
+    let print_ast = function
+        | ps ->
+            print_string
+            (List.fold_left (fun acc x ->
+                match x with
+                | Syntax.Process p -> acc ^ Syntax.string_of_expr p ^ "\n")
+            "" ps)
+
+    let print_ir = function
+        | ps ->
+            print_string
+            (List.fold_left (fun acc x ->
+                match x with
+                | Syntax.Process p -> acc ^ (Machine.string_of_frame (Compile.compile p)) ^ "\n")
+            "" ps)
+
     let exec = function
         | ps -> 
             let ps =
@@ -47,18 +63,6 @@ module ILC = Zoo.Main(struct
                 ps in
                 List.iter print_endline
                 (List.map string_of_finished_p (run_full ps))
-
-            (*(match p with
-            | Syntax.Process p -> 
-                (* Print ast *)
-                (*print_endline (Syntax.string_of_expr p); env*)
-
-                (* Print IR *)
-                (*let instrs = Compile.compile p in
-                print_endline (Machine.string_of_frame instrs); env*)
-
-                let p = Compile.compile p in
-                List.iter print_endline (List.map string_of_finished_p (run_full p)))*)
 end) ;;
 
 ILC.main ()

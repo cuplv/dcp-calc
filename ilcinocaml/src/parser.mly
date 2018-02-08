@@ -72,6 +72,7 @@
 %token LBRACE
 %token RBRACE
 %token COMMA
+%token SEMI
 %token EOF
 
 /* Precedence and assoc */
@@ -106,6 +107,8 @@ file:
       { [] }
     | e = expr EOF
       { [Process e] }
+    | e = expr SEMI SEMI lst = file
+      { Process e :: lst }
 
 toplevel:
     | e = expr EOF

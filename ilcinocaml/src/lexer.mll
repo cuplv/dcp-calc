@@ -100,6 +100,7 @@ rule token = parse
     | "{"                       { LBRACE }
     | "}"                       { RBRACE }
     | ","                       { COMMA }
+    | ";"                       { SEMI }
 
     (* Identifier and constants *)
     | ['a'-'z' 'A'-'Z']

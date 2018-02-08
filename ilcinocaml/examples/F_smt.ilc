@@ -1,6 +1,0 @@
-nu { p2f, f2p, f2a, a2f } .
-(let (status, S, R, sid, m) = rd p2f in
-    wr ("Sent", S, R, sid, m) -> f2a . wr ("Sent", S, sid, m) -> R .
-    let ("Corrupt", sid, P) = rd a2f in 
-        wr m -> f2a . 
-)

@@ -1,0 +1,10 @@
+(* No idea what S or KE are. Will read about it later *)
+
+nu { p2f, f2p } .
+let (KE, B) = rd p2f in
+    let k = rand in
+        wr (A, B) -> f2p.S .
+        rd (KE, B) = rd p2f .
+        wr (A, B) -> f2p.S .
+        let ("ok", P) = rd p2f in
+            wr (A, B, k) -> f2p.P

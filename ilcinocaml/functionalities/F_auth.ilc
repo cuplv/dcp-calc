@@ -1,7 +1,8 @@
 (* Do not need corrupt sender in static corruptions world *)
+(* f2p.R notation? *)
 
 nu { p2f, f2p, a2f } .
 let ("Send", S, R, sid, m) = rd p2f in
-    (wr[pub, delay] ("Sent", S, sid, m) -> f2p.R) & (* f2p.R notation? *)
+    (wr[pub, delay] ("Sent", S, sid, m) -> f2p.R) &
     (let ("Corrupt-sender", sid, m') = rd a2f in
-    wr ("Sent", S, sid, m') -> f2p.R)
+        wr ("Sent", S, sid, m') -> f2p.R)

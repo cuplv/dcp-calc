@@ -1,5 +1,5 @@
 (* Need way to parameterize functionality? *)
-(* Better way to check if delayed output written to R? *)
+(* Better way to check if delayed output to R? *)
 
 nu { p2f, f2p, f2a, a2f } .
 let ("Send", S, R, sid, m) = rd p2f in

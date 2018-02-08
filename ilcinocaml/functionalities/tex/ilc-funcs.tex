@@ -1,0 +1,148 @@
+\documentclass[a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{mathtools}
+\usepackage[margin=1in]{geometry}
+\usepackage{listings}
+\usepackage{algorithm}
+\usepackage[noend]{algpseudocode}
+\usepackage{framed}
+\usepackage{listings}
+\usepackage{xcolor}
+
+\newcommand{\N}{\mathbb{N}}
+\newcommand{\Q}{\mathbb{Q}}
+\newcommand{\powerset}{\mathcal{P}}
+\newcommand{\eq}{\equal}
+\newcommand{\F}{\mathcal{F}}
+
+\definecolor{mygreen}{rgb}{0.0, 0.5, 0.0}
+
+\lstdefinestyle{ilc}
+{
+    language=ML,
+    numbers=left,
+    stepnumber=1,
+    captionpos=b,
+    basicstyle = {\ttfamily},
+    commentstyle = {\itshape\color{orange}},
+    stringstyle= {\color{mygreen}},
+    keywordstyle = {\color{blue}},
+    keywordstyle = [2]{\color{red}},
+    otherkeywords = {nu, wr, rd, ->},
+    morekeywords = [2]{},
+    literate = {|}{{\textcolor{red}{|}}}1 {.|}{{\textcolor{red}{.|}}}1 {\&}{{\textcolor{red}{\texttt{\&}}}}1,
+    frame=single,
+    mathescape=true,
+    showstringspaces=false
+    numbersep=5pt,                   % how far the line-numbers are from the code
+    numberstyle=\tiny, % the style that is used for the line-numbers
+}
+
+\begin{document}
+\title{Functionalities in ILC}
+\author{Kevin Liao}
+\date{}
+\maketitle
+
+\section{Authenticated Message Transmission}
+
+\begin{framed}
+    \centerline{\textbf{Functionality} $\F_{\textsc{AUTH}}$}
+    \begin{enumerate}
+        \item Upon receiving an input $(\texttt{Send}, S, R, sid, m)$ from $ITI\ S$, generate a public delayed output $(\texttt{Sent}, S, sid, m)$ to $R$ and halt.
+        \item Upon receiving $(\texttt{Corrupt-sender}, sid, m')$ from the adversary, and if the $(\texttt{Sent}, S, sid, m)$ output is not yet delivered to $R$, then output $(\texttt{Sent}, S, sid, m')$ to $R$ and halt.
+    \end{enumerate}
+\end{framed}
+
+
+\lstinputlisting[style=ilc]{../F_auth.ilc}
+
+\section{Secure Message Transmission}
+
+\begin{framed}
+    \centerline{\textbf{Functionality} $\F^l_{\textsc{SMT}}$}
+    \begin{enumerate}
+        \item Upon receiving an input $(\texttt{Send}, S, R, sid, m)$ from $ITI\ S$, send $(\texttt{Sent}, S, R, sid, l(m))$ to the adversary, generate a private delayed output $(\texttt{Sent}, S, sid, m)$ to $R$ and halt.
+        \item Upon receiving $(\texttt{Corrupt}, sid, P)$ from the adversary, where $P \in \{S,R\}$, disclose $m$ to the adversary. Next, if the adversary provides a value $m'$, and $P = S$, and no output has been yet written to $R$, then output $(\texttt{Sent}, S, sid, m')$ to $R$ and halt.
+    \end{enumerate}
+\end{framed}
+
+\lstinputlisting[style=ilc]{../F_smt.ilc}
+
+\section{Zero Knowledge Proofs}
+
+\begin{framed}
+    \centerline{\textbf{Functionality} $\F_{\textsc{ZK(R)}}$}
+    \begin{enumerate}
+        \item Upon receiving input $(\texttt{Prove}, x, w, B)$ from $A$, leak $(A, B, x, R(x,w))$ to $S$.
+        \item When $S$ returns $ok$, output $(\texttt{Verified}, A, x, R(x,w))$ to $B$.
+    \end{enumerate}
+\end{framed}
+
+
+\lstinputlisting[style=ilc]{../F_zk.ilc}
+\section{Key Exchange}
+
+\begin{framed}
+    \centerline{\textbf{Functionality} $\F_{\textsc{KE}}$}
+    \begin{enumerate}
+        \item Upon receiving input $(KE, B)$ from $A$, choose a key $k$ and leak $(A,B)$ to $S$.
+        \item Upon receiving input $(KE, B)$ from $A$, leak $(A,B)$ to $S$.
+        \item When $S$ returns $(ok, P)$ for $P=\{A,B\}$, output $(A,B,k)$ to $P$.
+    \end{enumerate}
+\end{framed}
+
+
+\lstinputlisting[style=ilc]{../F_ke.ilc}
+
+\section{Common Reference String}
+
+From UC commitments~\cite{canetti2001universally}.
+
+\begin{framed}
+    \centerline{\textbf{Functionality} $\F_{\textsc{CRS}}$}
+    \ \\
+    \noindent $\F_{\textsc{CRS}}$ proceeds as follows, when parameterized by a distribution $D$.
+
+    \begin{enumerate}
+        \item When activated for the first time on input $(\texttt{value}, sid)$, choose a value $d \xleftarrow[]{R} D$ and send $d$ back to the activating party. In each other activation return the value $d$ to the activating party.
+    \end{enumerate}
+\end{framed}
+
+
+\lstinputlisting[style=ilc]{../F_crs.ilc}
+
+\section{Synchronous Communication}
+
+\begin{framed}
+    \centerline{\textbf{Functionality} $\F_{\textsc{SYN}}$}
+    \ \\
+    \noindent $\F_{\textsc{SYN}}$ expects its SID to be of the form $sid = (\mathcal{P}, sid')$ where $\mathcal{P}$ is a list of party identities among which sychronization is to be provided. It proceeds as follows.
+    
+    \begin{enumerate}
+        \item At the first activation, initialize a round counter $r \leftarrow 1$, and send a public delayed output $(\texttt{Init}, sid)$ to all parties $\mathcal{P}$.
+
+        \item Upon receiving input $(\texttt{Send}, sid, M)$ from a party $P \in \mathcal{P}$, where $M = \{(m_i, R_i)\}$ is a set of pairs of messages $m_i$ and recipient identities $R_i \in \mathcal{P}$, record $(P, M, r)$ and output $(sid, P, M, r)$ to the adversary.
+
+        \item Upon receiving input $(\texttt{Receive}, sid, r')$ from a party $P \in \mathcal{P}$ do:
+            \begin{enumerate}
+                \item[(a)] If $r' = r$ (i.e.,\ $r'$ is the current round), and all uncorrupted parties in $\mathcal{P}$ have already sent their messages for round $r$, then:
+                    \begin{enumerate}
+                        \item[i.] Interpret $N$ as the list of messages sent by all parties in this round. That is, $N = \{(S_i, R_i, m_i)\}$ where each $S_i, R_i \in \mathcal{P}$, $m$ is a messages, and $S_i, R_i \in \mathcal{P}$. ($S_i$ is taken as the sender of message $m_i$ and $R_i$ is the receiver. Note that either sender or receiver may be corrupted.)
+                        \item[ii.] Prepare for each party $P \in \mathcal{P}$ the list $L^r_P$ of messages that were sent to it in round $r$.
+                        \item[iii.] Increment the rounder number: $r \leftarrow r + 1$.
+                        \item[iv.] Output $(\texttt{Received}, sid, L^{r-1}_P)$ to $P$. (Let $L^0_P = \bot$.)
+                    \end{enumerate}
+                \item[(b)] If $r' < r$ then output $(\texttt{Received}, sid, L^{r'}_P)$ to $P$.
+                \item[(c)] Else (i.e.,\ $r' > r$ or not all parties in $\mathcal{P}$ have sent their messages for round $r$), output $(\texttt{Round Incomplete})$ to $P$.
+            \end{enumerate}
+    \end{enumerate}
+\end{framed}
+
+
+\bibliography{ilc-funcs}
+\bibliographystyle{plain}
+\end{document}

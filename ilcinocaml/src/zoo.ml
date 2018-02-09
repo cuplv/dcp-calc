@@ -137,13 +137,13 @@ struct
      "<file> Load <file> into the initial environment");
     ("--ast",
      Arg.Unit (fun () -> print_ast := true),
-     "Print abstract syntax tree of source");
+     " Print abstract syntax tree of source");
     ("--ir",
      Arg.Unit (fun () -> print_ir := true),
-     "Print intermediate representation of source");
+     " Print intermediate representation of source");
     ("--verbose",
      Arg.Unit (fun () -> verbose := true),
-     "Print verbose execution output");
+     " Print verbose execution output");
   ] @
   L.options
 

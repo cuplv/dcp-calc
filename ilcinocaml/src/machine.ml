@@ -337,7 +337,7 @@ let pattern_match p1 p2 =
         | (MVarP x :: rest1, y :: rest2) ->
             compare ((x, y) :: mapping) rest1 rest2
         | ([], []) -> mapping
-        | _ -> error "pattern matching failed"
+        | _ -> error "pattern match failed"
     in
     compare [] p1 p2
 
@@ -391,13 +391,15 @@ let exec instr frms stck envs =
             let new_mapping = (x, x') :: env in
             (frms, stck', new_mapping :: env_tail)
         | [] -> error "no environment for variable")
-    | ILetP -> (* TODO: Can probably do this in a better way *)
+    | ILetP ->
         (match envs with
         | env :: env_tail ->
             let (pattern, stck') = pop stck in
             let (tuple, stck') = pop stck' in
             let new_mapping =
                 (match (pattern, tuple) with
+                | (MTuple [MWCard], _) -> []
+                | (MTuple [MTag t], MTag t') when t=t'-> []
                 | (MTuple x, MTuple y) -> pattern_match x y
                 | _ -> error "pattern match failed") in
             (frms, stck', (new_mapping @ env) :: env_tail)

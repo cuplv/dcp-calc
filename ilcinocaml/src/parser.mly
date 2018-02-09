@@ -138,6 +138,8 @@ expr:
       { Let (x, e1, e2) }
     | LET USCORE EQUAL e1 = expr IN e2 = expr %prec LET_PREC
       { LetP ([Wildcard], e1, e2) }
+    | LET t = TAG EQUAL e1 = expr IN e2 = expr %prec LET_PREC
+      { LetP ([Tag t], e1, e2) }
     | LET LPAREN p = comma_list RPAREN EQUAL e1 = expr IN e2 = expr %prec LET_PREC
       { LetP (p, e1, e2) }
     | LETREC x = NAME EQUAL e1 = expr IN e2 = expr %prec LET_PREC

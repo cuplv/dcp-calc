@@ -6,5 +6,5 @@ let (KE, B) = rd p2f in
         wr ((A, B), S) -> f2p .
         rd (KE, B) = rd p2f .
         wr ((A, B), S) -> f2p .
-        let ("ok", P) = rd p2f in
+        let ('ok, P) = rd p2f in
             wr ((A, B, k), P) -> f2p

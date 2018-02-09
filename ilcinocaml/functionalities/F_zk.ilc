@@ -1,6 +1,7 @@
 (* Cleaner way to supply multiple args to function *)
 
 nu { p2f, f2p } .
-let ("Prove", x, w, B) = rd p2f in
+let ('Prove, x, w, B) = rd p2f in
     wr ((A, B, x, (R x) w), S) -> f2p .
-    if rd p2f == "ok" then wr (("Verified", A, x, (R x) w), B) -> f2p
+    let 'ok = rd p2f in
+    wr (('Verified, A, x, (R x) w), B) -> f2p

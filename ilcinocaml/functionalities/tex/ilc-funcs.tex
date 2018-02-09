@@ -11,6 +11,7 @@
 \usepackage{framed}
 \usepackage{listings}
 \usepackage{xcolor}
+\usepackage{textcomp}
 
 \newcommand{\N}{\mathbb{N}}
 \newcommand{\Q}{\mathbb{Q}}
@@ -22,17 +23,19 @@
 
 \lstdefinestyle{ilc}
 {
-    language=ML,
     numbers=left,
     stepnumber=1,
     captionpos=b,
     basicstyle = {\ttfamily},
     commentstyle = {\itshape\color{orange}},
-    stringstyle= {\color{mygreen}},
-    keywordstyle = {\color{blue}},
-    keywordstyle = [2]{\color{red}},
-    otherkeywords = {nu, wr, rd, ->},
-    morekeywords = [2]{},
+    stringstyle= {\color{purple}},
+    keywordstyle = {\color{mygreen}},
+    keywords={},
+    keywordsprefix= {'},
+    alsoletter= {' -},
+    upquote = true,
+    keywordstyle = [2]{\color{blue}},
+    morekeywords = [2]{let, in, letrec, nu, wr, rd, ->},
     literate = {|}{{\textcolor{red}{|}}}1 {.|}{{\textcolor{red}{.|}}}1 {\&}{{\textcolor{red}{\texttt{\&}}}}1,
     frame=single,
     mathescape=true,

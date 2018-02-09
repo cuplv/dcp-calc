@@ -15,9 +15,11 @@ type mvalue =
     | MThunk of frame
     | MHole
     | MVarP of name
+    | MTag of string
 and instr =
     | IVarP of name
     | IVar of name
+    | ITag of string
     | IInt of int
     | IBool of bool
     | IString of string
@@ -91,10 +93,12 @@ let rec string_of_mvalue = function
     | MList l -> "[" ^ string_of_list string_of_mvalue l ^ "]"
     | MTuple l -> "(" ^ string_of_list string_of_mvalue l ^ ")"
     | MVarP p -> p
+    | MTag s -> s
 
 let rec string_of_instr = function 
     | IVar x -> sprintf "IVar(%s)" x
     | IVarP x -> sprintf "IVarP(%s)" x
+    | ITag x -> sprintf "ITag(%s)" x
     | IInt n -> sprintf "IInt(%d)" n
     | IBool b -> sprintf "IBool(%b)" b
     | IString s -> sprintf "IString(%s)" s
@@ -317,6 +321,20 @@ let get_par_ps frm n =
     let (snd_frm, rest_frm) = split (List.tl rest_frm) (succ n) in
     (fst_frm, snd_frm, rest_frm)
 
+let pattern_match p1 p2 =
+    let rec compare mapping p1' p2' =
+        match (p1', p2') with
+        | (MTuple x :: rest1, MTuple y :: rest2) ->
+            (compare [] x y) @ compare mapping rest1 rest2
+        | (MTag x :: rest1, MTag y :: rest2) when x=y ->
+            compare mapping rest1 rest2
+        | (MVarP x :: rest1, y :: rest2) ->
+            compare ((x, y) :: mapping) rest1 rest2
+        | ([], []) -> mapping
+        | _ -> error "pattern matching failed"
+    in
+    compare [] p1 p2
+
 let exec instr frms stck envs = 
     match instr with
     | IAdd -> (frms, add stck, envs)
@@ -335,6 +353,7 @@ let exec instr frms stck envs =
     | INeq -> (frms, neq stck, envs)
     | IVar x -> (frms, (lookup x envs) :: stck, envs)
     | IVarP x -> (frms, (MVarP x) :: stck, envs)
+    | ITag x -> (frms, (MTag x) :: stck, envs)
     | IInt n -> (frms, (MInt n) :: stck, envs)
     | IBool b -> (frms, (MBool b) :: stck, envs)
     | IString s -> (frms, (MString s) :: stck, envs)
@@ -370,28 +389,11 @@ let exec instr frms stck envs =
         | env :: env_tail ->
             let (pattern, stck') = pop stck in
             let (tuple, stck') = pop stck' in
-            let values =
-                (match tuple with
-                | MTuple vs -> vs
+            let new_mapping =
+                (match (pattern, tuple) with
+                | (MTuple x, MTuple y) -> pattern_match x y
                 | _ -> error "pattern match failed") in
-            let keys = 
-                (match pattern with
-                | MList ks -> ks
-                | _ -> error "pattern match failed") in
-            let new_mappings =
-                (try List.combine keys values with
-                | Invalid_argument _ ->
-                    error "pattern match failed") in
-            let new_mappings = 
-                List.fold_left (fun acc x ->
-                    match x with 
-                    | (MVarP x, y) -> (x, y) :: acc
-                    | (MString x, MString y) when x=y -> acc
-                    | (MInt x, MInt y) when x=y -> acc
-                    | _ -> error "pattern match failed")
-                [] (List.rev new_mappings) in
-            let updated_env = new_mappings @ env in
-            (frms, stck', updated_env :: env_tail)
+            (frms, stck', (new_mapping @ env) :: env_tail)
         | [] -> error "no environment for variable")
     | INu xs ->
         (match envs with

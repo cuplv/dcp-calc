@@ -6,6 +6,7 @@
 
 /* Identifier and constants */
 %token <Syntax.name> NAME
+%token <string> TAG
 %token <int> INT
 %token <string> STRING 
 
@@ -145,6 +146,8 @@ expr:
 atom_expr:
     | x = NAME
       { Name x }
+    | t = TAG
+      { Tag t }
     | n = INT
       { Int n }
     | s = STRING

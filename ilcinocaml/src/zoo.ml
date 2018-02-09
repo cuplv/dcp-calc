@@ -221,7 +221,9 @@ struct
           while true do
             try
               let cmd = read_toplevel (wrap_syntax_errors toplevel_parser) () in
-              ctx := L.exec !verbose cmd;
+              if !print_ast then L.print_ast cmd
+              else if !print_ir then L.print_ir cmd
+              else L.exec !verbose cmd;
             with
               (*| Error err -> print_error err*)
               | Sys.Break -> prerr_endline "Interrupted."

@@ -13,6 +13,7 @@ type ty =
 type expr =
     (* Identifier, constants, values *)
     | Name of name
+    | Tag of string
     | Int of int
     | Bool of bool
     | String of string
@@ -98,6 +99,7 @@ let string_of_expr e =
         match e with
         (* Identifier, constants, and values *)
         | Name x -> name_to_str x
+        | Tag t -> "Tag(" ^ t ^ ")"
         | Int n -> "Int(" ^ string_of_int n ^ ")"
         | Bool b -> "Bool(" ^ string_of_bool b ^ ")"
         | String s -> "String(" ^ s ^ ")"

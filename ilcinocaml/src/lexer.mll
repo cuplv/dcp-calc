@@ -106,6 +106,10 @@ rule token = parse
     | ['a'-'z' 'A'-'Z']
       ['a'-'z' 'A'-'Z' '0'-'9' '_' '\'']*
                                 { NAME (Lexing.lexeme lexbuf) }
+    | ['\'']
+      ['a'-'z' 'A'-'Z' '0'-'9' '_' '\'']*
+                                { TAG (Lexing.lexeme lexbuf) }
+
     | ['0'-'9']+                { INT (int_of_string (Lexing.lexeme lexbuf)) }
     | "\""                      { resetStr (); string lexbuf }
     | eof                       { EOF }

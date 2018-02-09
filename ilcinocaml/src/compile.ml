@@ -22,6 +22,7 @@ let force_thunks x = List.fold_left (fun acc instr ->
 let rec compile = function
     (* Identifier, constants, values *)
     | Name x ->  [IVar x]
+    | Tag x ->  [ITag x]
     | Int n -> [IInt n]
     | Bool b -> [IBool b]
     | String s -> [IString s]
@@ -58,12 +59,12 @@ let rec compile = function
         [IThunk (force_thunks x (compile e1))] @
         [ILet x] @ (force_thunks x (compile e2))
     | LetP (p, e1, e2) -> (compile e1) @
-        [IStartL] @ List.fold_left (fun acc e ->
+        [IStartT] @ List.fold_left (fun acc e ->
             match e with
             | IVar x -> IVarP x :: acc
             | instr -> instr :: acc)
         [] (List.rev (List.fold_left (fun acc e -> acc @ (compile e))
-        [] p)) @ [IEndL] @ [ILetP] @ (compile e2)
+        [] p)) @ [IEndT] @ [ILetP] @ (compile e2)
 
     (* Conditionals *)
     | IfTE (e1, e2, e3) ->

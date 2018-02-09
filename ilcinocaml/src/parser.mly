@@ -17,6 +17,7 @@
 %token LAM
 %token NU
 %token WR
+%token WRDELAY
 %token RD
 %token IF
 %token THEN
@@ -25,9 +26,6 @@
 %token FALSE
 %token THUNK
 %token FORCE
-%token PUB
-%token PRIV
-%token DELAY
 
 /* Operators */
 %token EQUAL
@@ -243,8 +241,8 @@ app_expr:
 comm_expr:
     | WR e = expr RARROW c = NAME
       { Wr (e, c) }
-    | WR LT ts = trait_list GT e = expr RARROW c = NAME
-      { WrSpec (ts, e, c) }
+    | WRDELAY LT x = NAME GT e = expr RARROW c = NAME
+      { WrDelay (x, e, c) }
     | RD x = NAME LARROW c = NAME
       { RdBind (x, c) }
     | RD c = NAME
@@ -272,18 +270,3 @@ comma_list:
       { [e] }
     | e1 = expr COMMA e2 = comma_list
       { e1 :: e2 }
-
-trait:
-    | PUB
-      { Pub }
-    | PRIV
-      { Priv }
-    | DELAY
-      { Delay }
-
-trait_list:
-    | t = trait
-      { [t] }
-    | t1 = trait COMMA t2 = trait_list
-      { t1 :: t2 }
-

@@ -44,6 +44,7 @@ rule token = parse
     | "lam"                     { LAM }
     | "nu"                      { NU }
     | "wr"                      { WR }
+    | "wrdelay"                 { WRDELAY }
     | "rd"                      { RD }
     | "if"                      { IF }
     | "then"                    { THEN }
@@ -52,9 +53,6 @@ rule token = parse
     | "false"                   { FALSE }
     | "thunk"                   { THUNK }
     | "force"                   { FORCE }
-    | "pub"                     { PUB }
-    | "priv"                    { PRIV }
-    | "delay"                   { DELAY }
 
     (* Operators *)
     | "="                       { EQUAL }

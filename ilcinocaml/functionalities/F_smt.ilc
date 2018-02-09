@@ -4,7 +4,7 @@
 nu { p2f, f2p, f2a, a2f } .
 let ('Send, S, R, sid, m) = rd p2f in
     wr ('Sent, S, R, sid, l(m)) -> f2a .
-    (wr[priv, delay] (('Sent, S, sid, m), R) -> f2p) &
+    (wr<priv, delay> (('Sent, S, sid, m), R) -> f2p) &
     (let ('Corrupt, sid, P) = rd a2f in 
         wr m -> f2a . let m' = rd a2f in
             if P == S then wr (('Sent, S, sid, m'), R) -> f2p)

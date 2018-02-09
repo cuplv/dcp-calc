@@ -56,7 +56,7 @@ type expr =
 
     (* Pi *)
     | Wr of expr * name
-    | WrSpec of expr list * expr * name
+    | WrDelay of name * expr * name
     | Pub
     | Priv
     | Delay
@@ -152,8 +152,8 @@ let string_of_expr e =
 
         (* Pi *)
         | Wr (e, x) -> "Wr(" ^ to_str e ^ "," ^ name_to_str x ^ ")"
-        | WrSpec (ts, e, x) ->
-            "WrSpec((" ^ str_of_list to_str ts ^ ")," ^ to_str e ^ "," ^ name_to_str x ^ ")"
+        | WrDelay (f, e, x) ->
+            "WrDelay(" ^ name_to_str f ^ "," ^ to_str e ^ "," ^ name_to_str x ^ ")"
         | Pub -> "Pub"
         | Priv -> "Priv"
         | Delay -> "Delay"

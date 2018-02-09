@@ -77,10 +77,8 @@ let rec compile = function
 
     (* Pi *)
     | Wr (e, x) -> (compile e) @ [IWr (MHole, x)]
-    | WrSpec (ts, e, x) -> (* Syntactic sugar transformation *)
-        if (List.mem Delay ts) && (List.mem Pub ts) then
-            compile (Seq(Wr(e,"f2a"),LetP([Tag("'ok")],Rd("a2f"),Wr(e,x))))
-        else []
+    | WrDelay (f, e, x) -> (* Syntactic sugar transformation *)
+        compile (Seq(Wr(e,"f2a"),LetP([Tag("'ok")],Rd("a2f"),Wr(e,x))))
     | Rd x -> [IRd x]
     | RdBind (x1, x2) -> [IRdBind (x1, x2)]
     | Nu (x, e) -> [INu x] @ (compile e)

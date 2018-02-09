@@ -145,6 +145,32 @@ From UC commitments~\cite{canetti2001universally}.
     \end{enumerate}
 \end{framed}
 
+\section{Commitments}
+
+\begin{framed}
+    \centerline{\textbf{Functionality} $\F_{\textsc{COM}}$}
+    \ \\
+    \noindent $\F_{\textsc{COM}}$ proceeds as follows, running with parties $P_1, \ldots, P_n$ and an adversary $S$.
+    
+    \begin{enumerate}
+        \item Upon receiving a value $(\texttt{Commit}, sid, P_i, P_j, b)$ from $P_i$, where $b \in \{ 0, 1 \}$, record the value $b$ and send the message $(\texttt{Receipt}, sid, P_i, P_j)$ to $P_j$ and $S$. Ignore any subsequent \texttt{Commit} messages.
+
+        \item Upon receiving a value $(\texttt{Open}, sid, P_i, P_j)$ from $P_i$, proceed as follows: If some value $b$ was previously recorded, then send the message $(\texttt{Open}, sid, P_i, P_j, b)$ to $P_j$ and $S$ and halt. Otherwise halt.
+    \end{enumerate}
+\end{framed}
+
+\begin{framed}
+    \centerline{\textbf{Functionality} $\F_{\textsc{MCOM}}$}
+    \ \\
+    \noindent $\F_{\textsc{MCOM}}$ proceeds as follows, running with parties $P_1, \ldots, P_n$ and an adversary $S$.
+    
+    \begin{enumerate}
+        \item Upon receiving a value $(\texttt{Commit}, sid, cid, P_i, P_j, b)$ from $P_i$, where $b \in \{ 0, 1 \}$, record the tuple $(cid, P_i, P_j, b)$ and send the message $(\texttt{Receipt}, sid, cid, P_i, P_j)$ to $P_j$ and $S$. Ignore any subsequent $(\texttt{Commit}, sid, cid P_i, P_j, \ldots)$ messages.
+
+        \item Upon receiving a value $(\texttt{Open}, sid, cid, P_i, P_j)$ from $P_i$, proceed as follows: If the tuple $(cid, P_i, P_j, b)$ is recorded, then send the message $(\texttt{Open}, sid, cid, P_i, P_j, b)$ to $P_j$ and $S$ and halt. Otherwise, do nothing.
+    \end{enumerate}
+\end{framed}
+
 
 \bibliography{ilc-funcs}
 \bibliographystyle{plain}

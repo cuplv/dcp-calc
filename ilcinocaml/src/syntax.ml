@@ -51,7 +51,7 @@ type expr =
     | IfT of expr * expr
 
     (* Lambda *)
-    | Lam of name * expr
+    | Lam of name list * expr
     | App of expr * expr
 
     (* Pi *)
@@ -81,6 +81,7 @@ type expr =
     | Cons of expr * expr
     | Concat of expr * expr
     | Lookup of expr * expr
+    | Match of name * (expr * expr) list
 
 type process =
     | Process of expr
@@ -147,7 +148,8 @@ let string_of_expr e =
           to_str e2 ^ ")"
 
         (* Lambda *)
-        | Lam (x, e) -> "Lam(" ^ name_to_str x ^ "," ^ to_str e ^ ")"
+        (*| Lam (x, e) -> "Lam(" ^ str_of_list to_str x ^ "," ^ to_str e ^ ")"*)
+        | Lam (x, e) -> "Lam((" ^ str_of_list name_to_str x ^ ")," ^ to_str e ^ ")"
         | App (e1, e2) -> "App(" ^ to_str e1 ^ "," ^ to_str e2 ^ ")"
 
         (* Pi *)
@@ -178,4 +180,5 @@ let string_of_expr e =
         | Cons (e1, e2) -> "Cons(" ^ to_str e1 ^ "," ^ to_str e2 ^ ")"
         | Concat (e1, e2) -> "Concat(" ^ to_str e1 ^ "," ^ to_str e2 ^ ")"
         | Lookup (e1, e2) -> "Lookup(" ^ to_str e1 ^ "," ^ to_str e2 ^ ")"
+        | Match (x, es) -> "Match()"
     in to_str e

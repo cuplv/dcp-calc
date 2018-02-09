@@ -72,7 +72,7 @@ let rec compile = function
     | IfT (e1, e2) -> (compile e1) @ [ICond (compile e2)]
 
     (* Lambda *)
-    | Lam (x, e) -> [IClosure ("anon", x, compile e @ [IPopEnv])]
+    (*| Lam (x, e) -> [IClosure ("anon", x, compile e @ [IPopEnv])]*)
     | App (e1, e2) -> (compile e1) @ (compile e2) @ [ICall]
 
     (* Pi *)
@@ -81,7 +81,7 @@ let rec compile = function
         compile (Seq(Wr(e,"f2a"),LetP([Tag("'ok")],Rd("a2f"),Wr(e,x))))
     | Rd x -> [IRd x]
     | RdBind (x1, x2) -> [IRdBind (x1, x2)]
-    | Nu (x, e) -> [INu x] @ (compile e)
+    (*| Nu (x, e) -> [INu x] @ (compile e)*)
     | ParComp (e1, e2) ->
         let pid = !pid_counter in
         pid_counter := pid + 2; [IStartP pid] @

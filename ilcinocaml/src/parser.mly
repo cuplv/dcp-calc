@@ -2,6 +2,10 @@
     open Syntax
 
     exception Parsing_error
+
+    let get_names = function 
+          | Name x -> x
+          | _ -> raise Parsing_error
 %}
 
 /* Identifier and constants */
@@ -26,6 +30,8 @@
 %token FALSE
 %token THUNK
 %token FORCE
+%token MATCH
+%token WITH
 
 /* Operators */
 %token EQUAL
@@ -35,6 +41,7 @@
 %token PAR
 %token PARL
 %token CHOICE
+%token RRARROW
 
 /* Arithmetic operators */
 %token PLUS
@@ -71,8 +78,8 @@
 %token RPAREN
 %token LBRACK
 %token RBRACK
-%token LBRACE
-%token RBRACE
+/*%token LBRACE
+%token RBRACE*/
 %token COMMA
 %token SEMI
 %token USCORE
@@ -130,8 +137,8 @@ expr:
       { e }
     | e = proc_expr
       { e }
-    | LAM x = NAME DOT e = expr
-      { Lam (x, e) }
+    | LAM xs = name_list DOT e = expr
+      { Lam (xs, e) }
     | LET x = NAME EQUAL e1 = expr IN e2 = expr %prec LET_PREC
       { Let (x, e1, e2) }
     | LET USCORE EQUAL e1 = expr IN e2 = expr %prec LET_PREC
@@ -148,6 +155,8 @@ expr:
       { IfTE (b, e1, e2) }
     | e1 = expr DOT e2 = expr
       { Seq (e1, e2) }
+    | MATCH x = NAME WITH bs = branches SEMI
+      { Match (x, bs) }
 
 atom_expr:
     | x = NAME
@@ -247,13 +256,8 @@ comm_expr:
       { RdBind (x, c) }
     | RD c = NAME
       { Rd c }
-    | NU x = NAME DOT e = expr %prec NU_PREC
-      { Nu ([x], e) }
-    | NU LBRACE x = comma_list RBRACE DOT e = expr %prec NU_PREC
-      { Nu (List.map (function
-          | Name x -> x
-          | _ -> raise Parsing_error)
-        x, e) }
+    | NU xs = name_list DOT e = expr %prec NU_PREC
+      { Nu (xs, e) }
 
 proc_expr:
     | REPL e = expr
@@ -270,3 +274,15 @@ comma_list:
       { [e] }
     | e1 = expr COMMA e2 = comma_list
       { e1 :: e2 }
+
+name_list:
+    | e = NAME
+      { [e] }
+    | e1 = NAME COMMA e2 = name_list
+      { e1 :: e2 }
+
+branches:
+    | p = expr RRARROW e = expr
+      { [(p, e)] }
+    | p = expr RARROW e = expr PAR bs = branches
+      { (p, e) :: bs }

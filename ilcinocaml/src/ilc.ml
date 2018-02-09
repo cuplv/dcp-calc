@@ -3,7 +3,6 @@ module ILC = Zoo.Main(struct
     
     type process = Syntax.process
 
-    (* Typing context *)
     type ty_context = (Syntax.name * Syntax.ty) list
 
     type environment = (Syntax.name * Machine.mvalue) list
@@ -47,29 +46,25 @@ module ILC = Zoo.Main(struct
             loop (Communication.run_comm (Machine.run_until_blocked init_ps))
 
     let print_ast = function
-        | ps ->
-            print_string
-            (List.fold_left (fun acc x ->
-                match x with
-                | Syntax.Process p ->
-                    acc ^ Syntax.string_of_expr p ^ "\n")
-            "" ps)
+        | ps -> let f acc x =
+                    (match x with
+                    | Syntax.Process p ->
+                        acc ^ Syntax.string_of_expr p ^ "\n") in
+                print_string (List.fold_left f "" ps)
 
     let print_ir = function
-        | ps ->
-            print_string
-            (List.fold_left (fun acc x ->
-                match x with
-                | Syntax.Process p ->
-                    acc ^ (Machine.string_of_frame (Compile.compile p)) ^ "\n")
-            "" ps)
+        | ps -> let f acc x =
+                    (match x with
+                    | Syntax.Process p ->
+                        acc ^ (Machine.string_of_frame (Compile.compile p)) ^ "\n") in
+                print_string (List.fold_left f "" ps)
 
     let exec verbose = function
-        | ps -> 
-            let ps = List.map (function
-                               | Syntax.Process p -> Compile.compile p) ps in
-            let print = if verbose then printr_verbose else printr in
-                List.iter print (run_full ps)
+        | ps -> let f = function
+                    | Syntax.Process p -> Compile.compile p in
+                let compiled_ps = List.map f ps in
+                let print = if verbose then printr_verbose else printr in
+                List.iter print (run_full compiled_ps)
 end) ;;
 
 ILC.main ()

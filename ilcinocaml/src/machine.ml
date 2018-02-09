@@ -11,6 +11,7 @@ type mvalue =
     | MString of string
     | MList of mvalue list
     | MTuple of mvalue list
+    | MWCard
     | MClosure of name * frame * environ
     | MThunk of frame
     | MHole
@@ -20,6 +21,7 @@ and instr =
     | IVarP of name
     | IVar of name
     | ITag of string
+    | IWCard
     | IInt of int
     | IBool of bool
     | IString of string
@@ -88,6 +90,7 @@ let rec string_of_mvalue = function
     | MBool b -> string_of_bool b
     | MString s -> s
     | MThunk _ -> "<thunk>"
+    | MWCard -> "_"
     | MClosure _ -> "<fun>"
     | MHole -> "hole"
     | MList l -> "[" ^ string_of_list string_of_mvalue l ^ "]"
@@ -99,6 +102,7 @@ let rec string_of_instr = function
     | IVar x -> sprintf "IVar(%s)" x
     | IVarP x -> sprintf "IVarP(%s)" x
     | ITag x -> sprintf "ITag(%s)" x
+    | IWCard -> "IWCard"
     | IInt n -> sprintf "IInt(%d)" n
     | IBool b -> sprintf "IBool(%b)" b
     | IString s -> sprintf "IString(%s)" s
@@ -328,6 +332,8 @@ let pattern_match p1 p2 =
             (compare [] x y) @ compare mapping rest1 rest2
         | (MTag x :: rest1, MTag y :: rest2) when x=y ->
             compare mapping rest1 rest2
+        | (MWCard :: rest1, y :: rest2) ->
+            compare mapping rest1 rest2
         | (MVarP x :: rest1, y :: rest2) ->
             compare ((x, y) :: mapping) rest1 rest2
         | ([], []) -> mapping
@@ -354,6 +360,7 @@ let exec instr frms stck envs =
     | IVar x -> (frms, (lookup x envs) :: stck, envs)
     | IVarP x -> (frms, (MVarP x) :: stck, envs)
     | ITag x -> (frms, (MTag x) :: stck, envs)
+    | IWCard -> (frms, MWCard :: stck, envs)
     | IInt n -> (frms, (MInt n) :: stck, envs)
     | IBool b -> (frms, (MBool b) :: stck, envs)
     | IString s -> (frms, (MString s) :: stck, envs)

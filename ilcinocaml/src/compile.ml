@@ -32,6 +32,7 @@ let rec compile = function
     | Tuple es ->
         [IStartT] @ List.fold_left (fun acc e -> acc @ (compile e))
         [] es @ [IEndT]
+    | Wildcard -> [IWCard]
 
     (* Arithmetic operators *)
     | Plus (e1, e2) -> (compile e1) @ (compile e2) @ [IAdd]
@@ -65,7 +66,6 @@ let rec compile = function
             | instr -> instr :: acc)
         [] (List.rev (List.fold_left (fun acc e -> acc @ (compile e))
         [] p)) @ [IEndT] @ [ILetP] @ (compile e2)
-
     (* Conditionals *)
     | IfTE (e1, e2, e3) ->
         (compile e1) @ [IBranch (compile e2, compile e3)]

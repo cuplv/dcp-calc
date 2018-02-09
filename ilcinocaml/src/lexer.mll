@@ -101,6 +101,7 @@ rule token = parse
     | "}"                       { RBRACE }
     | ","                       { COMMA }
     | ";"                       { SEMI }
+    | "_"                       { USCORE }
 
     (* Identifier and constants *)
     | ['a'-'z' 'A'-'Z']

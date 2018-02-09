@@ -74,6 +74,7 @@
 %token RBRACE
 %token COMMA
 %token SEMI
+%token USCORE
 %token EOF
 
 /* Precedence and assoc */
@@ -132,6 +133,8 @@ expr:
       { Lam (x, e) }
     | LET x = NAME EQUAL e1 = expr IN e2 = expr %prec LET_PREC
       { Let (x, e1, e2) }
+    | LET USCORE EQUAL e1 = expr IN e2 = expr %prec LET_PREC
+      { LetP ([Wildcard], e1, e2) }
     | LET LPAREN p = comma_list RPAREN EQUAL e1 = expr IN e2 = expr %prec LET_PREC
       { LetP (p, e1, e2) }
     | LETREC x = NAME EQUAL e1 = expr IN e2 = expr %prec LET_PREC
@@ -146,6 +149,8 @@ expr:
 atom_expr:
     | x = NAME
       { Name x }
+    | USCORE
+      { Wildcard }
     | t = TAG
       { Tag t }
     | n = INT
@@ -156,6 +161,7 @@ atom_expr:
       { Bool true }
     | FALSE
       { Bool false }
+    
     | LBRACK RBRACK
       { List [] }
     | LBRACK e = comma_list RBRACK

@@ -19,6 +19,7 @@ type expr =
     | String of string
     | List of expr list
     | Tuple of expr list
+    | Wildcard
 
     (* Arithmetic operators *)
     | Plus of expr * expr
@@ -105,6 +106,7 @@ let string_of_expr e =
         | String s -> "String(" ^ s ^ ")"
         | List es -> "List(" ^ str_of_list to_str es ^ ")"
         | Tuple es -> "Tuple(" ^ str_of_list to_str es ^ ")"
+        | Wildcard -> "Wildcard"
 
         (* Arithmetic operators *)
         | Plus (e1, e2) -> "Plus(" ^ to_str e1 ^ "," ^ to_str e2 ^ ")"

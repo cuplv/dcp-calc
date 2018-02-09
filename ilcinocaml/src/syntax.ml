@@ -56,6 +56,10 @@ type expr =
 
     (* Pi *)
     | Wr of expr * name
+    | WrSpec of expr list * expr * name
+    | Pub
+    | Priv
+    | Delay
     | Rd of name
     | RdBind of name * name
     | Nu of name list * expr
@@ -148,6 +152,11 @@ let string_of_expr e =
 
         (* Pi *)
         | Wr (e, x) -> "Wr(" ^ to_str e ^ "," ^ name_to_str x ^ ")"
+        | WrSpec (ts, e, x) ->
+            "WrSpec((" ^ str_of_list to_str ts ^ ")," ^ to_str e ^ "," ^ name_to_str x ^ ")"
+        | Pub -> "Pub"
+        | Priv -> "Priv"
+        | Delay -> "Delay"
         | Rd x -> "Rd(" ^ name_to_str x ^ ")"
         | RdBind (x1, x2) -> "RdBind(" ^ name_to_str x1 ^ "," ^ name_to_str x2 ^ ")"
         | Nu (x, e) -> "Nu(" ^ str_of_list name_to_str x ^ "," ^ to_str e ^ ")"

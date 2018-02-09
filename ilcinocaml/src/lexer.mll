@@ -52,6 +52,9 @@ rule token = parse
     | "false"                   { FALSE }
     | "thunk"                   { THUNK }
     | "force"                   { FORCE }
+    | "pub"                     { PUB }
+    | "priv"                    { PRIV }
+    | "delay"                   { DELAY }
 
     (* Operators *)
     | "="                       { EQUAL }

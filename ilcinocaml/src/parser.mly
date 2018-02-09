@@ -25,6 +25,9 @@
 %token FALSE
 %token THUNK
 %token FORCE
+%token PUB
+%token PRIV
+%token DELAY
 
 /* Operators */
 %token EQUAL
@@ -161,7 +164,6 @@ atom_expr:
       { Bool true }
     | FALSE
       { Bool false }
-    
     | LBRACK RBRACK
       { List [] }
     | LBRACK e = comma_list RBRACK
@@ -170,6 +172,7 @@ atom_expr:
       { Tuple (e1::e2) }
     | RAND
       { Rand }
+    
     | LPAREN e = expr RPAREN
       { e }
     
@@ -238,6 +241,8 @@ app_expr:
 comm_expr:
     | WR e = expr RARROW c = NAME
       { Wr (e, c) }
+    | WR LT ts = trait_list GT e = expr RARROW c = NAME
+      { WrSpec (ts, e, c) }
     | RD x = NAME LARROW c = NAME
       { RdBind (x, c) }
     | RD c = NAME
@@ -265,3 +270,18 @@ comma_list:
       { [e] }
     | e1 = expr COMMA e2 = comma_list
       { e1 :: e2 }
+
+trait:
+    | PUB
+      { Pub }
+    | PRIV
+      { Priv }
+    | DELAY
+      { Delay }
+
+trait_list:
+    | t = trait
+      { [t] }
+    | t1 = trait COMMA t2 = trait_list
+      { t1 :: t2 }
+

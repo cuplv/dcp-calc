@@ -51,8 +51,7 @@ type expr =
     | IfT of expr * expr
 
     (* Lambda *)
-    | Lam of name * expr
-    | LamM of name list * expr
+    | Lam of name list * expr
     | App of expr * expr
 
     (* Pi *)
@@ -149,8 +148,7 @@ let string_of_expr e =
           to_str e2 ^ ")"
 
         (* Lambda *)
-        | Lam (x, e) -> "Lam(" ^ name_to_str x ^ "," ^ to_str e ^ ")"
-        | LamM (xs, e) -> "Lam((" ^ str_of_list name_to_str xs ^ ")," ^ to_str e ^ ")"
+        | Lam (xs, e) -> "Lam(" ^ str_of_list name_to_str xs ^ "," ^ to_str e ^ ")"
         | App (e1, e2) -> "App(" ^ to_str e1 ^ "," ^ to_str e2 ^ ")"
 
         (* Pi *)

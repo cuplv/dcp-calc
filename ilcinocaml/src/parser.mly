@@ -30,8 +30,8 @@
 %token FALSE
 %token THUNK
 %token FORCE
-%token MATCH
-%token WITH
+/*%token MATCH
+%token WITH*/
 
 /* Operators */
 %token EQUAL
@@ -41,7 +41,7 @@
 %token PAR
 %token PARL
 %token CHOICE
-%token RRARROW
+/*%token RRARROW*/
 
 /* Arithmetic operators */
 %token PLUS
@@ -137,10 +137,10 @@ expr:
       { e }
     | e = proc_expr
       { e }
-    | LAM x = NAME DOT e = expr
-      { Lam (x, e) }
+    /*| LAM x = NAME DOT e = expr
+      { Lam (x, e) }*/
     | LAM xs = name_list DOT e = expr
-      { LamM (xs, e) }
+      { Lam (xs, e) }
     | LET x = NAME EQUAL e1 = expr IN e2 = expr %prec LET_PREC
       { Let (x, e1, e2) }
     | LET USCORE EQUAL e1 = expr IN e2 = expr %prec LET_PREC

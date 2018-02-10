@@ -72,9 +72,9 @@ let rec compile = function
     | IfT (e1, e2) -> (compile e1) @ [ICond (compile e2)]
 
     (* Lambda *)
-    | Lam (x, e) -> [IClosure ("anon", x, compile e @ [IPopEnv])]
-    | LamM (xs, e) ->
-        compile (List.fold_right (fun x acc -> Lam(x, acc)) xs e)
+    | Lam ([x], e) -> [IClosure ("anon", x, compile e @ [IPopEnv])]
+    | Lam (xs, e) ->
+        compile (List.fold_right (fun x acc -> Lam([x], acc)) xs e)
     | App (e1, e2) -> (compile e1) @ (compile e2) @ [ICall]
 
     (* Pi *)

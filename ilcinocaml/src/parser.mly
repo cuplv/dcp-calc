@@ -72,6 +72,7 @@
 %token CONS
 %token CONCAT
 %token LOOKUP
+%token LENGTH
 
 /* Punctuation */
 %token DOT
@@ -255,14 +256,23 @@ app_expr:
       { Concat (e1, e2) }
     | LOOKUP e1 = expr IN e2 = expr %prec LET_PREC
       { Lookup (e1, e2) }
+    | LENGTH e = expr
+      { Length e }
 
 comm_expr:
     | WR e = expr RARROW c = NAME
       { Wr (e, c) }
+    | WR e = expr RARROW c = IMPNAME
+      { Wr (e, c) }
     | RD x = NAME LARROW c = NAME
+      { RdBind (x, c) }
+    | RD x = NAME LARROW c = IMPNAME
       { RdBind (x, c) }
     | RD c = NAME
       { Rd c }
+    | RD c = IMPNAME
+      { Rd c }
+    /* IMPNAME here */
     | NU xs = name_list DOT e = expr %prec NU_PREC
       { Nu (xs, e) }
 

@@ -1,0 +1,18 @@
+(* SaUCy prelude *)
+let sendDelayed = lam f, m, R, ?a2f, ?f2a, ?f2p .
+      wr f (m, R) -> f2a .
+      let 'ok = rd ?a2f in        (* rd 'ok <- ?a2f *)
+        wr (m, R) -> ?f2p
+in
+
+(* User-defined leakage *)
+let leak = lam x . let (('Sent, length msg), R) = x in
+  (('Sent, length msg), R)
+in
+
+(* Actual process *)
+nu a2f, f2a, f2p .
+  let ?a2f = a2f in
+    let ?f2a = f2a in
+      let ?f2p = f2p in
+        ((sendDelayed leak) ('Sent, "hi")) 1

@@ -79,6 +79,7 @@ type expr =
     | Cons of expr * expr
     | Concat of expr * expr
     | Lookup of expr * expr
+    | Length of expr
     (*| Match of name * (expr * expr) list*)
 
 type process =
@@ -177,5 +178,6 @@ let string_of_expr e =
         | Cons (e1, e2) -> "Cons(" ^ to_str e1 ^ "," ^ to_str e2 ^ ")"
         | Concat (e1, e2) -> "Concat(" ^ to_str e1 ^ "," ^ to_str e2 ^ ")"
         | Lookup (e1, e2) -> "Lookup(" ^ to_str e1 ^ "," ^ to_str e2 ^ ")"
+        | Length e -> "Length(" ^ to_str e ^ ")"
         (*| Match (x, es) -> "Match()"*)
     in to_str e

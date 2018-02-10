@@ -116,3 +116,4 @@ let rec compile = function
     | Cons (e1, e2) -> (compile e1) @ (compile e2) @ [ICons]
     | Concat (e1, e2) -> (compile e1) @ (compile e2) @ [IConcat]
     | Lookup (e1, e2) -> (compile e1) @ (compile e2) @[ILookup]
+    | Length e -> (compile e) @ [ILength]

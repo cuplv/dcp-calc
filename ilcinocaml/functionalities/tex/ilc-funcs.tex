@@ -28,6 +28,7 @@
     captionpos=b,
     basicstyle = {\ttfamily},
     commentstyle = {\itshape\color{orange}},
+    %morecomment=[s]{/*}{*/},
     stringstyle= {\color{purple}},
     keywordstyle = {\color{mygreen}},
     keywords={},
@@ -59,7 +60,6 @@
         \item Upon receiving $(\texttt{Corrupt-sender}, sid, m')$ from the adversary, and if the $(\texttt{Sent}, S, sid, m)$ output is not yet delivered to $R$, then output $(\texttt{Sent}, S, sid, m')$ to $R$ and halt.
     \end{enumerate}
 \end{framed}
-
 
 \lstinputlisting[style=ilc]{../F_auth.ilc}
 
@@ -171,6 +171,7 @@ From UC commitments~\cite{canetti2001universally}.
     \end{enumerate}
 \end{framed}
 
+\lstinputlisting[style=ilc]{../send_delay.ilc}
 
 \bibliography{ilc-funcs}
 \bibliographystyle{plain}

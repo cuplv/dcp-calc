@@ -72,6 +72,7 @@ and instr =
     | IRand
     | IShow
     | ILookup
+    | ILength
 and frame = instr list
 and environ = (name * mvalue) list
 and stack = mvalue list
@@ -156,6 +157,7 @@ let rec string_of_instr = function
     | IRand -> "IRand"
     | IShow -> "IShow"
     | ILookup -> "ILookup"
+    | ILength -> "ILength"
 and string_of_frame = function
     | [] -> "\n"
     | i::is -> string_of_instr i ^ "\n" ^ string_of_frame is
@@ -319,6 +321,10 @@ let assoc_lookup = function
         (find xs) :: s
     | _ -> error "no assoc list"
 
+let length = function
+    | (MString x) :: s -> MInt (String.length x) :: s
+    | _ -> error "no string to get length"
+
 let split frm n = 
     let rec aux acc = function
         | [] -> (List.rev acc, [])
@@ -457,6 +463,7 @@ let exec instr frms stck envs =
     | IRand -> (frms, rand stck, envs)
     | IShow -> (frms, show stck, envs)
     | ILookup -> (frms, assoc_lookup stck, envs)
+    | ILength -> (frms, length stck, envs)
     | _ -> error ("illegal instruction")
 
 (* Execute instructions *)

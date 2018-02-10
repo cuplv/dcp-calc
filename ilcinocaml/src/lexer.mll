@@ -94,6 +94,7 @@ rule token = parse
     | "::"                      { CONS }
     | "++"                      { CONCAT }
     | "lookup"                  { LOOKUP }
+    | "length"                  { LENGTH }
 
     (* Punctuation *)
     | "."                       { DOT }

@@ -53,8 +53,8 @@ rule token = parse
     | "false"                   { FALSE }
     | "thunk"                   { THUNK }
     | "force"                   { FORCE }
-    | "match"                   { MATCH }
-    | "with"                    { WITH }
+    (*| "match"                   { MATCH }
+    | "with"                    { WITH }*)
 
     (* Operators *)
     | "="                       { EQUAL }
@@ -64,7 +64,7 @@ rule token = parse
     | "|"                       { PAR }
     | ".|"                      { PARL }
     | "&"                       { CHOICE }
-    | "=>"                      { RRARROW }
+    (*| "=>"                      { RRARROW }*)
 
     (* Arithmetic operators *)
     | "+"                       { PLUS }

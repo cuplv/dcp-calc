@@ -120,8 +120,8 @@ let rec string_of_instr = function
     | INot -> "INot"
     | IEq -> "IEq"
     | INeq -> "INeq"
-    | IClosure (_, x, f) ->
-         sprintf "IClosure(%s)" x 
+    | IClosure (_, xs, f) ->
+         sprintf "IClosure()"
     | IBranch _ -> "IBranch"
     | ICond _ -> "ICond"
     | ICall -> "ICall" 

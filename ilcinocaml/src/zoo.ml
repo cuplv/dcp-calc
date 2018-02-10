@@ -217,7 +217,7 @@ struct
       in
       Format.printf "%si, version 0.0.1 @." L.name ;
       try
-        let ctx = ref ctx in
+        let _ = ref ctx in
           while true do
             try
               let cmd = read_toplevel (wrap_syntax_errors toplevel_parser) () in

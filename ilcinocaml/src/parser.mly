@@ -137,8 +137,10 @@ expr:
       { e }
     | e = proc_expr
       { e }
+    | LAM x = NAME DOT e = expr
+      { Lam (x, e) }
     | LAM xs = name_list DOT e = expr
-      { Lam (xs, e) }
+      { LamM (xs, e) }
     | LET x = NAME EQUAL e1 = expr IN e2 = expr %prec LET_PREC
       { Let (x, e1, e2) }
     | LET USCORE EQUAL e1 = expr IN e2 = expr %prec LET_PREC
@@ -155,8 +157,8 @@ expr:
       { IfTE (b, e1, e2) }
     | e1 = expr DOT e2 = expr
       { Seq (e1, e2) }
-    | MATCH x = NAME WITH bs = branches SEMI
-      { Match (x, bs) }
+    /*| MATCH x = NAME WITH bs = branches SEMI
+      { Match (x, bs) }*/
 
 atom_expr:
     | x = NAME
@@ -281,8 +283,8 @@ name_list:
     | e1 = NAME COMMA e2 = name_list
       { e1 :: e2 }
 
-branches:
+/*branches:
     | p = expr RRARROW e = expr
       { [(p, e)] }
     | p = expr RARROW e = expr PAR bs = branches
-      { (p, e) :: bs }
+      { (p, e) :: bs }*/

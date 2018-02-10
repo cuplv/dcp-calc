@@ -49,6 +49,7 @@ type expr =
     (* Conditionals *)
     | IfTE of expr * expr * expr
     | IfT of expr * expr
+    | Req of expr * expr
 
     (* Lambda *)
     | Lam of name list * expr
@@ -146,6 +147,7 @@ let string_of_expr e =
           to_str e2 ^ "," ^ to_str e3 ^ ")"
         | IfT (e1, e2) -> "IfT(" ^ to_str e1 ^ "," ^ 
           to_str e2 ^ ")"
+        | Req (e1, e2) -> "Req(" ^ to_str e1 ^ "," ^ to_str e2 ^ ")"
 
         (* Lambda *)
         | Lam (xs, e) -> "Lam(" ^ str_of_list name_to_str xs ^ "," ^ to_str e ^ ")"

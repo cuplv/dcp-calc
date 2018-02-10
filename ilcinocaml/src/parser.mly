@@ -32,6 +32,7 @@
 %token FORCE
 /*%token MATCH
 %token WITH*/
+%token REQ
 
 /* Operators */
 %token EQUAL
@@ -155,11 +156,13 @@ expr:
       { IfT (b, e1) }
     | IF b = expr THEN e1 = expr ELSE e2 = expr
       { IfTE (b, e1, e2) }
+    | REQ e1 = expr IN e2 = expr%prec LET_PREC
+      { Req (e1, e2) }
     | e1 = expr DOT e2 = expr
       { Seq (e1, e2) }
     /*| MATCH x = NAME WITH bs = branches SEMI
       { Match (x, bs) }*/
-
+   
 atom_expr:
     | x = NAME
       { Name x }

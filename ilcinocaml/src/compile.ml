@@ -70,6 +70,7 @@ let rec compile = function
     | IfTE (e1, e2, e3) ->
         (compile e1) @ [IBranch (compile e2, compile e3)]
     | IfT (e1, e2) -> (compile e1) @ [ICond (compile e2)]
+    | Req (e1, e2) -> (compile e1) @ [IReq] @ (compile e2)
 
     (* Lambda *)
     | Lam ([x], e) -> [IClosure ("anon", x, compile e @ [IPopEnv])]

@@ -42,6 +42,7 @@ and instr =
     | IClosure of name * name * frame
     | IBranch of frame * frame
     | ICond of frame
+    | IReq
     | ICall
     | INu of name list
     | IPopEnv
@@ -124,6 +125,7 @@ let rec string_of_instr = function
          sprintf "IClosure()"
     | IBranch _ -> "IBranch"
     | ICond _ -> "ICond"
+    | IReq -> "IReq"
     | ICall -> "ICall" 
     | INu _ -> "INu" (* TODO: Print *)
     | IPopEnv -> "IPopEnv"
@@ -417,6 +419,10 @@ let exec instr frms stck envs =
     | ICond f ->
         let (b, stck') = pop_bool stck in
         ((if b then f else []) :: frms, stck', envs)
+    | IReq ->
+        let (b, stck') = pop_bool stck in
+        if b then (frms, stck', envs)
+        else error "assertion failed"
     | ICall ->
         let (x, frm, env, v, stck') = pop_app stck in
         (frm :: frms, stck', ((x,v) :: env) :: envs)

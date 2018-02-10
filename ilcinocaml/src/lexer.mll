@@ -44,7 +44,6 @@ rule token = parse
     | "lam"                     { LAM }
     | "nu"                      { NU }
     | "wr"                      { WR }
-    | "wrdelay"                 { WRDELAY }
     | "rd"                      { RD }
     | "if"                      { IF }
     | "then"                    { THEN }
@@ -112,6 +111,10 @@ rule token = parse
     | ['a'-'z' 'A'-'Z']
       ['a'-'z' 'A'-'Z' '0'-'9' '_' '\'']*
                                 { NAME (Lexing.lexeme lexbuf) }
+    | ['?']
+      ['a'-'z' 'A'-'Z' '0'-'9' '_' '\'']*
+                                { IMPNAME (Lexing.lexeme lexbuf) }
+
     | ['\'']
       ['a'-'z' 'A'-'Z' '0'-'9' '_' '\'']*
                                 { TAG (Lexing.lexeme lexbuf) }

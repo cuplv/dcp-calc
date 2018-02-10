@@ -18,8 +18,9 @@ type mvalue =
     | MVarP of name
     | MTag of string
 and instr =
-    | IVarP of name
     | IVar of name
+    | IVarP of name
+    | IImpVar of name
     | ITag of string
     | IWCard
     | IInt of int
@@ -102,6 +103,7 @@ let rec string_of_mvalue = function
 let rec string_of_instr = function 
     | IVar x -> sprintf "IVar(%s)" x
     | IVarP x -> sprintf "IVarP(%s)" x
+    | IImpVar x -> sprintf "IImpVar(%s)" x
     | ITag x -> sprintf "ITag(%s)" x
     | IWCard -> "IWCard"
     | IInt n -> sprintf "IInt(%d)" n
@@ -122,7 +124,7 @@ let rec string_of_instr = function
     | IEq -> "IEq"
     | INeq -> "INeq"
     | IClosure (_, xs, f) ->
-         sprintf "IClosure()"
+         sprintf "IClosure(\n%s)" (string_of_frame f)
     | IBranch _ -> "IBranch"
     | ICond _ -> "ICond"
     | IReq -> "IReq"
@@ -154,8 +156,7 @@ let rec string_of_instr = function
     | IRand -> "IRand"
     | IShow -> "IShow"
     | ILookup -> "ILookup"
-
-let rec string_of_frame = function
+and string_of_frame = function
     | [] -> "\n"
     | i::is -> string_of_instr i ^ "\n" ^ string_of_frame is
 
@@ -199,6 +200,10 @@ let error msg = raise (Machine_error msg)
 
 let lookup x = function
     | env::_ -> (try List.assoc x env with Not_found -> error ("unknown " ^ x))
+    | _ -> error "no environment to look up"
+
+let imp_lookup x = function
+    | _ ::env:: _ -> (try List.assoc x env with Not_found -> error ("unknown " ^ x))
     | _ -> error "no environment to look up"
 
 let pop = function
@@ -361,6 +366,7 @@ let exec instr frms stck envs =
     | INeq -> (frms, neq stck, envs)
     | IVar x -> (frms, (lookup x envs) :: stck, envs)
     | IVarP x -> (frms, (MVarP x) :: stck, envs)
+    | IImpVar x -> (frms, (imp_lookup x envs) :: stck, envs)
     | ITag x -> (frms, (MTag x) :: stck, envs)
     | IWCard -> (frms, MWCard :: stck, envs)
     | IInt n -> (frms, (MInt n) :: stck, envs)

@@ -10,6 +10,7 @@
 
 /* Identifier and constants */
 %token <Syntax.name> NAME
+%token <Syntax.name> IMPNAME
 %token <string> TAG
 %token <int> INT
 %token <string> STRING 
@@ -21,7 +22,6 @@
 %token LAM
 %token NU
 %token WR
-%token WRDELAY
 %token RD
 %token IF
 %token THEN
@@ -144,6 +144,8 @@ expr:
       { Lam (xs, e) }
     | LET x = NAME EQUAL e1 = expr IN e2 = expr %prec LET_PREC
       { Let (x, e1, e2) }
+    | LET x = IMPNAME EQUAL e1 = expr IN e2 = expr %prec LET_PREC
+      { Let (x, e1, e2) }
     | LET USCORE EQUAL e1 = expr IN e2 = expr %prec LET_PREC
       { LetP ([Wildcard], e1, e2) }
     | LET t = TAG EQUAL e1 = expr IN e2 = expr %prec LET_PREC
@@ -166,6 +168,8 @@ expr:
 atom_expr:
     | x = NAME
       { Name x }
+    | x = IMPNAME
+      { ImpName x }
     | USCORE
       { Wildcard }
     | t = TAG
@@ -255,8 +259,6 @@ app_expr:
 comm_expr:
     | WR e = expr RARROW c = NAME
       { Wr (e, c) }
-    | WRDELAY LT x = NAME GT e = expr RARROW c = NAME
-      { WrDelay (x, e, c) }
     | RD x = NAME LARROW c = NAME
       { RdBind (x, c) }
     | RD c = NAME
@@ -283,8 +285,13 @@ comma_list:
 name_list:
     | e = NAME
       { [e] }
+    | e = IMPNAME
+      { [e] }
     | e1 = NAME COMMA e2 = name_list
       { e1 :: e2 }
+    | e1 = IMPNAME COMMA e2 = name_list
+      { e1 :: e2 }
+
 
 /*branches:
     | p = expr RRARROW e = expr

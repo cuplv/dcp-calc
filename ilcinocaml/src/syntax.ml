@@ -13,6 +13,7 @@ type ty =
 type expr =
     (* Identifier, constants, values *)
     | Name of name
+    | ImpName of name
     | Tag of string
     | Int of int
     | Bool of bool
@@ -57,10 +58,6 @@ type expr =
 
     (* Pi *)
     | Wr of expr * name
-    | WrDelay of name * expr * name
-    | Pub
-    | Priv
-    | Delay
     | Rd of name
     | RdBind of name * name
     | Nu of name list * expr
@@ -92,6 +89,9 @@ type process =
 
 let name_to_str = function
     | x -> "Name(" ^ x ^ ")"
+let impname_to_str = function
+    | x -> "ImpName(" ^ x ^ ")"
+
 
 let str_of_list f es = 
     let rec to_str acc = function
@@ -106,6 +106,7 @@ let string_of_expr e =
         match e with
         (* Identifier, constants, and values *)
         | Name x -> name_to_str x
+        | ImpName x -> impname_to_str x
         | Tag t -> "Tag(" ^ t ^ ")"
         | Int n -> "Int(" ^ string_of_int n ^ ")"
         | Bool b -> "Bool(" ^ string_of_bool b ^ ")"
@@ -155,11 +156,6 @@ let string_of_expr e =
 
         (* Pi *)
         | Wr (e, x) -> "Wr(" ^ to_str e ^ "," ^ name_to_str x ^ ")"
-        | WrDelay (f, e, x) ->
-            "WrDelay(" ^ name_to_str f ^ "," ^ to_str e ^ "," ^ name_to_str x ^ ")"
-        | Pub -> "Pub"
-        | Priv -> "Priv"
-        | Delay -> "Delay"
         | Rd x -> "Rd(" ^ name_to_str x ^ ")"
         | RdBind (x1, x2) -> "RdBind(" ^ name_to_str x1 ^ "," ^ name_to_str x2 ^ ")"
         | Nu (x, e) -> "Nu(" ^ str_of_list name_to_str x ^ "," ^ to_str e ^ ")"

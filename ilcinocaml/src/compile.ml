@@ -22,6 +22,7 @@ let force_thunks x = List.fold_left (fun acc instr ->
 let rec compile = function
     (* Identifier, constants, values *)
     | Name x ->  [IVar x]
+    | ImpName x ->  [IImpVar x]
     | Tag x ->  [ITag x]
     | Int n -> [IInt n]
     | Bool b -> [IBool b]
@@ -66,6 +67,7 @@ let rec compile = function
             | instr -> instr :: acc)
         [] (List.rev (List.fold_left (fun acc e -> acc @ (compile e))
         [] p)) @ [IEndT] @ [ILetP] @ (compile e2)
+
     (* Conditionals *)
     | IfTE (e1, e2, e3) ->
         (compile e1) @ [IBranch (compile e2, compile e3)]
@@ -75,16 +77,15 @@ let rec compile = function
     (* Lambda *)
     | Lam ([x], e) -> [IClosure ("anon", x, compile e @ [IPopEnv])]
     | Lam (xs, e) ->
-        compile (List.fold_right (fun x acc -> Lam([x], acc)) xs e)
+        let f x acc = if String.get x 0 <> '?' then Lam([x], acc) else acc in
+        compile (List.fold_right f xs e)
     | App (e1, e2) -> (compile e1) @ (compile e2) @ [ICall]
 
     (* Pi *)
     | Wr (e, x) -> (compile e) @ [IWr (MHole, x)]
-    | WrDelay (f, e, x) -> (* Syntactic sugar transformation *)
-        compile (Seq(Wr(e,"f2a"),LetP([Tag("'ok")],Rd("a2f"),Wr(e,x))))
     | Rd x -> [IRd x]
     | RdBind (x1, x2) -> [IRdBind (x1, x2)]
-    (*| Nu (x, e) -> [INu x] @ (compile e)*)
+    | Nu (x, e) -> [INu x] @ (compile e)
     | ParComp (e1, e2) ->
         let pid = !pid_counter in
         pid_counter := pid + 2; [IStartP pid] @
@@ -115,4 +116,3 @@ let rec compile = function
     | Cons (e1, e2) -> (compile e1) @ (compile e2) @ [ICons]
     | Concat (e1, e2) -> (compile e1) @ (compile e2) @ [IConcat]
     | Lookup (e1, e2) -> (compile e1) @ (compile e2) @[ILookup]
-    | _ -> error "not implemented yet"

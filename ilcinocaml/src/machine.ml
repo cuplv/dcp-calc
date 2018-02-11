@@ -77,6 +77,7 @@ and instr =
     | ILookup
     | ILength
     | IMem
+    | IUnion
 and frame = instr list
 and environ = (name * mvalue) list
 and stack = mvalue list
@@ -166,6 +167,7 @@ let rec string_of_instr = function
     | ILookup -> "ILookup"
     | ILength -> "ILength"
     | IMem -> "IMem"
+    | IUnion -> "IUnion"
 and string_of_frame = function
     | [] -> "\n"
     | i::is -> string_of_instr i ^ "\n" ^ string_of_frame is
@@ -337,6 +339,13 @@ let mem = function
     | (MSet xs) :: x :: s -> MBool (List.mem x xs) :: s
     | _ -> error "no set"
 
+let union = function
+    | (MSet xs) :: (MSet ys) :: s ->
+        let f acc x = if List.mem x ys then acc
+                      else acc @ [x] in
+        MSet (List.fold_left f ys xs) :: s
+    | _ -> error "no sets to union"
+
 let split frm n = 
     let rec aux acc = function
         | [] -> (List.rev acc, [])
@@ -365,6 +374,12 @@ let pattern_match p1 p2 =
         | _ -> error "pattern match failed"
     in
     compare [] p1 p2
+
+(* Clearly I need to read Okasaki *)
+let remove_duplicates l =
+    let uniqueify acc x = if List.mem x acc then acc
+                          else x :: acc in
+    List.fold_left uniqueify [] (List.rev l)
 
 let exec instr frms stck envs = 
     match instr with
@@ -466,8 +481,9 @@ let exec instr frms stck envs =
         in (frms, (MList lst) :: stck', envs)
     | IStartS -> (frms, (MList []) :: stck, envs)
     | IEndS ->
-        let (lst, stck') = pop_list stck
-        in (frms, (MSet lst) :: stck', envs)
+        let (lst, stck') = pop_list stck in
+        let set = remove_duplicates lst in
+        (frms, (MSet set) :: stck', envs)
     | ICons -> (frms, cons stck, envs)
     | IConcat -> (frms, concat stck, envs)
     | IStartT -> (frms, (MList []) :: stck, envs)
@@ -481,6 +497,7 @@ let exec instr frms stck envs =
     | ILookup -> (frms, assoc_lookup stck, envs)
     | ILength -> (frms, length stck, envs)
     | IMem -> (frms, mem stck, envs)
+    | IUnion -> (frms, union stck, envs)
     | _ -> error ("illegal instruction")
 
 (* Execute instructions *)

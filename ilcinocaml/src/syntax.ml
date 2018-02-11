@@ -83,6 +83,7 @@ type expr =
     | Lookup of expr * expr
     | Length of expr
     | Mem of expr * expr
+    | Union of expr * expr
 
 type process =
     | Process of expr
@@ -184,4 +185,5 @@ let string_of_expr e =
         | Lookup (e1, e2) -> "Lookup(" ^ to_str e1 ^ "," ^ to_str e2 ^ ")"
         | Length e -> "Length(" ^ to_str e ^ ")"
         | Mem (e1, e2) -> "Mem(" ^ to_str e1 ^ "," ^ to_str e2 ^ ")"
+        | Union (e1, e2) -> "Union(" ^ to_str e1 ^ "," ^ to_str e2 ^ ")"
     in to_str e

@@ -95,6 +95,7 @@ rule token = parse
     | "lookup"                  { LOOKUP }
     | "length"                  { LENGTH }
     | "mem"                     { MEM }
+    | "union"                   { UNION }
 
     (* Punctuation *)
     | "."                       { DOT }

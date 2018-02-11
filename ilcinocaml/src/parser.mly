@@ -76,6 +76,7 @@
 %token LOOKUP
 %token LENGTH
 %token MEM
+%token UNION
 
 /* Punctuation */
 %token DOT
@@ -237,9 +238,7 @@ bool_expr:
       { Neq (e1, e2) }
     /*| e1 = atom_expr IN e2 = atom_expr
       { Mem (e1, e2) }*/
-    | MEM e1 = atom_expr e2 = atom_expr
-      { Mem (e1, e2) }
-
+    
 
 app_expr:
     | x = NAME es = atom_list
@@ -272,6 +271,10 @@ app_expr:
       { Lookup (e1, e2) }
     | LENGTH e = expr
       { Length e }
+    | MEM e1 = atom_expr e2 = atom_expr
+      { Mem (e1, e2) }
+    | UNION e1 = atom_expr e2 = atom_expr
+      { Union (e1, e2) }
 
 comm_expr:
     | WR e = expr RARROW c = NAME

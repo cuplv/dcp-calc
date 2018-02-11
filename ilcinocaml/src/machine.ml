@@ -218,7 +218,7 @@ let pop_bool = function
 
 let pop_app = function
     | v :: MClosure (x, f, e) :: s -> (x, f, e, v, s)
-    | _ -> error "value and closure expected"
+    | s -> print_endline (string_of_stack s); error "value and closure expected"
 
 let pop_list l = 
     let rec pop acc = function
@@ -473,27 +473,45 @@ let run p =
         | (pid, ([], [], e)) -> (pid, ([], [], e))
         | (pid, ([], [v], e)) -> (pid, ([], [v], e))
         | (pid, ((IRdBind (x1, x2) :: is) :: frms, stck, envs)) ->
-            if List.mem_assoc x2 (List.hd envs)
+            let chan_env = (* TODO: Clean this up *)
+                if String.get x2 0 == '?' then List.hd (List.tl envs)
+                else List.hd envs in
+            if List.mem_assoc x2 (chan_env)
             then (pid, ((IRdBind (x1, x2) :: is) :: frms, stck, envs))
             else error "channel not allocated"
         | (pid, ((IChoice(pid', cid,  (IRdBind (x1, x2))) :: is) :: frms, stck, envs)) ->
-            if List.mem_assoc x2 (List.hd envs)
+            let chan_env =
+                if String.get x2 0 == '?' then List.hd (List.tl envs)
+                else List.hd envs in
+            if List.mem_assoc x2 (chan_env)
             then (pid, ((IChoice(pid', cid, (IRdBind (x1, x2))) :: is) :: frms, stck, envs))
             else error "channel not allocated"
         | (pid, ((IRd x :: is) :: frms, stck, envs)) ->
-            if List.mem_assoc x (List.hd envs)
+            let chan_env =
+                if String.get x 0 == '?' then List.hd (List.tl envs)
+                else List.hd envs in
+            if List.mem_assoc x (chan_env)
             then (pid, ((IRd x :: is) :: frms, stck, envs))
             else error "channel not allocated"
         | (pid, ((IChoice(pid', cid,  (IRd x)) :: is) :: frms, stck, envs)) ->
-            if List.mem_assoc x (List.hd envs)
+            let chan_env =
+                if String.get x 0 == '?' then List.hd (List.tl envs)
+                else List.hd envs in
+            if List.mem_assoc x (chan_env)
             then (pid, ((IChoice(pid', cid, (IRd x)) :: is) :: frms, stck, envs))
             else error "channel not allocated"
         | (pid, ((IWr (MHole, x) :: is) :: frms, v :: stck, envs)) ->
-            if List.mem_assoc x (List.hd envs)
+            let chan_env =
+                if String.get x 0 == '?' then List.hd (List.tl envs)
+                else List.hd envs in
+            if List.mem_assoc x (chan_env)
             then (pid, ((IWr (v, x) :: is) :: frms, stck, envs))
             else error "channel not allocated"
         | (pid, ((IWr (v, x) :: is) :: frms, stck, envs)) ->
-            if List.mem_assoc x (List.hd envs)
+            let chan_env =
+                if String.get x 0 == '?' then List.hd (List.tl envs)
+                else List.hd envs in
+            if List.mem_assoc x (chan_env)
             then (pid, ((IWr (v, x) :: is) :: frms, stck, envs))
             else error "channel not allocated"
         | (pid, ([ISpawn] :: frms, stck, envs)) ->

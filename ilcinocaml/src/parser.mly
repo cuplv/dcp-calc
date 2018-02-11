@@ -8,7 +8,7 @@
           | _ -> raise Parsing_error
 
     let curry_lambdas x acc = if String.get x 0 <> '?' then Lam(x, acc) else acc
-    let curry e acc = App(acc, e)
+    let curry acc e = App(acc, e)
 %}
 
 /* Identifier and constants */
@@ -234,9 +234,9 @@ bool_expr:
 
 app_expr:
     | x = NAME es = atom_list
-      { List.fold_right curry es (Name x) }
+      { List.fold_left curry (Name x) es }
     | LPAREN x = expr RPAREN es = atom_list
-      { List.fold_right curry es x }
+      { List.fold_left curry x es }
     | THUNK x = NAME
       { Thunk (Name x) }
     | THUNK LPAREN e = expr RPAREN

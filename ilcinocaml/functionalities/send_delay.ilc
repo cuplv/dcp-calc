@@ -3,7 +3,7 @@ let sendDelayed = lam f, m, R, ?a2f, ?f2a, ?f2p .
   wr f (m, R) -> ?f2a .
   let 'ok = rd ?a2f in        (* rd 'ok <- ?a2f *)
     wr (m, R) -> ?f2p
-in
+in 
 
 (* User-defined leakage *)
 let leak = lam x . let (('Sent, msg), R) = x in

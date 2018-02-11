@@ -1,0 +1,16 @@
+nu f2p, p2f .
+  let (db, c) = ([], 0) in
+    match rd p2f with (P_i, 'Write, m_i) in
+      (* TODO: regexp matching? *)
+      req mem m_i pattern({0, 1}*) in
+        let db = (c, (P_i, m_i)) :: db in
+          wr ((S, 'Write, c, P_i, m_i), C_I) -> f2p .
+            let c = c + 1 in
+    match rd p2f (P_j, 'Read, c) in
+      (* Should this be (P_j, m_i)? *)
+      if lookup (c, (P_i, m_i)) db then
+        wr (((S, P_j, 'Read, m),
+             (P_j, 'Read, c, P_j, m_i)), C_I) -> f2p .
+      else
+        wr (((S, P_j, 'NoRead, c),
+             (P_j, 'NoRead, c)), C_I) -> f2p .

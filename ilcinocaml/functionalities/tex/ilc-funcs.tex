@@ -200,7 +200,7 @@ From~\cite{wikstrom2004universally}.
     \begin{enumerate}
         \item $\F_{\textsc{BB}}$ holds a database indexed on the integers. Initialize a counter $c = 0$.
         \item Upon receiving $(P_i, \texttt{Write}, m_i)$, $m_i \in {\{0, 1\}}^*$, from $C_\mathcal{I}$, store $(P_i, m_i)$ under the index $c$ in the database, hand $(S, \texttt{Write}, c, P_i, m_i)$ to $C_\mathcal{I}$, and set $c \leftarrow c + 1$.
-        \item Upon receiving $(P_j, \texttt{Read}, c)$ from $C_\mathcal{I}$ check if a tuple $(P_i, m_i)$ is stored in the database under $c$. If so hand $((S, P_j, \texttt{Read}, c, P_i, m),(P_j, \texttt{Read}, c, P_i, m_i))$ to $C_\mathcal{I}$. If not, hand $((S, P_j, \texttt{NoRead},c),), (P_j, \texttt{NoRead}, c))$ to $C_\mathcal{I}$.
+        \item Upon receiving $(P_j, \texttt{Read}, c)$ from $C_\mathcal{I}$ check if a tuple $(P_i, m_i)$ is stored in the database under $c$. If so hand $((S, P_j, \texttt{Read}, c, P_i, m),(P_j, \texttt{Read}, c, P_i, m_i))$ to $C_\mathcal{I}$. If not, hand $((S, P_j, \texttt{NoRead},c), (P_j, \texttt{NoRead}, c))$ to $C_\mathcal{I}$.
     \end{enumerate}
 \end{framed}
 

@@ -15,4 +15,4 @@ nu a2f, f2a, f2p .
   let ?a2f = a2f in
     let ?f2a = f2a in
       let ?f2p = f2p in
-        ((sendDelayed leak) ('Sent, "hi")) 1
+        sendDelayed leak ('Sent, "hi") 1

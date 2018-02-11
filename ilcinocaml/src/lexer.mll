@@ -39,6 +39,7 @@ rule token = parse
 
     (* Reserved words *)
     | "let"                     { LET }
+    | "match"                   { MATCH }
     | "in"                      { IN }
     | "letrec"                  { LETREC }
     | "lam"                     { LAM }
@@ -52,8 +53,6 @@ rule token = parse
     | "false"                   { FALSE }
     | "thunk"                   { THUNK }
     | "force"                   { FORCE }
-    (*| "match"                   { MATCH }
-    | "with"                    { WITH }*)
     | "req"                     { REQ }
 
     (* Operators *)
@@ -64,7 +63,6 @@ rule token = parse
     | "|"                       { PAR }
     | ".|"                      { PARL }
     | "&"                       { CHOICE }
-    (*| "=>"                      { RRARROW }*)
 
     (* Arithmetic operators *)
     | "+"                       { PLUS }

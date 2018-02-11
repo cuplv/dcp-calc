@@ -6,6 +6,8 @@
     let get_names = function 
           | Name x -> x
           | _ -> raise Parsing_error
+
+    let curry e acc = App(acc, e)
 %}
 
 /* Identifier and constants */
@@ -17,6 +19,7 @@
 
 /* Reserved words */
 %token LET
+%token MATCH
 %token IN
 %token LETREC
 %token LAM
@@ -30,8 +33,6 @@
 %token FALSE
 %token THUNK
 %token FORCE
-/*%token MATCH
-%token WITH*/
 %token REQ
 
 /* Operators */
@@ -42,7 +43,6 @@
 %token PAR
 %token PARL
 %token CHOICE
-/*%token RRARROW*/
 
 /* Arithmetic operators */
 %token PLUS
@@ -97,13 +97,13 @@
 %nonassoc ELSE
 %right CONS CONCAT
 %nonassoc SHOW
+%nonassoc LENGTH
 %nonassoc OR
 %nonassoc AND
 %nonassoc NOT
 %nonassoc LT GT LEQ GEQ EQ NEQ
 %left PLUS MINUS
 %left TIMES DIVIDE MOD
-%left APP
 
 %start file
 %type <Syntax.process list> file
@@ -139,8 +139,6 @@ expr:
       { e }
     | e = proc_expr
       { e }
-    /*| LAM x = NAME DOT e = expr
-      { Lam (x, e) }*/
     | LAM xs = name_list DOT e = expr
       { Lam (xs, e) }
     | LET x = NAME EQUAL e1 = expr IN e2 = expr %prec LET_PREC
@@ -152,6 +150,12 @@ expr:
     | LET t = TAG EQUAL e1 = expr IN e2 = expr %prec LET_PREC
       { LetP ([Tag t], e1, e2) }
     | LET LPAREN p = comma_list RPAREN EQUAL e1 = expr IN e2 = expr %prec LET_PREC
+      { LetP (p, e1, e2) }
+    | MATCH USCORE EQUAL e1 = expr IN e2 = expr %prec LET_PREC
+      { LetP ([Wildcard], e1, e2) }
+    | MATCH t = TAG EQUAL e1 = expr IN e2 = expr %prec LET_PREC
+      { LetP ([Tag t], e1, e2) }
+    | MATCH LPAREN p = comma_list RPAREN EQUAL e1 = expr IN e2 = expr %prec LET_PREC
       { LetP (p, e1, e2) }
     | LETREC x = NAME EQUAL e1 = expr IN e2 = expr %prec LET_PREC
       { LetRec (x, e1, e2) }
@@ -228,10 +232,10 @@ bool_expr:
       { Neq (e1, e2) }
 
 app_expr:
-    | x = NAME e = expr %prec APP
-      { App (Name x, e) }
-    | LPAREN x = expr RPAREN e = expr %prec APP
-      { App (x, e) }
+    | x = NAME es = atom_list
+      { List.fold_right curry es (Name x) }
+    | LPAREN x = expr RPAREN es = atom_list
+      { List.fold_right curry es x }
     | THUNK x = NAME
       { Thunk (Name x) }
     | THUNK LPAREN e = expr RPAREN
@@ -302,9 +306,8 @@ name_list:
     | e1 = IMPNAME COMMA e2 = name_list
       { e1 :: e2 }
 
-
-/*branches:
-    | p = expr RRARROW e = expr
-      { [(p, e)] }
-    | p = expr RARROW e = expr PAR bs = branches
-      { (p, e) :: bs }*/
+atom_list:
+    | e = atom_expr
+      { [e] }
+    | e1 = atom_expr e2 = atom_list
+      { e1 :: e2 }

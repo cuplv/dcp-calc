@@ -20,9 +20,10 @@
 
 /* Reserved words */
 %token LET
-%token MATCH
-%token IN
 %token LETREC
+%token IN
+%token MATCH
+%token WITH
 %token LAM
 %token NU
 %token WR
@@ -152,11 +153,11 @@ expr:
       { LetP ([Tag t], e1, e2) }
     | LET LPAREN p = comma_list RPAREN EQUAL e1 = expr IN e2 = expr %prec LET_PREC
       { LetP (p, e1, e2) }
-    | MATCH USCORE EQUAL e1 = expr IN e2 = expr %prec LET_PREC
+    | MATCH e1 = expr WITH USCORE IN e2 = expr %prec LET_PREC
       { LetP ([Wildcard], e1, e2) }
-    | MATCH t = TAG EQUAL e1 = expr IN e2 = expr %prec LET_PREC
+    | MATCH e1 = expr WITH t = TAG IN e2 = expr %prec LET_PREC
       { LetP ([Tag t], e1, e2) }
-    | MATCH LPAREN p = comma_list RPAREN EQUAL e1 = expr IN e2 = expr %prec LET_PREC
+    | MATCH e1 = expr WITH LPAREN p = comma_list RPAREN IN e2 = expr %prec LET_PREC
       { LetP (p, e1, e2) }
     | LETREC x = NAME EQUAL e1 = expr IN e2 = expr %prec LET_PREC
       { LetRec (x, e1, e2) }
@@ -168,8 +169,6 @@ expr:
       { Req (e1, e2) }
     | e1 = expr DOT e2 = expr
       { Seq (e1, e2) }
-    /*| MATCH x = NAME WITH bs = branches SEMI
-      { Match (x, bs) }*/
    
 atom_expr:
     | x = NAME

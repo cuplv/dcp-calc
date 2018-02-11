@@ -6,7 +6,7 @@ let sendDelayed = lam f, m, R, ?a2f, ?f2a, ?f2p .
 in 
 
 (* User-defined leakage *)
-let leak = lam x . let (('Sent, msg), R) = x in
+let leak = lam x . match x with (('Sent, msg), R) in
   (('Sent, length msg), R)
 in
 

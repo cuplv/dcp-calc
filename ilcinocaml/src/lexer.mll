@@ -39,9 +39,10 @@ rule token = parse
 
     (* Reserved words *)
     | "let"                     { LET }
-    | "match"                   { MATCH }
-    | "in"                      { IN }
     | "letrec"                  { LETREC }
+    | "in"                      { IN }
+    | "match"                   { MATCH }
+    | "with"                    { WITH }
     | "lam"                     { LAM }
     | "nu"                      { NU }
     | "wr"                      { WR }

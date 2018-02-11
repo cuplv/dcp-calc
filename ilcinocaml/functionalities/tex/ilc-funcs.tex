@@ -75,7 +75,7 @@
 
 \lstinputlisting[style=ilc]{../F_smt.ilc}
 
-\section{Zero Knowledge Proofs}
+\section{Zero Knowledge}
 
 \begin{framed}
     \centerline{\textbf{Functionality} $\F_{\textsc{ZK(R)}}$}
@@ -174,6 +174,64 @@ From UC commitments~\cite{canetti2001universally}.
 \end{framed}
 
 \lstinputlisting[style=ilc]{../F_mcom.ilc}
+
+\section{Mix-Net}
+From~\cite{wikstrom2004universally}.
+
+\begin{framed}
+    \centerline{\textbf{Functionality} $\F_{\textsc{MN}}$}
+    \ \\
+    \noindent $\F_{\textsc{MN}}$ running with mix-servers $M_1, \ldots, M_k$, senders $P_1, \ldots, P_N$, and ideal adversary $S$ proceeds as follows.
+    
+    \begin{enumerate}
+        \item Initialize a list $L = \emptyset$, and set $J_P = \emptyset$ and $J_M = \emptyset$.
+        \item Suppose $(P_i, \texttt{Send}, m_i)$, $m_i \in G_q$ is received from $C_\mathcal{I}$. If $i \not \in J_P$, set $J_P \leftarrow J_P \cup \{i\}$, and append $m_i$ to the list $L$. Then hand $(S, P_i, \texttt{Send})$ to $C_\mathcal{I}$.
+        \item Suppose $(M_j, \texttt{Run})$ is received from $C_\mathcal{I}$. Set $J_M \leftarrow J_M \cup \{j\}$. If $|J_M| \geq k/2$, then sort the list $L$ lexicographically to form a list $L'$, and hand $((S, M_j, \texttt{Output}, L'), {\{M_l, \texttt{Output}, L')\}}^{k}_{l=1})$ to $C_\mathcal{I}$. Otherwise, hand $C_\mathcal{I}$ the list $(S, M_j, \texttt{Run})$.
+    \end{enumerate}
+\end{framed}
+
+\section{Bulletin Board~\cite{wikstrom2004universally}}
+
+\begin{framed}
+    \centerline{\textbf{Functionality} $\F_{\textsc{BB}}$}
+    \ \\
+    \noindent $\F_{\textsc{BB}}$ running with participants $P_1, \ldots, P_k$ and ideal adversary $S$.
+    
+    \begin{enumerate}
+        \item $\F_{\textsc{BB}}$ holds a database indexed on the integers. Initialize a counter $c = 0$.
+        \item Upon receiving $(P_i, \texttt{Write}, m_i)$, $m_i \in {\{0, 1\}}^*$, from $C_\mathcal{I}$, store $(P_i, m_i)$ under the index $c$ in the database, hand $(S, \texttt{Write}, c, P_i, m_i)$ to $C_\mathcal{I}$, and set $c \leftarrow c + 1$.
+        \item Upon receiving $(P_j, \texttt{Read}, c)$ from $C_\mathcal{I}$ check if a tuple $(P_i, m_i)$ is stored in the database under $c$. If so hand $((S, P_j, \texttt{Read}, c, P_i, m),(P_j, \texttt{Read}, c, P_i, m_i))$ to $C_\mathcal{I}$. If not, hand $((S, P_j, \texttt{NoRead},c),), (P_j, \texttt{NoRead}, c))$ to $C_\mathcal{I}$.
+    \end{enumerate}
+\end{framed}
+
+\section{Distributed El Gamal Key Generation~\cite{wikstrom2004universally}}
+
+\begin{framed}
+    \centerline{\textbf{Functionality} $\F_{\textsc{KG}}$}
+    \ \\
+    \noindent $\F_{\textsc{KG}}$ running with mix-servers $M_1, \ldots, M_k$, senders $P_1, \ldots, P_N$, and ideal adversary $S$ proceeds as follows.
+    
+    \begin{enumerate}
+        \item Initialize sets $J_j = \emptyset$ for $j = 0, \ldots, k$.
+        \item Until $|J_0| = k$, wait for $(M_j, \texttt{MyKey}, x_j, y_j)$ from $C_\mathcal{I}$ such that $x_j \in \mathbb{Z}_q$, $y_j = g^{x_j}$, and $j \not \in J_0$. Set $J_0 \leftarrow J_0 \cup \{j\}$.
+        \item Hand $((S, \texttt{PublicKeys}, y_1, \ldots, y_k), {\{(P_j, \texttt{PublicKeys}, y_1, \ldots, y_k)\}}^{N}_{j=1},$ ${\{(M_j, \texttt{Keys}, x_j, y_1, \ldots, y_k)\}}^{k}_{j=1})$ to $C_\mathcal{I}$.
+        \item If $(M_j, \texttt{Recover}, M_l)$ is received from $C_\mathcal{I}$, set $J_l \leftarrow J_l \cup \{j\}$. If $|J_l| \geq k/2$, then hand $((S, \texttt{Recovered}, M_l, x_l), {\{(M_j, \texttt{Recovered}, M_l, x_l)\}}^{k}_{j=1})$ to $C_\mathcal{I}$, and otherwise hand $(S, M_j, \texttt{Recover}, M_l)$ to $C_\mathcal{I}$.
+    \end{enumerate}
+\end{framed}
+
+\section{Zero-Knowledge Proof of Knowledge~\cite{wikstrom2004universally}}
+
+\begin{framed}
+    \centerline{\textbf{Functionality} $\F_{\textsc{ZK(R)}}$}
+    \ \\
+    \noindent $\F_{\textsc{KG}}$ of a witness $w$ to an element $x \in \mathcal{L}$, running with provers $P_1, \ldots, P_N$, and verifiers $M_1, \ldots, M_k$ proceeds as follows.
+    
+    \begin{enumerate}
+        \item Upon receipt of $(P_i, \texttt{Prover}, x, w)$ from $C_\mathcal{I}$, store $w$ under the tag $(P_i, x)$, and hand $(S, P_i, \texttt{Prover}, x, R(x, w))$ to $C_\mathcal{I}$. Ignore further messages from $P_i$.
+        \item Upon receipt of $(M_j, \texttt{Question}, P_i, x)$ from $C_\mathcal{I}$, let $w$ be the string stored under the tag $(P_i, x)$ (the empty string if nothing is stored), and hand $((S, M_j, \texttt{Verifier}, P_i, x, R(x, w)), (M_j, \texttt{Verifier}, P_i, R(x, w)))$ to $C_\mathcal{I}$.
+    \end{enumerate}
+\end{framed}
+
 
 \section{SaUCY execution model}
 \lstinputlisting[style=ilc]{../SaUCy/send_delay.ilc}

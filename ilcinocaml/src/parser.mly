@@ -286,7 +286,7 @@ comm_expr:
       { Rd c }
     | RD c = IMPNAME
       { Rd c }
-    /* IMPNAME here */
+    /* IMPNAME here? */
     | NU xs = name_list DOT e = expr %prec NU_PREC
       { Nu (xs, e) }
 

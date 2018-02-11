@@ -1,6 +1,6 @@
 (* Functionality parameterized by distribution D *)
 
-nu {p2f, f2p} .
+nu p2f, f2p .
 let (pid, sid) = rd p2f in
   let d = rand in
     wr (pid, d) -> f2p .
@@ -8,7 +8,7 @@ let (pid, sid) = rd p2f in
       wr (pid, d) -> f2p);;
 
 (* Test functionality *)
-nu {p2f, f2p} .
+nu p2f, f2p .
 wr (0, 0) -> p2f . let (pid, d) = rd f2p in
     show pid ++ " received " ++ show d
 | wr (1, 1) -> p2f . let (pid, d) = rd f2p in

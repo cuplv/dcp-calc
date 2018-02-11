@@ -1,6 +1,6 @@
 (* No idea what S or KE are. Will read about it later *)
 
-nu { p2f, f2p } .
+nu p2f, f2p .
 let (KE, B) = rd p2f in
     let k = rand in
         wr ((A, B), S) -> f2p .

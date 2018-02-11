@@ -1,2 +1,0 @@
-(*let leak = lam (tag, m) . (tag, length(m)) in*)
-  nu {f2a, a2f, f2p} . wrdelay<leak> ('Sent, m) -> R

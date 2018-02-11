@@ -1,7 +1,7 @@
 (* Do not need corrupt sender in static corruptions world *)
 
-nu { p2f, f2p, a2f } .
-let ('Send, S, R, sid, m) = rd p2f in
+nu p2f, f2p, a2f .
+match rd p2f with ('Send, S, R, sid, m) in
     (wr<pub, delay> (('Sent, S, sid, m), R) -> f2p) &
-    (let ('Corrupt-sender, sid, m') = rd a2f in
+    (match rd a2f with ('Corrupt-sender, sid, m') in
         wr (('Sent, S, sid, m'), R) -> f2p)

@@ -1,4 +1,4 @@
-nu {p2f, f2p} .
+nu p2f, f2p .
 let (pid, sid) = rd p2f in
   let d = rand in
     wr (pid, d) -> f2p .

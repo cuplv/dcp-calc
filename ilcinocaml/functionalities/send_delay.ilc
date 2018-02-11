@@ -1,7 +1,7 @@
 (* SaUCy prelude *)
 let sendDelayed = lam f, m, R, ?a2f, ?f2a, ?f2p .
   wr f (m, R) -> ?f2a .
-  let 'ok = rd ?a2f in        (* rd 'ok <- ?a2f *)
+  match rd ?a2f with 'ok in
     wr (m, R) -> ?f2p
 in 
 

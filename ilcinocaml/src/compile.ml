@@ -30,6 +30,9 @@ let rec compile = function
     | List es ->
         [IStartL] @ List.fold_left (fun acc e -> acc @ (compile e))
         [] es @ [IEndL]
+    | Set es ->
+        [IStartS] @ List.fold_left (fun acc e -> acc @ (compile e))
+        [] es @ [IEndS]
     | Tuple es ->
         [IStartT] @ List.fold_left (fun acc e -> acc @ (compile e))
         [] es @ [IEndT]
@@ -115,3 +118,4 @@ let rec compile = function
     | Concat (e1, e2) -> (compile e1) @ (compile e2) @ [IConcat]
     | Lookup (e1, e2) -> (compile e1) @ (compile e2) @[ILookup]
     | Length e -> (compile e) @ [ILength]
+    | Mem (e1, e2) -> (compile e1) @ (compile e2) @[IMem]

@@ -75,6 +75,7 @@
 %token CONCAT
 %token LOOKUP
 %token LENGTH
+%token MEM
 
 /* Punctuation */
 %token DOT
@@ -82,8 +83,8 @@
 %token RPAREN
 %token LBRACK
 %token RBRACK
-/*%token LBRACE
-%token RBRACE*/
+%token LBRACE
+%token RBRACE
 %token COMMA
 %token SEMI
 %token USCORE
@@ -165,7 +166,7 @@ expr:
       { IfT (b, e1) }
     | IF b = expr THEN e1 = expr ELSE e2 = expr
       { IfTE (b, e1, e2) }
-    | REQ e1 = expr IN e2 = expr%prec LET_PREC
+    | REQ e1 = expr IN e2 = expr %prec LET_PREC
       { Req (e1, e2) }
     | e1 = expr DOT e2 = expr
       { Seq (e1, e2) }
@@ -191,6 +192,10 @@ atom_expr:
       { List [] }
     | LBRACK e = comma_list RBRACK
       { List e }
+    | LBRACE RBRACE
+      { Set [] }
+    | LBRACE e = comma_list RBRACE
+      { Set e }
     | LPAREN e1 = expr COMMA e2 = comma_list RPAREN
       { Tuple (e1::e2) }
     | RAND
@@ -230,6 +235,11 @@ bool_expr:
       { Eq (e1, e2) }
     | e1 = expr NEQ e2 = expr
       { Neq (e1, e2) }
+    /*| e1 = atom_expr IN e2 = atom_expr
+      { Mem (e1, e2) }*/
+    | MEM e1 = atom_expr e2 = atom_expr
+      { Mem (e1, e2) }
+
 
 app_expr:
     | x = NAME es = atom_list
@@ -258,7 +268,7 @@ app_expr:
       { Cons (e1, e2) }
     | e1 = expr CONCAT e2 = expr
       { Concat (e1, e2) }
-    | LOOKUP e1 = expr IN e2 = expr %prec LET_PREC
+    | LOOKUP e1 = atom_expr e2 = atom_expr
       { Lookup (e1, e2) }
     | LENGTH e = expr
       { Length e }

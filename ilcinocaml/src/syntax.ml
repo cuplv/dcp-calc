@@ -19,6 +19,7 @@ type expr =
     | Bool of bool
     | String of string
     | List of expr list
+    | Set of expr list
     | Tuple of expr list
     | Wildcard
 
@@ -81,7 +82,7 @@ type expr =
     | Concat of expr * expr
     | Lookup of expr * expr
     | Length of expr
-    (*| Match of name * (expr * expr) list*)
+    | Mem of expr * expr
 
 type process =
     | Process of expr
@@ -114,6 +115,7 @@ let string_of_expr e =
         | Bool b -> "Bool(" ^ string_of_bool b ^ ")"
         | String s -> "String(" ^ s ^ ")"
         | List es -> "List(" ^ str_of_list to_str es ^ ")"
+        | Set es -> "Set(" ^ str_of_list to_str es ^ ")"
         | Tuple es -> "Tuple(" ^ str_of_list to_str es ^ ")"
         | Wildcard -> "Wildcard"
 
@@ -181,5 +183,5 @@ let string_of_expr e =
         | Concat (e1, e2) -> "Concat(" ^ to_str e1 ^ "," ^ to_str e2 ^ ")"
         | Lookup (e1, e2) -> "Lookup(" ^ to_str e1 ^ "," ^ to_str e2 ^ ")"
         | Length e -> "Length(" ^ to_str e ^ ")"
-        (*| Match (x, es) -> "Match()"*)
+        | Mem (e1, e2) -> "Mem(" ^ to_str e1 ^ "," ^ to_str e2 ^ ")"
     in to_str e

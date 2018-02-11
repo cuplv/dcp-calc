@@ -94,6 +94,7 @@ rule token = parse
     | "++"                      { CONCAT }
     | "lookup"                  { LOOKUP }
     | "length"                  { LENGTH }
+    | "mem"                     { MEM }
 
     (* Punctuation *)
     | "."                       { DOT }
@@ -101,8 +102,8 @@ rule token = parse
     | ")"                       { RPAREN }
     | "["                       { LBRACK }
     | "]"                       { RBRACK }
-    (*| "{"                       { LBRACE }
-    | "}"                       { RBRACE }*)
+    | "{"                       { LBRACE }
+    | "}"                       { RBRACE }
     | ","                       { COMMA }
     | ";"                       { SEMI }
     | "_"                       { USCORE }

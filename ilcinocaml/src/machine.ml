@@ -10,6 +10,7 @@ type mvalue =
     | MBool of bool
     | MString of string
     | MList of mvalue list
+    | MSet of mvalue list
     | MTuple of mvalue list
     | MWCard
     | MClosure of name * frame * environ
@@ -62,6 +63,8 @@ and instr =
     | IHole of int
     | IStartL
     | IEndL
+    | IStartS
+    | IEndS
     | ICons
     | IConcat
     | IStartT
@@ -73,6 +76,7 @@ and instr =
     | IShow
     | ILookup
     | ILength
+    | IMem
 and frame = instr list
 and environ = (name * mvalue) list
 and stack = mvalue list
@@ -97,6 +101,7 @@ let rec string_of_mvalue = function
     | MClosure _ -> "<fun>"
     | MHole -> "hole"
     | MList l -> "[" ^ string_of_list string_of_mvalue l ^ "]"
+    | MSet l -> "{" ^ string_of_list string_of_mvalue l ^ "}"
     | MTuple l -> "(" ^ string_of_list string_of_mvalue l ^ ")"
     | MVarP p -> p
     | MTag s -> s
@@ -147,6 +152,8 @@ let rec string_of_instr = function
     | IHole n -> sprintf "IHole(%d)" n
     | IStartL -> "IStartL"
     | IEndL -> "IEndL"
+    | IStartS -> "IStartS"
+    | IEndS -> "IEndS"
     | ICons -> "ICons"
     | IConcat -> "IConcat"
     | IStartT -> "IStartT"
@@ -158,6 +165,7 @@ let rec string_of_instr = function
     | IShow -> "IShow"
     | ILookup -> "ILookup"
     | ILength -> "ILength"
+    | IMem -> "IMem"
 and string_of_frame = function
     | [] -> "\n"
     | i::is -> string_of_instr i ^ "\n" ^ string_of_frame is
@@ -325,6 +333,10 @@ let length = function
     | (MString x) :: s -> MInt (String.length x) :: s
     | _ -> error "no string to get length"
 
+let mem = function
+    | (MSet xs) :: x :: s -> MBool (List.mem x xs) :: s
+    | _ -> error "no set"
+
 let split frm n = 
     let rec aux acc = function
         | [] -> (List.rev acc, [])
@@ -452,6 +464,10 @@ let exec instr frms stck envs =
     | IEndL ->
         let (lst, stck') = pop_list stck
         in (frms, (MList lst) :: stck', envs)
+    | IStartS -> (frms, (MList []) :: stck, envs)
+    | IEndS ->
+        let (lst, stck') = pop_list stck
+        in (frms, (MSet lst) :: stck', envs)
     | ICons -> (frms, cons stck, envs)
     | IConcat -> (frms, concat stck, envs)
     | IStartT -> (frms, (MList []) :: stck, envs)
@@ -464,6 +480,7 @@ let exec instr frms stck envs =
     | IShow -> (frms, show stck, envs)
     | ILookup -> (frms, assoc_lookup stck, envs)
     | ILength -> (frms, length stck, envs)
+    | IMem -> (frms, mem stck, envs)
     | _ -> error ("illegal instruction")
 
 (* Execute instructions *)

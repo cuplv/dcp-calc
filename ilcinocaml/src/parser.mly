@@ -7,6 +7,7 @@
           | Name x -> x
           | _ -> raise Parsing_error
 
+    let curry_lambdas x acc = if String.get x 0 <> '?' then Lam(x, acc) else acc
     let curry e acc = App(acc, e)
 %}
 
@@ -140,7 +141,7 @@ expr:
     | e = proc_expr
       { e }
     | LAM xs = name_list DOT e = expr
-      { Lam (xs, e) }
+      { List.fold_right curry_lambdas xs e }
     | LET x = NAME EQUAL e1 = expr IN e2 = expr %prec LET_PREC
       { Let (x, e1, e2) }
     | LET x = IMPNAME EQUAL e1 = expr IN e2 = expr %prec LET_PREC

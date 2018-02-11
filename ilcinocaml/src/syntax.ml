@@ -53,7 +53,8 @@ type expr =
     | Req of expr * expr
 
     (* Lambda *)
-    | Lam of name list * expr
+    | Lam of name * expr
+    | ImpLam of name * expr
     | App of expr * expr
 
     (* Pi *)
@@ -152,7 +153,8 @@ let string_of_expr e =
         | Req (e1, e2) -> "Req(" ^ to_str e1 ^ "," ^ to_str e2 ^ ")"
 
         (* Lambda *)
-        | Lam (xs, e) -> "Lam(" ^ str_of_list name_to_str xs ^ "," ^ to_str e ^ ")"
+        | Lam (x, e) -> "Lam(" ^ name_to_str x ^ "," ^ to_str e ^ ")"
+        | ImpLam (x, e) -> "ImpLam(" ^ name_to_str x ^ "," ^ to_str e ^ ")"
         | App (e1, e2) -> "App(" ^ to_str e1 ^ "," ^ to_str e2 ^ ")"
 
         (* Pi *)

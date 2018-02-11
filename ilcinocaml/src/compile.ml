@@ -75,10 +75,8 @@ let rec compile = function
     | Req (e1, e2) -> (compile e1) @ [IReq] @ (compile e2)
 
     (* Lambda *)
-    | Lam ([x], e) -> [IClosure ("anon", x, compile e @ [IPopEnv])]
-    | Lam (xs, e) ->
-        let f x acc = if String.get x 0 <> '?' then Lam([x], acc) else acc in
-        compile (List.fold_right f xs e)
+    | Lam (x, e) -> [IClosure ("anon", x, compile e @ [IPopEnv])]
+    | ImpLam (x, e) -> compile e
     | App (e1, e2) -> (compile e1) @ (compile e2) @ [ICall]
 
     (* Pi *)

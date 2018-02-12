@@ -79,6 +79,9 @@ and instr =
   | ILength
   | IMem
   | IUnion
+  | IStartM
+  | IEndM
+  | IMatchCond of frame
 and frame = instr list
 and environ = (name * mvalue) list
 and stack = mvalue list
@@ -170,6 +173,9 @@ let rec string_of_instr = function
   | ILength -> "ILength"
   | IMem -> "IMem"
   | IUnion -> "IUnion"
+  | IStartM -> "IStartM"
+  | IEndM -> "IEndM"
+  | IMatchCond _ -> "IMatchCond()"
 and string_of_frame = function
   | [] -> "\n"
   | i::is -> string_of_instr i ^ "\n" ^ string_of_frame is
@@ -351,6 +357,10 @@ let union = function
     MSet (List.fold_left f ys xs) :: s
   | _ -> error "no sets to union"
 
+let pop_match = function
+  | pattern :: tuple :: s -> (pattern, tuple, s)
+  | _ -> error "pattern match failed 1"
+
 let split frm n = 
   let rec aux acc = function
     | [] -> (List.rev acc, [])
@@ -364,6 +374,8 @@ let get_par_ps frm n =
   let (snd_frm, rest_frm) = split (List.tl rest_frm) (succ n) in
   (fst_frm, snd_frm, rest_frm)
 
+exception Pattern_match_fail
+
 let pattern_match p1 p2 =
   let rec compare mapping p1' p2' =
     match (p1', p2') with
@@ -376,7 +388,7 @@ let pattern_match p1 p2 =
     | (MVarP x :: rest1, y :: rest2) ->
         compare ((x, y) :: mapping) rest1 rest2
     | ([], []) -> mapping
-    | _ -> error "pattern match failed"
+    | _ -> raise Pattern_match_fail
   in
   compare [] p1 p2
 
@@ -385,6 +397,11 @@ let remove_duplicates l =
   let uniqueify acc x = if List.mem x acc then acc
                         else x :: acc in
   List.fold_left uniqueify [] (List.rev l)
+
+let rec remove_alts = function
+  | IEndM :: instrs -> instrs
+  | _ :: instrs -> remove_alts instrs
+  | [] -> []
 
 let exec instr frms stck envs = 
   match instr with
@@ -437,7 +454,7 @@ let exec instr frms stck envs =
           let new_mapping = (x, x') :: env in
           (frms, stck', new_mapping :: env_tail)
       | [] -> error "no environment for variable")
-  | ILetP ->
+(*  | ILetP ->
       (match envs with
       | env :: env_tail ->
           let (pattern, stck') = pop stck in
@@ -449,7 +466,7 @@ let exec instr frms stck envs =
             | (MTuple x, MTuple y) -> pattern_match x y
             | _ -> error "pattern match failed") in
           (frms, stck', (new_mapping @ env) :: env_tail)
-      | [] -> error "no environment for variable")
+      | [] -> error "no environment for variable")*)
   | INu xs ->
       (match envs with
       | env :: env_tail ->
@@ -503,6 +520,22 @@ let exec instr frms stck envs =
   | ILength -> (frms, length stck, envs)
   | IMem -> (frms, mem stck, envs)
   | IUnion -> (frms, union stck, envs)
+  | IStartM -> (frms, stck, envs)
+  | IEndM -> error ("reached IEndM")
+  | IMatchCond new_frm ->
+     (match (frms, envs) with
+      | (frm :: frm_tail, env :: env_tail) ->
+         let (pattern, tuple, stck') = pop_match stck in
+         (try let new_mapping =
+                (match (pattern, tuple) with
+                 | (MTuple [MWCard], _) -> []
+                 | (MTuple [MTag t], MTag t') when t=t'-> []
+                 | (MTuple x, MTuple y) -> pattern_match x y
+                 | _ -> raise Pattern_match_fail) in
+              let rest_frm = remove_alts frm in
+              (new_frm :: rest_frm :: frm_tail, stck', (new_mapping @ env) :: env_tail) with
+          | Pattern_match_fail -> (frms, tuple :: stck', env :: env_tail))
+      | _ -> error "Pattern matching failed")
   | _ -> error ("illegal instruction")
 
 (* Execute instructions *)

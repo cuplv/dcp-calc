@@ -1,4 +1,4 @@
-module ILC = Zoo.Main(struct
+ module ILC = Zoo.Main(struct
     let name = "ILC"
     
     type process = Syntax.process

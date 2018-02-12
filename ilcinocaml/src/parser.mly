@@ -9,6 +9,8 @@
   
   let curry_lambdas x acc = if String.get x 0 <> '?' then Lam(x, acc) else acc
   let curry acc e = App(acc, e)
+
+  let get_proj f l = List.fold_left (fun acc x -> f x :: acc) [] (List.rev l)
 %}
 
 /* Identifier and constants */
@@ -36,6 +38,7 @@
 %token THUNK
 %token FORCE
 %token REQ
+%token END
 
 /* Operators */
 %token EQUAL
@@ -155,12 +158,14 @@ expr:
     { LetP ([Tag t], e1, e2) }
   | LET LPAREN p = comma_list RPAREN EQUAL e1 = expr IN e2 = expr %prec LET_PREC
     { LetP (p, e1, e2) }
-  | MATCH e1 = expr WITH USCORE IN e2 = expr %prec LET_PREC
+  /*| MATCH e1 = expr WITH USCORE IN e2 = expr %prec LET_PREC
     { LetP ([Wildcard], e1, e2) }
   | MATCH e1 = expr WITH t = TAG IN e2 = expr %prec LET_PREC
     { LetP ([Tag t], e1, e2) }
   | MATCH e1 = expr WITH LPAREN p = comma_list RPAREN IN e2 = expr %prec LET_PREC
-    { LetP (p, e1, e2) }
+    { LetP (p, e1, e2) }*/
+  | MATCH e1 = expr WITH bs = branches
+    { Match (e1, bs) }
   | LETREC x = NAME EQUAL e1 = expr IN e2 = expr %prec LET_PREC
     { LetRec (x, e1, e2) }
   | IF b = expr THEN e1 = expr
@@ -320,3 +325,9 @@ atom_list:
     { [e] }
   | e1 = atom_expr e2 = atom_list
     { e1 :: e2 }
+
+branches:
+  | PAR e1 = expr RARROW e2 = expr END
+    { [(e1, e2)] }
+  | PAR e1 = expr RARROW e2 = expr bs = branches
+    { (e1, e2) :: bs }

@@ -47,7 +47,8 @@ type expr =
   | Let of name * expr * expr
   | LetRec of name * expr * expr
   | LetP of expr list * expr * expr
-  
+  | Match of expr * (expr * expr) list
+            
   (* Conditionals *)
   | IfTE of expr * expr * expr
   | IfT of expr * expr
@@ -146,7 +147,9 @@ let string_of_expr e =
       to_str e1 ^ "," ^ to_str e2 ^ ")"
     | LetP (p, e1, e2) -> "LetP(" ^ "(" ^ str_of_list to_str p ^ ")," ^ 
       to_str e1 ^ "," ^ to_str e2 ^ ")"
-
+    | Match (e, es) ->
+       "Match(" ^ to_str e ^ "," ^ str_of_list str_of_match_pair es ^ ")"
+                      
     (* Conditionals *)
     | IfTE (e1, e2, e3) -> "IfTE(" ^ to_str e1 ^ "," ^ 
       to_str e2 ^ "," ^ to_str e3 ^ ")"
@@ -185,4 +188,6 @@ let string_of_expr e =
     | Length e -> "Length(" ^ to_str e ^ ")"
     | Mem (e1, e2) -> "Mem(" ^ to_str e1 ^ "," ^ to_str e2 ^ ")"
     | Union (e1, e2) -> "Union(" ^ to_str e1 ^ "," ^ to_str e2 ^ ")"
+  and str_of_match_pair = function
+    | (e1, e2) -> "Alt(" ^ to_str e1 ^ "," ^ to_str e2 ^ ")"
   in to_str e

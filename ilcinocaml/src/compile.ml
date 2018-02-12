@@ -18,7 +18,9 @@ let add_force x = function
   | instr -> [instr]
 
 let force_thunks x = List.fold_left (fun acc instr ->
-  acc @ (add_force x instr)) []
+                         acc @ (add_force x instr)) []
+
+let get_proj f l = List.fold_left (fun acc x -> f x :: acc) [] (List.rev l)
 
 let rec compile = function
   (* Identifier, constants, values *)
@@ -75,7 +77,15 @@ let rec compile = function
           | IVar x -> IVarP x :: acc
           | instr -> instr :: acc)
       [] (List.rev (List.fold_left (fun acc e -> acc @ (compile e))
-      [] p)) @ [IEndT lst_id] @ [ILetP] @ (compile e2)
+                                   [] p)) @ [IEndT lst_id] @ [ILetP] @ (compile e2)
+  | Match (e, es) ->
+     let f acc = function
+       | (p, expr) -> List.map (function
+                                | IVar x -> IVarP x
+                                | instr -> instr)
+                               (compile p) @
+                        [IMatchCond (compile expr)] @ acc in
+     [IStartM] @ (compile e) @ List.fold_left f [] (List.rev es) @ [IEndM]
   
   (* Conditionals *)
   | IfTE (e1, e2, e3) ->

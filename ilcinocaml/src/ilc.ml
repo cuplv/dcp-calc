@@ -20,7 +20,7 @@ module ILC = Zoo.Main(struct
     exception Process_error of string
 
     let printr = function
-      | (_, ([], [v], _)) when v <> Machine.MInt 0 ->
+      | (_, ([], [v], _)) ->
           Printf.printf "%s\n" (Machine.string_of_mvalue v)
       | _ -> ()
 

@@ -1,6 +1,6 @@
 (* -------------------------------------------------------------------------- *)
 (* Abstract machine *)
-
+open Syntax
 open Printf
 
 type name = Syntax.name
@@ -335,6 +335,9 @@ let assoc_lookup = function
 
 let length = function
   | (MString x) :: s -> MInt (String.length x) :: s
+  | (MList xs) :: s -> MInt(List.length xs) :: s
+  | (MTuple xs) :: s -> MInt(List.length xs) :: s
+  | (MSet xs) :: s -> MInt(List.length xs) :: s                      
   | _ -> error "no string to get length"
 
 let mem = function

@@ -190,6 +190,8 @@ From~\cite{wikstrom2004universally}.
     \end{enumerate}
 \end{framed}
 
+\lstinputlisting[style=ilc]{../F_mn.ilc}
+
 \section{Bulletin Board~\cite{wikstrom2004universally}}
 
 \begin{framed}
@@ -203,6 +205,8 @@ From~\cite{wikstrom2004universally}.
         \item Upon receiving $(P_j, \texttt{Read}, c)$ from $C_\mathcal{I}$ check if a tuple $(P_i, m_i)$ is stored in the database under $c$. If so hand $((S, P_j, \texttt{Read}, c, P_i, m),(P_j, \texttt{Read}, c, P_i, m_i))$ to $C_\mathcal{I}$. If not, hand $((S, P_j, \texttt{NoRead},c), (P_j, \texttt{NoRead}, c))$ to $C_\mathcal{I}$.
     \end{enumerate}
 \end{framed}
+
+\lstinputlisting[style=ilc]{../F_bb.ilc}
 
 \section{Distributed El Gamal Key Generation~\cite{wikstrom2004universally}}
 
@@ -218,6 +222,7 @@ From~\cite{wikstrom2004universally}.
         \item If $(M_j, \texttt{Recover}, M_l)$ is received from $C_\mathcal{I}$, set $J_l \leftarrow J_l \cup \{j\}$. If $|J_l| \geq k/2$, then hand $((S, \texttt{Recovered}, M_l, x_l), {\{(M_j, \texttt{Recovered}, M_l, x_l)\}}^{k}_{j=1})$ to $C_\mathcal{I}$, and otherwise hand $(S, M_j, \texttt{Recover}, M_l)$ to $C_\mathcal{I}$.
     \end{enumerate}
 \end{framed}
+
 
 \section{Zero-Knowledge Proof of Knowledge~\cite{wikstrom2004universally}}
 

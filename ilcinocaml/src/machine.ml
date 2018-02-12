@@ -18,6 +18,7 @@ type mvalue =
     | MHole
     | MVarP of name
     | MTag of string
+    | MId of int (* Hacky way to keep track of lists. Change later *)
 and instr =
     | IVar of name
     | IVarP of name
@@ -61,14 +62,14 @@ and instr =
     | IRd of name
     | ISpawn
     | IHole of int
-    | IStartL
-    | IEndL
-    | IStartS
-    | IEndS
+    | IStartL of int
+    | IEndL of int
+    | IStartS of int
+    | IEndS of int
     | ICons
     | IConcat
-    | IStartT
-    | IEndT
+    | IStartT of int
+    | IEndT of int
     | IFst
     | ISnd
     | IRepl of frame
@@ -106,6 +107,7 @@ let rec string_of_mvalue = function
     | MTuple l -> "(" ^ string_of_list string_of_mvalue l ^ ")"
     | MVarP p -> p
     | MTag s -> s
+    | MId n -> string_of_int n
 
 let rec string_of_instr = function 
     | IVar x -> sprintf "IVar(%s)" x
@@ -151,14 +153,14 @@ let rec string_of_instr = function
     | IBlock i -> sprintf "IBlock(%s)" (string_of_instr i)
     | ISpawn -> "ISpawn"
     | IHole n -> sprintf "IHole(%d)" n
-    | IStartL -> "IStartL"
-    | IEndL -> "IEndL"
-    | IStartS -> "IStartS"
-    | IEndS -> "IEndS"
+    | IStartL _ -> "IStartL"
+    | IEndL _ -> "IEndL"
+    | IStartS _ -> "IStartS"
+    | IEndS _ -> "IEndS"
     | ICons -> "ICons"
     | IConcat -> "IConcat"
-    | IStartT -> "IStartT"
-    | IEndT -> "IEndT"
+    | IStartT _ -> "IStartT"
+    | IEndT _ -> "IEndT"
     | IFst -> "IFst"
     | ISnd -> "ISnd"
     | IRepl _ -> "IRepl"
@@ -228,11 +230,11 @@ let pop_bool = function
 
 let pop_app = function
     | v :: MClosure (x, f, e) :: s -> (x, f, e, v, s)
-    | s -> print_endline (string_of_stack s); error "value and closure expected"
+    | s -> error "value and closure expected"
 
-let pop_list l = 
+let pop_list n l = 
     let rec pop acc = function
-        | MList [] :: s -> (acc, s)
+        | MId n :: s -> (acc, s)
         | mv :: s -> pop (mv :: acc) s
         | _ -> error "no list to pop"
     in
@@ -475,20 +477,20 @@ let exec instr frms stck envs =
             let (fst_frm, snd_frm, rest_frm) = get_par_ps frm n in
             ([ISpawn] :: fst_frm :: snd_frm :: rest_frm :: rest_frms, stck, envs)
         | [] -> error "no processes to spawn")
-    | IStartL -> (frms, (MList []) :: stck, envs)
-    | IEndL ->
-        let (lst, stck') = pop_list stck
+    | IStartL n -> (frms, (MId n) :: stck, envs)
+    | IEndL n ->
+        let (lst, stck') = pop_list n stck
         in (frms, (MList lst) :: stck', envs)
-    | IStartS -> (frms, (MList []) :: stck, envs)
-    | IEndS ->
-        let (lst, stck') = pop_list stck in
+    | IStartS n -> (frms, (MId n) :: stck, envs)
+    | IEndS n ->
+        let (lst, stck') = pop_list n stck in
         let set = remove_duplicates lst in
         (frms, (MSet set) :: stck', envs)
     | ICons -> (frms, cons stck, envs)
     | IConcat -> (frms, concat stck, envs)
-    | IStartT -> (frms, (MList []) :: stck, envs)
-    | IEndT ->
-        let (lst, stck') = pop_list stck
+    | IStartT n -> (frms, (MId n) :: stck, envs)
+    | IEndT n ->
+        let (lst, stck') = pop_list n stck
         in (frms, (MTuple lst) :: stck', envs)
     | IFst -> (frms, do_fst stck, envs)
     | ISnd -> (frms, do_snd stck, envs)

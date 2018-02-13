@@ -362,6 +362,7 @@ let length = function
 
 let mem = function
   | (MSet xs) :: x :: s -> MBool (List.mem x xs) :: s
+  | (MList xs) :: x :: s -> MBool (List.mem x xs) :: s
   | _ -> error "no set"
 
 let union = function

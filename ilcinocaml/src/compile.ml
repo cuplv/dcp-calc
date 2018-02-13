@@ -80,13 +80,18 @@ let rec compile = function
                                    [] p)) @ [IEndT lst_id] @ [ILetP] @ (compile e2)
   | Match (e, es) ->
      let f acc = function
-       | (p, expr) -> List.map (function
-                                | IVar x -> IVarP x
-                                | instr -> instr)
-                               (compile p) @
-                        [IMatchCond (compile expr)] @ acc in
+       | (p, expr) -> (compile p) @ [IMatchCond (compile expr)] @ acc in
      [IStartM] @ (compile e) @ List.fold_left f [] (List.rev es) @ [IEndM]
-  
+  | Pattern e ->
+     (match e with
+     | Tuple e -> List.map (function
+                            | IVar x -> IVarP x
+                            | instr -> instr)
+                           (compile (Tuple e))
+     | List [] -> [IEmpListP]
+     | Cons(Name hd, Name tl) -> [IListP (hd, tl)]
+     | _ -> error "Not implemented")
+
   (* Conditionals *)
   | IfTE (e1, e2, e3) ->
       (compile e1) @ [IBranch (compile e2, compile e3)]

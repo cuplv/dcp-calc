@@ -328,6 +328,6 @@ atom_list:
 
 branches:
   | PAR e1 = expr RARROW e2 = expr END
-    { [(e1, e2)] }
+    { [(Pattern e1, e2)] }
   | PAR e1 = expr RARROW e2 = expr bs = branches
-    { (e1, e2) :: bs }
+    { (Pattern e1, e2) :: bs }

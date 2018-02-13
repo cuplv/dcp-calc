@@ -17,11 +17,15 @@ type mvalue =
   | MThunk of frame
   | MHole
   | MVarP of name
+  | MEmpListP
+  | MListP of name * name
   | MTag of string
   | MId of int (* Hacky way to keep track of lists. Change later *)
 and instr =
   | IVar of name
   | IVarP of name
+  | IEmpListP
+  | IListP of name * name
   | IImpVar of name
   | ITag of string
   | IWCard
@@ -109,12 +113,16 @@ let rec string_of_mvalue = function
   | MSet l -> "{" ^ string_of_list string_of_mvalue l ^ "}"
   | MTuple l -> "(" ^ string_of_list string_of_mvalue l ^ ")"
   | MVarP p -> p
+  | MEmpListP -> "empty list pattern"
+  | MListP _ -> "list pattern"
   | MTag s -> s
   | MId n -> string_of_int n
 
 let rec string_of_instr = function 
   | IVar x -> sprintf "IVar(%s)" x
   | IVarP x -> sprintf "IVarP(%s)" x
+  | IEmpListP -> "IEmpListP"
+  | IListP (hd, tl) -> sprintf "IListP(%s,%s)" hd tl
   | IImpVar x -> sprintf "IImpVar(%s)" x
   | ITag x -> sprintf "ITag(%s)" x
   | IWCard -> "IWCard"
@@ -203,7 +211,7 @@ let string_of_environs envs =
     | [] -> ""
     | e :: es -> string_of_environ e ^ to_str es
   in
-    "[" ^ to_str envs ^ "]"
+  "[" ^ to_str envs ^ "]"
 
 let string_of_state = function
   | (f, s, e) -> string_of_frames f ^ string_of_stack s ^ string_of_environs e
@@ -352,9 +360,9 @@ let mem = function
 
 let union = function
   | (MSet xs) :: (MSet ys) :: s ->
-    let f acc x = if List.mem x ys then acc
-                  else acc @ [x] in
-    MSet (List.fold_left f ys xs) :: s
+     let f acc x = if List.mem x ys then acc
+                   else acc @ [x] in
+     MSet (List.fold_left f ys xs) :: s
   | _ -> error "no sets to union"
 
 let pop_match = function
@@ -380,13 +388,13 @@ let pattern_match p1 p2 =
   let rec compare mapping p1' p2' =
     match (p1', p2') with
     | (MTuple x :: rest1, MTuple y :: rest2) ->
-        (compare [] x y) @ compare mapping rest1 rest2
+       (compare [] x y) @ compare mapping rest1 rest2
     | (MTag x :: rest1, MTag y :: rest2) when x=y ->
-        compare mapping rest1 rest2
+       compare mapping rest1 rest2
     | (MWCard :: rest1, y :: rest2) ->
-        compare mapping rest1 rest2
+       compare mapping rest1 rest2
     | (MVarP x :: rest1, y :: rest2) ->
-        compare ((x, y) :: mapping) rest1 rest2
+       compare ((x, y) :: mapping) rest1 rest2
     | ([], []) -> mapping
     | _ -> raise Pattern_match_fail
   in
@@ -421,6 +429,8 @@ let exec instr frms stck envs =
   | INeq -> (frms, neq stck, envs)
   | IVar x -> (frms, (lookup x envs) :: stck, envs)
   | IVarP x -> (frms, (MVarP x) :: stck, envs)
+  | IEmpListP -> (frms, MEmpListP :: stck, envs)
+  | IListP (hd, tl) -> (frms, MListP (hd, tl) :: stck, envs)
   | IImpVar x -> (frms, (imp_lookup x envs) :: stck, envs)
   | ITag x -> (frms, (MTag x) :: stck, envs)
   | IWCard -> (frms, MWCard :: stck, envs)
@@ -429,89 +439,89 @@ let exec instr frms stck envs =
   | IString s -> (frms, (MString s) :: stck, envs)
   | IThunk f -> (frms, (MThunk f) :: stck, envs)
   | IForce ->
-      (match frms with
+     (match frms with
       | frm :: frm_rest ->
-          (match pop stck with
+         (match pop stck with
           | (MThunk f, stck') ->
-              (f :: frm :: frm_rest, stck', envs)
+             (f :: frm :: frm_rest, stck', envs)
           | _ -> error "no thunk to pop")
       | _ -> error "no frames")
   | IClosure (f, x, frm) ->
-      (match envs with
+     (match envs with
       | env :: _ ->
-          let named =
-            match frms with
-            | (ILet x :: _) :: _ -> x
-            | _ -> f
-          in
-          let rec c = MClosure (x, frm, (named, c) :: env)
-          in (frms, c :: stck, envs)
+         let named =
+           match frms with
+           | (ILet x :: _) :: _ -> x
+           | _ -> f
+         in
+         let rec c = MClosure (x, frm, (named, c) :: env)
+         in (frms, c :: stck, envs)
       | [] -> error "no environment for a closure")
   | ILet x ->
-      (match envs with
+     (match envs with
       | env :: env_tail ->
-          let (x', stck') = pop stck in
-          let new_mapping = (x, x') :: env in
-          (frms, stck', new_mapping :: env_tail)
+         let (x', stck') = pop stck in
+         let new_mapping = (x, x') :: env in
+         (frms, stck', new_mapping :: env_tail)
       | [] -> error "no environment for variable")
-(*  | ILetP ->
-      (match envs with
+  | ILetP ->
+     (match envs with
       | env :: env_tail ->
-          let (pattern, stck') = pop stck in
-          let (tuple, stck') = pop stck' in
-          let new_mapping =
-            (match (pattern, tuple) with
+         let (pattern, stck') = pop stck in
+         let (tuple, stck') = pop stck' in
+         let new_mapping =
+           (match (pattern, tuple) with
             | (MTuple [MWCard], _) -> []
             | (MTuple [MTag t], MTag t') when t=t'-> []
             | (MTuple x, MTuple y) -> pattern_match x y
             | _ -> error "pattern match failed") in
-          (frms, stck', (new_mapping @ env) :: env_tail)
-      | [] -> error "no environment for variable")*)
+         (frms, stck', (new_mapping @ env) :: env_tail)
+      | [] -> error "no environment for variable")
   | INu xs ->
-      (match envs with
+     (match envs with
       | env :: env_tail ->
-          let new_mapping =
-            List.fold_left (fun acc x -> (x, MHole) :: acc) [] (List.rev xs) in
-          (frms, stck, (new_mapping @ env) :: env_tail)
+         let new_mapping =
+           List.fold_left (fun acc x -> (x, MHole) :: acc) [] (List.rev xs) in
+         (frms, stck, (new_mapping @ env) :: env_tail)
       | [] -> error "no environment for variable")
   | IBranch (f1, f2) ->
-      let (b, stck') = pop_bool stck in
-      ((if b then f1 else f2) :: frms, stck', envs)
+     let (b, stck') = pop_bool stck in
+     ((if b then f1 else f2) :: frms, stck', envs)
   | ICond f ->
-      let (b, stck') = pop_bool stck in
-      ((if b then f else []) :: frms, stck', envs)
+     let (b, stck') = pop_bool stck in
+     ((if b then f else []) :: frms, stck', envs)
   | IReq ->
-      let (b, stck') = pop_bool stck in
-      if b then (frms, stck', envs)
-      else error "assertion failed"
+     let (b, stck') = pop_bool stck in
+     if b then (frms, stck', envs)
+     else error "assertion failed"
   | ICall ->
-      let (x, frm, env, v, stck') = pop_app stck in
-      (frm :: frms, stck', ((x,v) :: env) :: envs)
+     let (x, frm, env, v, stck') = pop_app stck in
+     (frm :: frms, stck', ((x,v) :: env) :: envs)
   | IPopEnv ->
-      (match envs with
+     (match envs with
       | [] -> error "no environment to pop"
       | _ :: envs' -> (frms, stck, envs'))
   | IStartP n ->
-      (match frms with
+     (match frms with
       | frm :: rest_frms ->
-          let (fst_frm, snd_frm, rest_frm) = get_par_ps frm n in
-          ([ISpawn] :: fst_frm :: snd_frm :: rest_frm :: rest_frms, stck, envs)
+         let (fst_frm, snd_frm, rest_frm) = get_par_ps frm n in
+         ([ISpawn] :: fst_frm :: snd_frm :: rest_frm :: rest_frms, stck, envs)
       | [] -> error "no processes to spawn")
   | IStartL n -> (frms, (MId n) :: stck, envs)
   | IEndL n ->
-      let (lst, stck') = pop_list n stck
-      in (frms, (MList lst) :: stck', envs)
+     let (lst, stck') = pop_list n stck
+     in (frms, (MList lst) :: stck', envs)
   | IStartS n -> (frms, (MId n) :: stck, envs)
   | IEndS n ->
-      let (lst, stck') = pop_list n stck in
-      let set = remove_duplicates lst in
-      (frms, (MSet set) :: stck', envs)
+     let (lst, stck') = pop_list n stck in
+     let set = remove_duplicates lst in
+     (frms, (MSet set) :: stck', envs)
   | ICons -> (frms, cons stck, envs)
   | IConcat -> (frms, concat stck, envs)
   | IStartT n -> (frms, (MId n) :: stck, envs)
   | IEndT n ->
-      let (lst, stck') = pop_list n stck
-      in (frms, (MTuple lst) :: stck', envs)
+     let (lst, stck') = pop_list n stck
+     in (frms, (MTuple lst) :: stck', envs)
   | IFst -> (frms, do_fst stck, envs)
   | ISnd -> (frms, do_snd stck, envs)
   | IRand -> (frms, rand stck, envs)
@@ -525,16 +535,19 @@ let exec instr frms stck envs =
   | IMatchCond new_frm ->
      (match (frms, envs) with
       | (frm :: frm_tail, env :: env_tail) ->
-         let (pattern, tuple, stck') = pop_match stck in
+         let (pattern, expr, stck') = pop_match stck in
          (try let new_mapping =
-                (match (pattern, tuple) with
+                (match (pattern, expr) with
                  | (MTuple [MWCard], _) -> []
                  | (MTuple [MTag t], MTag t') when t=t'-> []
                  | (MTuple x, MTuple y) -> pattern_match x y
+                 | (MEmpListP, MList []) -> []
+                 | (MListP (hd, tl), MList (hd' :: tl')) ->
+                    [(hd, hd'); (tl, MList tl')]
                  | _ -> raise Pattern_match_fail) in
               let rest_frm = remove_alts frm in
               (new_frm :: rest_frm :: frm_tail, stck', (new_mapping @ env) :: env_tail) with
-          | Pattern_match_fail -> (frms, tuple :: stck', env :: env_tail))
+          | Pattern_match_fail -> (frms, expr :: stck', env :: env_tail))
       | _ -> error "Pattern matching failed")
   | _ -> error ("illegal instruction")
 
@@ -546,43 +559,43 @@ let run p =
     | (pid, ([], [], e)) -> (pid, ([], [], e))
     | (pid, ([], [v], e)) -> (pid, ([], [v], e))
     | (pid, ((IRdBind (x1, x2) :: is) :: frms, stck, envs)) ->
-        if List.mem_assoc x2 (List.hd envs) || String.get x2 0 == '?'
-        then (pid, ((IRdBind (x1, x2) :: is) :: frms, stck, envs))
-        else error "channel not allocated"
+       if List.mem_assoc x2 (List.hd envs) || String.get x2 0 == '?'
+       then (pid, ((IRdBind (x1, x2) :: is) :: frms, stck, envs))
+       else error "channel not allocated"
     | (pid, ((IChoice(pid', cid,  (IRdBind (x1, x2))) :: is) :: frms, stck, envs)) ->
-        if List.mem_assoc x2 (List.hd envs) || String.get x2 0 == '?'
-        then (pid, ((IChoice(pid', cid, (IRdBind (x1, x2))) :: is) :: frms, stck, envs))
-        else error "channel not allocated"
+       if List.mem_assoc x2 (List.hd envs) || String.get x2 0 == '?'
+       then (pid, ((IChoice(pid', cid, (IRdBind (x1, x2))) :: is) :: frms, stck, envs))
+       else error "channel not allocated"
     | (pid, ((IRd x :: is) :: frms, stck, envs)) ->
-        if List.mem_assoc x (List.hd envs) || String.get x 0 == '?'             
-        then (pid, ((IRd x :: is) :: frms, stck, envs))
-        else error "channel not allocated"
+       if List.mem_assoc x (List.hd envs) || String.get x 0 == '?'             
+       then (pid, ((IRd x :: is) :: frms, stck, envs))
+       else error "channel not allocated"
     | (pid, ((IChoice(pid', cid,  (IRd x)) :: is) :: frms, stck, envs)) ->
-        if List.mem_assoc x (List.hd envs) || String.get x 0 == '?'              
-        then (pid, ((IChoice(pid', cid, (IRd x)) :: is) :: frms, stck, envs))
-        else error "channel not allocated"
+       if List.mem_assoc x (List.hd envs) || String.get x 0 == '?'              
+       then (pid, ((IChoice(pid', cid, (IRd x)) :: is) :: frms, stck, envs))
+       else error "channel not allocated"
     | (pid, ((IWr (MHole, x) :: is) :: frms, v :: stck, envs)) ->
-        if List.mem_assoc x (List.hd envs) || String.get x 0 == '?'             
-        then (pid, ((IWr (v, x) :: is) :: frms, stck, envs))
-        else error "channel not allocated"
+       if List.mem_assoc x (List.hd envs) || String.get x 0 == '?'             
+       then (pid, ((IWr (v, x) :: is) :: frms, stck, envs))
+       else error "channel not allocated"
     | (pid, ((IWr (v, x) :: is) :: frms, stck, envs)) ->
-        if List.mem_assoc x (List.hd envs) || String.get x 0 == '?'             
-        then (pid, ((IWr (v, x) :: is) :: frms, stck, envs))
-        else error "channel not allocated"
+       if List.mem_assoc x (List.hd envs) || String.get x 0 == '?'             
+       then (pid, ((IWr (v, x) :: is) :: frms, stck, envs))
+       else error "channel not allocated"
     | (pid, ([ISpawn] :: frms, stck, envs)) ->
-        (pid, ([ISpawn] :: frms, stck, envs))
+       (pid, ([ISpawn] :: frms, stck, envs))
     | (pid, ((IHole n :: is) :: frms, stck, envs)) ->
-        (pid, ((IHole n :: is) :: frms, stck, envs))
+       (pid, ((IHole n :: is) :: frms, stck, envs))
     | (pid, ((IBlock i :: is) :: frms, stck, envs)) ->
-        (pid, ((IBlock i :: is) :: frms, stck, envs))
+       (pid, ((IBlock i :: is) :: frms, stck, envs))
     | (pid, ((IRepl i :: is) :: frms, stck, envs)) ->
-        (pid, ((IRepl i :: is) :: frms, stck, envs))
+       (pid, ((IRepl i :: is) :: frms, stck, envs))
     | (pid, ((i :: is) :: frms, stck, envs)) ->
-        loop (pid, (exec i (is :: frms) stck envs))
+       loop (pid, (exec i (is :: frms) stck envs))
     | (pid, ([] :: frms, stck, envs)) -> loop (pid, (frms, stck, envs))
     | s -> error ("illegal end of program")
   in
-    loop p
+  loop p
 
 let run_all ps = List.map run ps
 
@@ -597,17 +610,17 @@ let spawn_all ps =
             then (true, List.rev old_ps)
             else (false, (List.rev old_ps) @ (List.rev new_ps))
     | (pid, ([ISpawn] :: frm1 :: frm2 :: frms, stck, envs)) :: rest_ps ->
-        let pid' = !pid_counter in
-        let original_p = (pid, (frms, stck, envs)) in
-        let new_p1 = (pid', ([frm1], [], envs)) in
-        let new_p2 = (succ pid', ([frm2], [], envs)) in
-        pid_counter := !pid_counter + 2;
-        spawn (original_p :: old_ps)
-              (new_p2 :: new_p1 :: new_ps)
-              rest_ps
+       let pid' = !pid_counter in
+       let original_p = (pid, (frms, stck, envs)) in
+       let new_p1 = (pid', ([frm1], [], envs)) in
+       let new_p2 = (succ pid', ([frm2], [], envs)) in
+       pid_counter := !pid_counter + 2;
+       spawn (original_p :: old_ps)
+             (new_p2 :: new_p1 :: new_ps)
+             rest_ps
     | p :: rest_ps -> spawn (p :: old_ps) new_ps rest_ps
   in
-    spawn [] [] ps
+  spawn [] [] ps
 
 (* Fill holes *)
 let is_hole = function
@@ -616,39 +629,39 @@ let is_hole = function
 
 let fill_hole ps = function
   | (pid, ((IHole n :: instrs) :: frms, stck, envs)) ->
-      let rec check_ps = function
-        | (pid', ([], [v], _)) :: _ when n=pid' ->
-            (false, (pid, (instrs :: frms, v :: stck, envs)))
-        | (pid', _) :: _ when n=pid' ->
-            (true, (pid, ((IHole n :: instrs) :: frms, stck, envs)))
-        | _ :: rest_ps -> check_ps rest_ps
-        | [] -> error ("process not found")
-      in
-      check_ps ps
+     let rec check_ps = function
+       | (pid', ([], [v], _)) :: _ when n=pid' ->
+          (false, (pid, (instrs :: frms, v :: stck, envs)))
+       | (pid', _) :: _ when n=pid' ->
+          (true, (pid, ((IHole n :: instrs) :: frms, stck, envs)))
+       | _ :: rest_ps -> check_ps rest_ps
+       | [] -> error ("process not found")
+     in
+     check_ps ps
   | _ -> error ("not a hole")
 
 let fill_all ps =
   let rec loop acc is_done = function
     | [] -> (is_done, List.rev acc)
     | p :: ps' ->
-        if (is_hole p)
-        then let (is_done', new_p) = fill_hole ps p in
-             loop (new_p :: acc) is_done' ps'
-        else loop (p :: acc) is_done ps'
+       if (is_hole p)
+       then let (is_done', new_p) = fill_hole ps p in
+            loop (new_p :: acc) is_done' ps'
+       else loop (p :: acc) is_done ps'
   in loop [] true ps
 
 (* Executes instructions, spawns processes, and fills holes until blocked *)
 let run_until_blocked ps =
   let quit_loop = ref false in
   let prev_done_spawning = ref false in
-    let prev_done_filling = ref false in
-    let ps_store = ref ps in
-    while not !quit_loop do
-      let (done_spawning, ps') = spawn_all (run_all !ps_store) in
-      let (done_filling, ps') = fill_all (run_all ps') in
-      quit_loop := done_spawning && !prev_done_spawning &&
+  let prev_done_filling = ref false in
+  let ps_store = ref ps in
+  while not !quit_loop do
+    let (done_spawning, ps') = spawn_all (run_all !ps_store) in
+    let (done_filling, ps') = fill_all (run_all ps') in
+    quit_loop := done_spawning && !prev_done_spawning &&
                    done_filling && !prev_done_filling;
-      prev_done_spawning := done_spawning;
-      prev_done_filling := done_filling;
-      ps_store := ps';
-    done; !ps_store
+    prev_done_spawning := done_spawning;
+    prev_done_filling := done_filling;
+    ps_store := ps';
+  done; !ps_store

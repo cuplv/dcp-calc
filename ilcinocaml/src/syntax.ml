@@ -48,6 +48,7 @@ type expr =
   | LetRec of name * expr * expr
   | LetP of expr list * expr * expr
   | Match of expr * (expr * expr) list
+  | Pattern of expr
             
   (* Conditionals *)
   | IfTE of expr * expr * expr
@@ -149,6 +150,7 @@ let string_of_expr e =
       to_str e1 ^ "," ^ to_str e2 ^ ")"
     | Match (e, es) ->
        "Match(" ^ to_str e ^ "," ^ str_of_list str_of_match_pair es ^ ")"
+    | Pattern e -> "Pattern(" ^ to_str e ^ ")"
                       
     (* Conditionals *)
     | IfTE (e1, e2, e3) -> "IfTE(" ^ to_str e1 ^ "," ^ 

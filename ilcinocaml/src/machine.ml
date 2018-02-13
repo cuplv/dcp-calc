@@ -360,9 +360,13 @@ let length = function
   | (MSet xs) :: s -> MInt(List.length xs) :: s                      
   | _ -> error "no string to get length"
 
+let mem_assoc x = function
+  | MTuple [x'; y] when x=x' -> true
+  | _ -> false
+
 let mem = function
   | (MSet xs) :: x :: s -> MBool (List.mem x xs) :: s
-  | (MList xs) :: x :: s -> MBool (List.mem x xs) :: s
+  | (MList xs) :: x :: s -> MBool (List.exists (mem_assoc x) xs) :: s
   | _ -> error "no set"
 
 let union = function

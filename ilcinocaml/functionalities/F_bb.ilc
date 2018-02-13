@@ -4,8 +4,8 @@ let F_bb = lam x, ?f2p, ?p2f .
     match rd ?p2f with
     | (P_i, 'Write, m_i) ->
       let db = (c, (P_i, m_i)) :: db in
-      let c = c + 1 in
-      wr (("S", 'Write, c, P_i, m_i), "C_I") -> ?f2p
+      wr (("S", 'Write, c, P_i, m_i), "C_I") -> ?f2p .
+      let c = c + 1 in 0
     | (P_j, 'Read, c) ->
       if mem c db then (* Fix this *)
         let (P_i, m_i) = lookup c db in

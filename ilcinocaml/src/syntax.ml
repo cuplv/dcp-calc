@@ -22,6 +22,7 @@ type expr =
   | Set of expr list
   | Tuple of expr list
   | Wildcard
+  | Unit
   
   (* Arithmetic operators *)
   | Plus of expr * expr
@@ -56,15 +57,15 @@ type expr =
   | Req of expr * expr
   
   (* Lambda *)
-  | Lam of name * expr
-  | ImpLam of name * expr
+  | Lam of expr * expr
+  (*| ImpLam of name * expr*)
   | App of expr * expr
   
   (* Pi *)
   | Wr of expr * name
   | Rd of name
   | RdBind of name * name
-  | Nu of name list * expr
+  | Nu of expr list * expr
   | ParComp of expr * expr
   | ParLeft of expr * expr
   | Choice of expr * expr
@@ -120,6 +121,7 @@ let string_of_expr e =
     | Set es -> "Set(" ^ str_of_list to_str es ^ ")"
     | Tuple es -> "Tuple(" ^ str_of_list to_str es ^ ")"
     | Wildcard -> "Wildcard"
+    | Unit -> "Unit"
 
     (* Arithmetic operators *)
     | Plus (e1, e2) -> "Plus(" ^ to_str e1 ^ "," ^ to_str e2 ^ ")"
@@ -160,15 +162,15 @@ let string_of_expr e =
     | Req (e1, e2) -> "Req(" ^ to_str e1 ^ "," ^ to_str e2 ^ ")"
 
     (* Lambda *)
-    | Lam (x, e) -> "Lam(" ^ name_to_str x ^ "," ^ to_str e ^ ")"
-    | ImpLam (x, e) -> "ImpLam(" ^ name_to_str x ^ "," ^ to_str e ^ ")"
+    | Lam (e1, e2) -> "Lam(" ^ to_str e1 ^ "," ^ to_str e2 ^ ")"
+    (*| ImpLam (x, e) -> "ImpLam(" ^ name_to_str x ^ "," ^ to_str e ^ ")"*)
     | App (e1, e2) -> "App(" ^ to_str e1 ^ "," ^ to_str e2 ^ ")"
 
     (* Pi *)
     | Wr (e, x) -> "Wr(" ^ to_str e ^ "," ^ name_to_str x ^ ")"
     | Rd x -> "Rd(" ^ name_to_str x ^ ")"
     | RdBind (x1, x2) -> "RdBind(" ^ name_to_str x1 ^ "," ^ name_to_str x2 ^ ")"
-    | Nu (x, e) -> "Nu(" ^ str_of_list name_to_str x ^ "," ^ to_str e ^ ")"
+    | Nu (x, e) -> "Nu(" ^ str_of_list to_str x ^ "," ^ to_str e ^ ")"
     | ParComp (e1, e2) -> "ParComp(" ^ to_str e1 ^ "," ^ to_str e2 ^ ")"
     | ParLeft (e1, e2) -> "ParLeft(" ^ to_str e1 ^ "," ^ to_str e2 ^ ")"
     | Choice (e1, e2) -> "Choice(" ^ to_str e1 ^ "," ^ to_str e2 ^ ")"

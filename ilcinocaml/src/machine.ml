@@ -104,11 +104,11 @@ let string_of_list f l =
   in
   to_str "" l
 
-let rec string_of_mvalue = function
+(*let rec string_of_mvalue = function
   | MInt n -> string_of_int n
   | MBool b -> string_of_bool b
   | MString s -> s
-  | MThunk _ -> "<thunk>"
+  | MThunk frm -> "Thunk(" ^ string_of_frame
   | MWCard -> "_"
   | MClosure _ -> "<fun>"
   | MHole -> "hole"
@@ -121,7 +121,7 @@ let rec string_of_mvalue = function
   | MTag s -> s
   | MId n -> string_of_int n
   | MImpVarP x -> x
-  | MChan x -> x
+  | MChan x -> x*)
 
 let rec string_of_instr = function 
   | IVar x -> sprintf "IVar(%s)" x
@@ -151,7 +151,8 @@ let rec string_of_instr = function
   | INeq -> "INeq"
   | IClosure (_, xs, f) ->
       sprintf "IClosure(\n%s)" (string_of_frame f)
-  | IBranch _ -> "IBranch"
+  | IBranch (f1, f2) -> "IBranch(" ^ (string_of_frame f1) ^ "," ^
+                          (string_of_frame f2) ^ ")"
   | ICond _ -> "ICond"
   | IReq -> "IReq"
   | ICall -> "ICall" 
@@ -193,6 +194,24 @@ let rec string_of_instr = function
 and string_of_frame = function
   | [] -> "\n"
   | i::is -> string_of_instr i ^ "\n" ^ string_of_frame is
+and string_of_mvalue = function
+  | MInt n -> string_of_int n
+  | MBool b -> string_of_bool b
+  | MString s -> s
+  | MThunk frm -> "Thunk(" ^ (string_of_frame frm) ^ ")"
+  | MWCard -> "_"
+  | MClosure _ -> "<fun>"
+  | MHole -> "hole"
+  | MList l -> "[" ^ string_of_list string_of_mvalue l ^ "]"
+  | MSet l -> "{" ^ string_of_list string_of_mvalue l ^ "}"
+  | MTuple l -> "(" ^ string_of_list string_of_mvalue l ^ ")"
+  | MVarP p -> p
+  | MEmpListP -> "empty list pattern"
+  | MListP _ -> "list pattern"
+  | MTag s -> s
+  | MId n -> string_of_int n
+  | MImpVarP x -> x
+  | MChan x -> x           
 
 let rec string_of_stack = function
   | [] -> ""

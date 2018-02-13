@@ -56,6 +56,7 @@ rule token = parse
   | "force"                   { FORCE }
   | "req"                     { REQ }
   | "end"		      { END }
+  | "()"		      { UNIT }
   
   (* Operators *)
   | "="                       { EQUAL }

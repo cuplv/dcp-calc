@@ -13,8 +13,13 @@ let convert_to_choice pid cid = function
   | instr :: instrs -> IChoice(pid, cid, instr) :: instrs
   | _ -> raise (Compilation_error)
 
-let add_force x = function
+(* TODO: ICond, IClosure? *)      
+let rec add_force x = function
   | IVar x' when x=x' -> [IVar x; IForce]
+  | IBranch (f1,f2) ->
+     let f acc instr = (add_force x instr) @ acc in
+     let add_force_branch frm = List.fold_left f [] (List.rev frm) in
+     [IBranch (add_force_branch f1, add_force_branch f2)]
   | instr -> [instr]
 
 let force_thunks x = List.fold_left (fun acc instr ->
@@ -101,15 +106,15 @@ let rec compile = function
   | Req (e1, e2) -> (compile e1) @ [IReq] @ (compile e2)
   
   (* Lambda *)
-  | Lam (x, e) -> [IClosure ("anon", x, compile e @ [IPopEnv])]
-  | ImpLam (x, e) -> compile e
+  (*  | Lam (x, e) -> [IClosure ("anon", x, compile e @ [IPopEnv])]*)
+  (*  | ImpLam (x, e) -> compile e*)
   | App (e1, e2) -> (compile e1) @ (compile e2) @ [ICall]
   
   (* Pi *)
   | Wr (e, x) -> (compile e) @ [IWr (MHole, x)]
   | Rd x -> [IRd x]
   | RdBind (x1, x2) -> [IRdBind (x1, x2)]
-  | Nu (x, e) -> [INu x] @ (compile e)
+  (*  | Nu (x, e) -> [INu x] @ (compile e)*)
   | ParComp (e1, e2) ->
       let pid = !pid_counter in
       pid_counter := pid + 2; [IStartP pid] @
@@ -143,3 +148,4 @@ let rec compile = function
   | Length e -> (compile e) @ [ILength]
   | Mem (e1, e2) -> (compile e1) @ (compile e2) @[IMem]
   | Union (e1, e2) -> (compile e1) @ (compile e2) @[IUnion]
+  | _ -> error "not implemented"

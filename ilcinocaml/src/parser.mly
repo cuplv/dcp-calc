@@ -7,7 +7,11 @@
     | Name x -> x
     | _ -> raise Parsing_error
   
-  let curry_lambdas x acc = if String.get x 0 <> '?' then Lam(x, acc) else acc
+  let curry_lambdas x acc =
+    match x with
+    | ImpName x -> acc
+    | x -> Lam (x, acc)
+
   let curry acc e = App(acc, e)
 
   let get_proj f l = List.fold_left (fun acc x -> f x :: acc) [] (List.rev l)
@@ -39,6 +43,7 @@
 %token FORCE
 %token REQ
 %token END
+%token UNIT
 
 /* Operators */
 %token EQUAL
@@ -146,7 +151,7 @@ expr:
     { e }
   | e = proc_expr
     { e }
-  | LAM xs = name_list DOT e = expr
+  | LAM xs = arg_list DOT e = expr
     { List.fold_right curry_lambdas xs e }
   | LET x = NAME EQUAL e1 = expr IN e2 = expr %prec LET_PREC
     { Let (x, e1, e2) }
@@ -184,6 +189,8 @@ atom_expr:
     { ImpName x }
   | USCORE
     { Wildcard }
+  | UNIT
+    { Unit }
   | t = TAG
     { Tag t }
   | n = INT
@@ -291,7 +298,7 @@ comm_expr:
   | RD c = IMPNAME
     { Rd c }
   /* IMPNAME here? */
-  | NU xs = name_list DOT e = expr %prec NU_PREC
+  | NU xs = arg_list DOT e = expr %prec NU_PREC
     { Nu (xs, e) }
 
 proc_expr:
@@ -310,15 +317,19 @@ comma_list:
   | e1 = expr COMMA e2 = comma_list
     { e1 :: e2 }
 
-name_list:
+arg_list:
   | e = NAME
-    { [e] }
+    { [Name e] }
   | e = IMPNAME
-    { [e] }
-  | e1 = NAME COMMA e2 = name_list
-    { e1 :: e2 }
-  | e1 = IMPNAME COMMA e2 = name_list
-    { e1 :: e2 }
+    { [ImpName e] }
+  | UNIT
+    { [Unit] }
+  | e1 = NAME COMMA e2 = arg_list
+    { Name e1 :: e2 }
+  | e1 = IMPNAME COMMA e2 = arg_list
+    { ImpName e1 :: e2 }
+  | UNIT COMMA e2 = arg_list
+    { Unit :: e2 }
 
 atom_list:
   | e = atom_expr

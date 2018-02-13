@@ -48,6 +48,7 @@ let rec compile = function
       incr lst_counter; [IStartT lst_id] @ List.fold_left (fun acc e -> acc @ (compile e))
       [] es @ [IEndT lst_id]
   | Wildcard -> [IWCard]
+  | Unit -> [IUnit]
   
   (* Arithmetic operators *)
   | Plus (e1, e2) -> (compile e1) @ (compile e2) @ [IAdd]
@@ -70,7 +71,7 @@ let rec compile = function
   | Neq (e1, e2) -> (compile e1) @ (compile e2) @ [INeq]
   
   (* Let *)
-  | Let (x, e1, e2) -> (compile e1) @ [ILet x] @ (compile e2)
+  | Let (x, e1, e2) -> (compile e1) @ [ILet x] @ (compile e2) @ [IUnscope [x]]
   | LetRec (x, e1, e2) ->
       [IThunk (force_thunks x (compile e1))] @
       [ILet x] @ (force_thunks x (compile e2))
@@ -106,15 +107,20 @@ let rec compile = function
   | Req (e1, e2) -> (compile e1) @ [IReq] @ (compile e2)
   
   (* Lambda *)
-  (*  | Lam (x, e) -> [IClosure ("anon", x, compile e @ [IPopEnv])]*)
-  (*  | ImpLam (x, e) -> compile e*)
+  | Lam (x, e) ->
+     let arg = 
+       match x with
+       | Name x' -> x'
+       | Unit -> "()"
+       | _ -> error "invalid argument in lambda" in
+     [IClosure ("anon", arg, compile e @ [IPopEnv])]
   | App (e1, e2) -> (compile e1) @ (compile e2) @ [ICall]
   
   (* Pi *)
   | Wr (e, x) -> (compile e) @ [IWr (MHole, x)]
   | Rd x -> [IRd x]
   | RdBind (x1, x2) -> [IRdBind (x1, x2)]
-  (*  | Nu (x, e) -> [INu x] @ (compile e)*)
+ | Nu (x, e) -> [INu x] @ (compile e)
   | ParComp (e1, e2) ->
       let pid = !pid_counter in
       pid_counter := pid + 2; [IStartP pid] @
@@ -148,4 +154,3 @@ let rec compile = function
   | Length e -> (compile e) @ [ILength]
   | Mem (e1, e2) -> (compile e1) @ (compile e2) @[IMem]
   | Union (e1, e2) -> (compile e1) @ (compile e2) @[IUnion]
-  | _ -> error "not implemented"

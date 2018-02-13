@@ -6,7 +6,8 @@
   let get_names = function 
     | Name x -> x
     | _ -> raise Parsing_error
-  
+
+  (* Omits implicit args *)
   let curry_lambdas x acc =
     match x with
     | ImpName x -> acc
@@ -14,7 +15,6 @@
 
   let curry acc e = App(acc, e)
 
-  let get_proj f l = List.fold_left (fun acc x -> f x :: acc) [] (List.rev l)
 %}
 
 /* Identifier and constants */
@@ -297,9 +297,10 @@ comm_expr:
     { Rd c }
   | RD c = IMPNAME
     { Rd c }
-  /* IMPNAME here? */
+  /* Channels can only be strings */
   | NU xs = arg_list DOT e = expr %prec NU_PREC
-    { Nu (xs, e) }
+    { let names = List.map get_names xs in
+      Nu (names, e) }
 
 proc_expr:
   | REPL e = expr

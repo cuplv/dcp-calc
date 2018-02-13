@@ -13,6 +13,7 @@ type mvalue =
   | MSet of mvalue list
   | MTuple of mvalue list
   | MWCard
+  | MUnit
   | MClosure of name * frame * environ
   | MThunk of frame
   | MHole
@@ -32,6 +33,7 @@ and instr =
   | IImpVarP of name
   | ITag of string
   | IWCard
+  | IUnit
   | IInt of int
   | IBool of bool
   | IString of string
@@ -60,6 +62,7 @@ and instr =
   | IForce
   | ILet of name
   | ILetP
+  | IUnscope of name list
   | IStartP of int
   | IEndP of int
   | IChoice of int * int * instr
@@ -104,25 +107,6 @@ let string_of_list f l =
   in
   to_str "" l
 
-(*let rec string_of_mvalue = function
-  | MInt n -> string_of_int n
-  | MBool b -> string_of_bool b
-  | MString s -> s
-  | MThunk frm -> "Thunk(" ^ string_of_frame
-  | MWCard -> "_"
-  | MClosure _ -> "<fun>"
-  | MHole -> "hole"
-  | MList l -> "[" ^ string_of_list string_of_mvalue l ^ "]"
-  | MSet l -> "{" ^ string_of_list string_of_mvalue l ^ "}"
-  | MTuple l -> "(" ^ string_of_list string_of_mvalue l ^ ")"
-  | MVarP p -> p
-  | MEmpListP -> "empty list pattern"
-  | MListP _ -> "list pattern"
-  | MTag s -> s
-  | MId n -> string_of_int n
-  | MImpVarP x -> x
-  | MChan x -> x*)
-
 let rec string_of_instr = function 
   | IVar x -> sprintf "IVar(%s)" x
   | IVarP x -> sprintf "IVarP(%s)" x
@@ -132,6 +116,7 @@ let rec string_of_instr = function
   | IImpVarP x -> sprintf "IImpVarP(%s)" x
   | ITag x -> sprintf "ITag(%s)" x
   | IWCard -> "IWCard"
+  | IUnit -> "IUnit"
   | IInt n -> sprintf "IInt(%d)" n
   | IBool b -> sprintf "IBool(%b)" b
   | IString s -> sprintf "IString(%s)" s
@@ -161,6 +146,7 @@ let rec string_of_instr = function
   | IThunk e -> "IThunk" ^ List.fold_left (fun acc x -> acc ^ "," ^ string_of_instr x) "" e
   | IForce -> "IForce"
   | ILet x -> sprintf "ILet(%s)" x
+  | IUnscope xs -> sprintf "IUnscope(%s)" "" (* TODO: Print *)
   | ILetP -> "ILetP"
   | IWr (v, x) -> sprintf "IWr(%s,%s)" (string_of_mvalue v) x
   | IRdBind (x1, x2) -> sprintf "IRdBind(%s,%s)" x1 x2 
@@ -200,6 +186,7 @@ and string_of_mvalue = function
   | MString s -> s
   | MThunk frm -> "Thunk(" ^ (string_of_frame frm) ^ ")"
   | MWCard -> "_"
+  | MUnit -> "()"
   | MClosure _ -> "<fun>"
   | MHole -> "hole"
   | MList l -> "[" ^ string_of_list string_of_mvalue l ^ "]"
@@ -443,6 +430,10 @@ let rec remove_alts = function
   | _ :: instrs -> remove_alts instrs
   | [] -> []
 
+let unscope_vars env xs =
+  let unscope_var acc x = List.remove_assoc x acc in
+  List.fold_left unscope_var env xs
+
 let exec instr frms stck envs = 
   match instr with
   | IAdd -> (frms, add stck, envs)
@@ -467,6 +458,7 @@ let exec instr frms stck envs =
   | IImpVarP x -> (frms, (MImpVarP x) :: stck, envs)
   | ITag x -> (frms, (MTag x) :: stck, envs)
   | IWCard -> (frms, MWCard :: stck, envs)
+  | IUnit -> (frms, MUnit :: stck, envs)
   | IInt n -> (frms, (MInt n) :: stck, envs)
   | IBool b -> (frms, (MBool b) :: stck, envs)
   | IString s -> (frms, (MString s) :: stck, envs)
@@ -493,10 +485,17 @@ let exec instr frms stck envs =
   | ILet x ->
      (match envs with
       | env :: env_tail ->
+         print_endline (string_of_environs envs);
          let (x', stck') = pop stck in
          let new_mapping = (x, x') :: env in
          (frms, stck', new_mapping :: env_tail)
       | [] -> error "no environment for variable")
+  | IUnscope xs ->
+     (match envs with
+      | env :: env_tail ->
+         let new_env = unscope_vars env xs in
+         (frms, stck, new_env :: env_tail)
+      | [] -> error "no environment to unscope")
   | ILetP ->
      (match envs with
       | env :: env_tail ->
@@ -529,7 +528,11 @@ let exec instr frms stck envs =
      else error "assertion failed"
   | ICall ->
      let (x, frm, env, v, stck') = pop_app stck in
-     (frm :: frms, stck', ((x,v) :: env) :: envs)
+     let new_envs =
+       (match v with
+       | MUnit -> env :: envs
+       | _ -> ((x, v) :: env) :: envs) in
+     (frm :: frms, stck', new_envs)
   | IPopEnv ->
      (match envs with
       | [] -> error "no environment to pop"
@@ -587,7 +590,6 @@ let exec instr frms stck envs =
 (* Execute instructions *)
 (* TODO: Generalize read instructions *)
 (* TODO: Check for implicit arg channel allocation *)
-
 let run p = 
   let rec loop = function
     | (pid, ([], [], e)) -> (pid, ([], [], e))

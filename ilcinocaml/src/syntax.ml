@@ -58,14 +58,13 @@ type expr =
   
   (* Lambda *)
   | Lam of expr * expr
-  (*| ImpLam of name * expr*)
   | App of expr * expr
   
   (* Pi *)
   | Wr of expr * name
   | Rd of name
   | RdBind of name * name
-  | Nu of expr list * expr
+  | Nu of name list * expr
   | ParComp of expr * expr
   | ParLeft of expr * expr
   | Choice of expr * expr
@@ -163,14 +162,13 @@ let string_of_expr e =
 
     (* Lambda *)
     | Lam (e1, e2) -> "Lam(" ^ to_str e1 ^ "," ^ to_str e2 ^ ")"
-    (*| ImpLam (x, e) -> "ImpLam(" ^ name_to_str x ^ "," ^ to_str e ^ ")"*)
     | App (e1, e2) -> "App(" ^ to_str e1 ^ "," ^ to_str e2 ^ ")"
 
     (* Pi *)
     | Wr (e, x) -> "Wr(" ^ to_str e ^ "," ^ name_to_str x ^ ")"
     | Rd x -> "Rd(" ^ name_to_str x ^ ")"
     | RdBind (x1, x2) -> "RdBind(" ^ name_to_str x1 ^ "," ^ name_to_str x2 ^ ")"
-    | Nu (x, e) -> "Nu(" ^ str_of_list to_str x ^ "," ^ to_str e ^ ")"
+    | Nu (x, e) -> "Nu(" ^ str_of_list name_to_str x ^ "," ^ to_str e ^ ")"
     | ParComp (e1, e2) -> "ParComp(" ^ to_str e1 ^ "," ^ to_str e2 ^ ")"
     | ParLeft (e1, e2) -> "ParLeft(" ^ to_str e1 ^ "," ^ to_str e2 ^ ")"
     | Choice (e1, e2) -> "Choice(" ^ to_str e1 ^ "," ^ to_str e2 ^ ")"

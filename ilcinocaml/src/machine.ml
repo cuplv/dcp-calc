@@ -21,12 +21,15 @@ type mvalue =
   | MListP of name * name
   | MTag of string
   | MId of int (* Hacky way to keep track of lists. Change later *)
+  | MImpVarP of name
+  | MChan of name
 and instr =
   | IVar of name
   | IVarP of name
   | IEmpListP
   | IListP of name * name
   | IImpVar of name
+  | IImpVarP of name
   | ITag of string
   | IWCard
   | IInt of int
@@ -117,6 +120,8 @@ let rec string_of_mvalue = function
   | MListP _ -> "list pattern"
   | MTag s -> s
   | MId n -> string_of_int n
+  | MImpVarP x -> x
+  | MChan x -> x
 
 let rec string_of_instr = function 
   | IVar x -> sprintf "IVar(%s)" x
@@ -124,6 +129,7 @@ let rec string_of_instr = function
   | IEmpListP -> "IEmpListP"
   | IListP (hd, tl) -> sprintf "IListP(%s,%s)" hd tl
   | IImpVar x -> sprintf "IImpVar(%s)" x
+  | IImpVarP x -> sprintf "IImpVarP(%s)" x
   | ITag x -> sprintf "ITag(%s)" x
   | IWCard -> "IWCard"
   | IInt n -> sprintf "IInt(%d)" n
@@ -209,7 +215,7 @@ let string_of_frames frms =
 let string_of_environs envs =
   let rec to_str = function
     | [] -> ""
-    | e :: es -> string_of_environ e ^ to_str es
+    | e :: es -> string_of_environ e ^ "\n" ^ to_str es
   in
   "[" ^ to_str envs ^ "]"
 
@@ -232,7 +238,7 @@ let lookup x = function
 
 let imp_lookup x = function
   | _ ::env:: _ -> (try List.assoc x env with Not_found -> error ("unknown " ^ x))
-  | _ -> error "no environment to look up"
+  | _ -> error "no environment to look up implicit arg"
 
 let pop = function
   | [] -> error "empty stack"
@@ -395,6 +401,8 @@ let pattern_match p1 p2 =
        compare mapping rest1 rest2
     | (MVarP x :: rest1, y :: rest2) ->
        compare ((x, y) :: mapping) rest1 rest2
+    | (MImpVarP x :: rest1, y :: rest2) ->
+       compare ((x, y) :: mapping) rest1 rest2
     | ([], []) -> mapping
     | _ -> raise Pattern_match_fail
   in
@@ -432,6 +440,7 @@ let exec instr frms stck envs =
   | IEmpListP -> (frms, MEmpListP :: stck, envs)
   | IListP (hd, tl) -> (frms, MListP (hd, tl) :: stck, envs)
   | IImpVar x -> (frms, (imp_lookup x envs) :: stck, envs)
+  | IImpVarP x -> (frms, (MImpVarP x) :: stck, envs)
   | ITag x -> (frms, (MTag x) :: stck, envs)
   | IWCard -> (frms, MWCard :: stck, envs)
   | IInt n -> (frms, (MInt n) :: stck, envs)
@@ -481,7 +490,7 @@ let exec instr frms stck envs =
      (match envs with
       | env :: env_tail ->
          let new_mapping =
-           List.fold_left (fun acc x -> (x, MHole) :: acc) [] (List.rev xs) in
+           List.fold_left (fun acc x -> (x, MChan x) :: acc) [] (List.rev xs) in
          (frms, stck, (new_mapping @ env) :: env_tail)
       | [] -> error "no environment for variable")
   | IBranch (f1, f2) ->
@@ -554,34 +563,55 @@ let exec instr frms stck envs =
 (* Execute instructions *)
 (* TODO: Generalize read instructions *)
 (* TODO: Check for implicit arg channel allocation *)
+
 let run p = 
   let rec loop = function
     | (pid, ([], [], e)) -> (pid, ([], [], e))
     | (pid, ([], [v], e)) -> (pid, ([], [v], e))
     | (pid, ((IRdBind (x1, x2) :: is) :: frms, stck, envs)) ->
-       if List.mem_assoc x2 (List.hd envs) || String.get x2 0 == '?'
-       then (pid, ((IRdBind (x1, x2) :: is) :: frms, stck, envs))
-       else error "channel not allocated"
+       if List.mem_assoc x2 (List.hd envs) || String.get x2 0 == '?' then
+         (pid, ((IRdBind (x1, x2) :: is) :: frms, stck, envs))
+       else error "channel not allocated 1"
     | (pid, ((IChoice(pid', cid,  (IRdBind (x1, x2))) :: is) :: frms, stck, envs)) ->
        if List.mem_assoc x2 (List.hd envs) || String.get x2 0 == '?'
        then (pid, ((IChoice(pid', cid, (IRdBind (x1, x2))) :: is) :: frms, stck, envs))
-       else error "channel not allocated"
+       else error "channel not allocated 2"
     | (pid, ((IRd x :: is) :: frms, stck, envs)) ->
-       if List.mem_assoc x (List.hd envs) || String.get x 0 == '?'             
-       then (pid, ((IRd x :: is) :: frms, stck, envs))
-       else error "channel not allocated"
+       if List.mem_assoc x (List.hd envs) then
+         (pid, ((IRd x :: is) :: frms, stck, envs))
+       else if String.get x 0 == '?' then
+         let chan =
+           (match imp_lookup x envs with
+            | MChan x -> x
+            | _ -> error "imp lookup failed") in
+         let new_envs =
+           (match envs with
+            | env :: env_tail -> ((chan, MChan chan) :: env) :: env_tail
+            | _ -> error "no env") in
+         (pid, ((IRd chan :: is) :: frms, stck, new_envs))
+       else error ( "channel not allocated " ^ (string_of_environs envs))
     | (pid, ((IChoice(pid', cid,  (IRd x)) :: is) :: frms, stck, envs)) ->
        if List.mem_assoc x (List.hd envs) || String.get x 0 == '?'              
        then (pid, ((IChoice(pid', cid, (IRd x)) :: is) :: frms, stck, envs))
-       else error "channel not allocated"
+       else error "channel not allocated 4"
     | (pid, ((IWr (MHole, x) :: is) :: frms, v :: stck, envs)) ->
-       if List.mem_assoc x (List.hd envs) || String.get x 0 == '?'             
-       then (pid, ((IWr (v, x) :: is) :: frms, stck, envs))
-       else error "channel not allocated"
+       if List.mem_assoc x (List.hd envs) || String.get x 0 == '?' then
+       (pid, ((IWr (v, x) :: is) :: frms, stck, envs))
+       else error "channel not allocated 5"
     | (pid, ((IWr (v, x) :: is) :: frms, stck, envs)) ->
-       if List.mem_assoc x (List.hd envs) || String.get x 0 == '?'             
-       then (pid, ((IWr (v, x) :: is) :: frms, stck, envs))
-       else error "channel not allocated"
+       if List.mem_assoc x (List.hd envs) then
+         (pid, ((IWr (v, x) :: is) :: frms, stck, envs))
+       else if String.get x 0 == '?' then
+         let chan =
+           (match imp_lookup x envs with
+            | MChan x -> x
+            | _ -> error "imp lookup failed") in
+         let new_envs =
+           (match envs with
+            | env :: env_tail -> ((chan, MChan chan) :: env) :: env_tail
+            | _ -> error "no env") in
+         (pid, ((IWr (v, chan) :: is) :: frms, stck, new_envs))
+       else error "channel not allocated 6"
     | (pid, ([ISpawn] :: frms, stck, envs)) ->
        (pid, ([ISpawn] :: frms, stck, envs))
     | (pid, ((IHole n :: is) :: frms, stck, envs)) ->
@@ -593,7 +623,7 @@ let run p =
     | (pid, ((i :: is) :: frms, stck, envs)) ->
        loop (pid, (exec i (is :: frms) stck envs))
     | (pid, ([] :: frms, stck, envs)) -> loop (pid, (frms, stck, envs))
-    | s -> error ("illegal end of program")
+    | s -> error ("illegal end of program" ^ (string_of_process s))
   in
   loop p
 

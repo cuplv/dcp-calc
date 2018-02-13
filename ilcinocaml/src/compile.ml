@@ -75,6 +75,7 @@ let rec compile = function
       [IStartT lst_id] @ List.fold_left (fun acc e ->
           match e with
           | IVar x -> IVarP x :: acc
+          | IImpVar x -> IImpVarP x :: acc
           | instr -> instr :: acc)
       [] (List.rev (List.fold_left (fun acc e -> acc @ (compile e))
                                    [] p)) @ [IEndT lst_id] @ [ILetP] @ (compile e2)
@@ -86,6 +87,7 @@ let rec compile = function
      (match e with
      | Tuple e -> List.map (function
                             | IVar x -> IVarP x
+                            | IImpVar x -> IImpVarP x
                             | instr -> instr)
                            (compile (Tuple e))
      | List [] -> [IEmpListP]

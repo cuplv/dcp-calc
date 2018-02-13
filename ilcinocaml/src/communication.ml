@@ -5,7 +5,11 @@ open Machine
 
 exception Communication_error of string
 
-let error msg = raise (Communication_error msg) 
+let error msg = raise (Communication_error msg)
+
+let imp_lookup x = function
+  | _ ::env:: _ -> (try List.assoc x env with Not_found -> error ("unknown " ^ x))
+  | _ -> error "no environment to look up implicit arg"              
 
 let is_blocked = function
   | (_, ((IWr _ :: _) :: _, _, _)) -> true
@@ -29,7 +33,7 @@ let is_reading = function
 let get_comm_info = function
   | (pid, ((IWr (v, x) :: _) :: _, _, _)) -> (pid, IWr (v,x))
   | (pid, ((IRdBind (x1, x2) :: _) :: _, _, _)) -> (pid, IRdBind (x1,x2))
-  | (pid, ((IRd x :: _) :: _, _, _)) -> (pid, IRd x)
+  | (pid, ((IRd x :: _) :: _, _, envs)) -> (pid, IRd x)
   | (pid, ((IChoice(pid', cid, (IRdBind (x1, x2))) :: _) :: _, _, _)) ->
       (pid, IChoice(pid', cid, IRdBind (x1,x2)))
   | (pid, ((IChoice(pid', cid, (IRd x)) :: _) :: _, _, _)) -> (pid, IChoice(pid', cid, IRd x))
@@ -48,7 +52,7 @@ let can_comm = function
   | ((_, IWr (_, c)), (_, IRd c')) when c=c' -> true
   | ((_, IWr (_, c)), (_, (IChoice (_, _, IRd c')))) when c=c' -> true
   | ((_, IWr (_, c)), (_, (IRepl (IRd c' :: _)))) when c=c' -> true
-  | _ -> false
+  | _ -> print_endline "false"; false
 
 (* TODO: Generalize reads! *)
 (* TODO: equality for closures *)

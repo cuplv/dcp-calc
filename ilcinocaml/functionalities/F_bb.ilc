@@ -1,16 +1,23 @@
 let F_bb = lam ?f2p, ?p2f .
   let (db, c) = ([], 0) in
-    let (P_i, 'Write, m_i) = rd ?p2f in
-    (* (P_i, 'Write, m_i :: BitString) *)
-        let db = (c, (P_i, m_i)) :: db in
-          wr ((S, 'Write, c, P_i, m_i), C_I) -> ?f2p .
-            let c = c + 1 in
-    let (P_j, 'Read, c) = rd ?p2f in
+  letrec loop = 
+    match rd ?p2f with
+    | (P_i, 'Write, m_i) ->
+      let db = (c, (P_i, m_i)) :: db in
+      let c = c + 1 in
+      wr ((S, 'Write, m_i), "C_I") -> ?f2p
+    | (P_j, 'Read, c, P_i, m_i) ->
       if lookup (c, (P_i, m_i)) db then
         wr (((S, P_j, 'Read, m),
-             (P_j, 'Read, c, P_j, m_i)), C_I) -> ?f2p
+	     (P_j, 'Read, c, P_j, m_i)), "C_I") -> ?f2p
       else
         wr (((S, P_j, 'NoRead, c),
-             (P_j, 'NoRead, c)), C_I) -> ?f2p
+	     (P_k, 'NoRead, c)), "C_I") -> ?f2p
+    end .
+    loop in loop
 in
-0
+nu f2p, p2f .
+  let (?f2p, ?p2f) = (f2p, p2f) in
+  F_bb | wr (0, 'Write, "hi") -> p2f .
+         let ((S, 'Write, m_i), C_I) = rd f2p in
+	 m_i

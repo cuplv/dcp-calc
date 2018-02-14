@@ -597,13 +597,11 @@ let chan_alloc_check c envs =
   | envs_hd :: envs_tl when String.get c 0 == '?' ->
        (match imp_lookup c envs with
         | MChan c' -> (c', ((c', MChan c') :: envs_hd) :: envs_tl)
-        | _ -> error "channel not allocated")
+        | _ -> error ("channel not allocated: " ^ c))
   | [] -> error "no environment"
-  | _ -> error "channel not allocated"
+  | _ -> error ("channel not allocated: " ^ c)
 
 (* Execute instructions *)
-(* TODO: Generalize read instructions *)
-(* TODO: Check for implicit arg channel allocation *)
 let run p = 
   let rec loop = function
     | (pid, ([], [], e)) -> (pid, ([], [], e))
@@ -622,7 +620,7 @@ let run p =
        (pid, ((IChoice (pid', cid, (IRd c)) :: is) :: frms, stck, new_envs))
     | (pid, ((IWr (MHole, x) :: is) :: frms, v :: stck, envs)) ->
        let (c, new_envs) = chan_alloc_check x envs in
-       (pid, ((IWr (MHole, c) :: is) :: frms, v :: stck, new_envs))              
+       (pid, ((IWr (v, c) :: is) :: frms, stck, new_envs))              
     | (pid, ((IWr (v, x) :: is) :: frms, stck, envs)) ->
        let (c, new_envs) = chan_alloc_check x envs in
        (pid, ((IWr (v, c) :: is) :: frms, stck, new_envs))              
@@ -635,7 +633,7 @@ let run p =
     | (pid, ((i :: is) :: frms, stck, envs)) ->
        loop (pid, (exec i (is :: frms) stck envs))
     | (pid, ([] :: frms, stck, envs)) -> loop (pid, (frms, stck, envs))
-    | s -> error ("illegal end of program" ^ (string_of_process s))
+    | _ -> error ("illegal end of program: " ^ (string_of_process p))
   in
   loop p
 

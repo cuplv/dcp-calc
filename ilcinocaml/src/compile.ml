@@ -13,14 +13,16 @@ let convert_to_choice pid cid = function
   | instr :: instrs -> IChoice(pid, cid, instr) :: instrs
   | _ -> raise (Compilation_error)
 
-(* TODO: ICond, IClosure? *)      
 let rec add_force x = function
   | IVar x' when x=x' -> [IVar x; IForce]
   | IBranch (f1,f2) ->
-     let f acc instr = (add_force x instr) @ acc in
-     let add_force_branch frm = List.fold_left f [] (List.rev frm) in
-     [IBranch (add_force_branch f1, add_force_branch f2)]
+     [IBranch (add_force_branch x f1, add_force_branch x f2)]
+  | ICond f1 ->
+     [ICond (add_force_branch x f1)]
   | instr -> [instr]
+and add_force_branch x frm =
+  let f acc instr = (add_force x instr) @ acc in
+  List.fold_left f [] (List.rev frm)
 
 let force_thunks x = List.fold_left (fun acc instr ->
                          acc @ (add_force x instr)) []

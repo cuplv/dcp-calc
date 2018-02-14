@@ -49,16 +49,10 @@ let rec compile = function
   | Int n -> [IInt n]
   | Bool b -> [IBool b]
   | String s -> [IString s]
-  | List es ->
-     (match es with
-     | [] -> [INil]
-     | _ -> [IStartL] @ List.fold_left (fun acc e -> acc @ (compile e))
-      [] es @ [IEndL])
-  | Set es ->
-     (match es with
-      | [] -> [IEmp]
-      | _ -> [IStartS] @ List.fold_left (fun acc e -> acc @ (compile e))
-      [] es @ [IEndS])
+  | List es -> [IStartL] @ List.fold_left (fun acc e -> acc @ (compile e))
+      [] es @ [IEndL]
+  | Set es -> [IStartS] @ List.fold_left (fun acc e -> acc @ (compile e))
+      [] es @ [IEndS]
   | Tuple es ->
       [IStartT] @ List.fold_left (fun acc e -> acc @ (compile e))
       [] es @ [IEndT]

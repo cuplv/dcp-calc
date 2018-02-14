@@ -13,9 +13,7 @@ type mvalue =
   | MTag of string
   | MUnit          
   | MList of mvalue list
-  | MNil
   | MSet of mvalue list
-  | MEmp
   | MTuple of mvalue list
   | MThunk of frame  
   | MClosure of name * frame * environ
@@ -95,8 +93,6 @@ and instr =
   | IStartM
   | IEndM
   | IMatchCond of frame
-  | INil
-  | IEmp
 and frame = instr list
 and environ = (name * mvalue) list
 and stack = mvalue list
@@ -182,8 +178,6 @@ let rec string_of_instr = function
   | IStartM -> "IStartM"
   | IEndM -> "IEndM"
   | IMatchCond _ -> "IMatchCond()"
-  | INil -> "INil"
-  | IEmp -> "IEmp"
 and string_of_frame = function
   | [] -> "\n"
   | i::is -> string_of_instr i ^ "\n" ^ string_of_frame is
@@ -197,9 +191,7 @@ and string_of_mvalue = function
   | MClosure _ -> "<fun>"
   | MHole -> "hole"
   | MList l -> "[" ^ string_of_list string_of_mvalue l ^ "]"
-  | MNil -> "[]"
   | MSet l -> "{" ^ string_of_list string_of_mvalue l ^ "}"
-  | MEmp -> "{}"
   | MTuple l -> "(" ^ string_of_list string_of_mvalue l ^ ")"
   | MVarP p -> p
   | MEmpListP -> "empty list pattern"
@@ -269,7 +261,7 @@ let pop_app = function
 
 let pop_list l = 
   let rec pop acc = function
-    | (MList []) :: s -> (acc, s)
+    | (MList [MHole]) :: s -> (acc, s)
     | mv :: s -> pop (mv :: acc) s
     | _ -> error "no list to pop"
   in
@@ -337,7 +329,6 @@ let neq = function
 
 let cons = function
   | (MList x) :: y :: s -> MList (y::x) :: s
-  | MNil :: y :: s -> MList [y] :: s
   | _ -> error "no list to cons"
 
 let concat = function
@@ -374,8 +365,6 @@ let length = function
   | (MList xs) :: s -> MInt(List.length xs) :: s
   | (MTuple xs) :: s -> MInt(List.length xs) :: s
   | (MSet xs) :: s -> MInt(List.length xs) :: s
-  | MNil :: s -> MInt 0 :: s
-  | MEmp :: s -> MInt 0 :: s
   | _ -> error "no string to get length"
 
 let mem_assoc x = function
@@ -385,8 +374,6 @@ let mem_assoc x = function
 let mem = function
   | (MSet xs) :: x :: s -> MBool (List.mem x xs) :: s
   | (MList xs) :: x :: s -> MBool (List.exists (mem_assoc x) xs) :: s
-  | MNil :: s -> MBool false :: s
-  | MEmp :: s -> MBool false :: s
   | _ -> error "no set"
 
 let union = function
@@ -561,20 +548,18 @@ let exec instr frms stck envs =
          let (fst_frm, snd_frm, rest_frm) = get_par_ps frm n in
          ([ISpawn] :: fst_frm :: snd_frm :: rest_frm :: rest_frms, stck, envs)
       | [] -> error "no processes to spawn")
-  | IStartL -> (frms, (MList []) :: stck, envs)
+  | IStartL -> (frms, (MList [MHole]) :: stck, envs)
   | IEndL ->
      let (lst, stck') = pop_list stck
      in (frms, (MList lst) :: stck', envs)
-  | INil -> (frms, MNil :: stck, envs)
-  | IStartS -> (frms, (MList []) :: stck, envs)
+  | IStartS -> (frms, (MList [MHole]) :: stck, envs)
   | IEndS ->
      let (lst, stck') = pop_list stck in
      let set = remove_duplicates lst in
      (frms, (MSet set) :: stck', envs)
-  | IEmp -> (frms, MEmp :: stck, envs)
   | ICons -> (frms, cons stck, envs)
   | IConcat -> (frms, concat stck, envs)
-  | IStartT -> (frms, (MList []) :: stck, envs)
+  | IStartT -> (frms, (MList [MHole]) :: stck, envs)
   | IEndT ->
      let (lst, stck') = pop_list stck
      in (frms, (MTuple lst) :: stck', envs)

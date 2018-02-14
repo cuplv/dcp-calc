@@ -68,7 +68,6 @@ type expr =
   | ParComp of expr * expr
   | ParLeft of expr * expr
   | Choice of expr * expr
-  | Repl of expr
   | Seq of expr * expr
   
   (* Laziness *)
@@ -172,7 +171,6 @@ let string_of_expr e =
     | ParComp (e1, e2) -> "ParComp(" ^ to_str e1 ^ "," ^ to_str e2 ^ ")"
     | ParLeft (e1, e2) -> "ParLeft(" ^ to_str e1 ^ "," ^ to_str e2 ^ ")"
     | Choice (e1, e2) -> "Choice(" ^ to_str e1 ^ "," ^ to_str e2 ^ ")"
-    | Repl e -> "Repl(" ^ to_str e ^ ")"
     | Seq (e1, e2) -> "Seq(" ^ to_str e1 ^ "," ^ to_str e2 ^ ")"
 
     (* Laziness *)

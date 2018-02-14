@@ -44,12 +44,14 @@
 %token REQ
 %token END
 %token UNIT
+%token REF
 
 /* Operators */
 %token EQUAL
+%token ASSIGN
 %token LARROW
 %token RARROW
-%token REPL
+%token BANG
 %token PAR
 %token PARL
 %token CHOICE
@@ -102,7 +104,6 @@
 /* Precedence and assoc */
 %nonassoc NU_PREC
 %right PAR PARL CHOICE
-%nonassoc REPL
 %right DOT
 %nonassoc LET_PREC
 %nonassoc THEN
@@ -303,8 +304,6 @@ comm_expr:
       Nu (names, e) }
 
 proc_expr:
-  | REPL e = expr
-    { Repl e }
   | e1 = expr PAR e2 = expr
     { ParComp (e1, e2) }
   | e1 = expr PARL e2 = expr

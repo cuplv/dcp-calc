@@ -82,7 +82,6 @@ and instr =
   | IEndT of int
   | IFst
   | ISnd
-  | IRepl of frame
   | IRand
   | IShow
   | ILookup
@@ -167,7 +166,6 @@ let rec string_of_instr = function
   | IEndT _ -> "IEndT"
   | IFst -> "IFst"
   | ISnd -> "ISnd"
-  | IRepl _ -> "IRepl"
   | IRand -> "IRand"
   | IShow -> "IShow"
   | ILookup -> "ILookup"
@@ -643,8 +641,6 @@ let run p =
        (pid, ((IHole n :: is) :: frms, stck, envs))
     | (pid, ((IBlock i :: is) :: frms, stck, envs)) ->
        (pid, ((IBlock i :: is) :: frms, stck, envs))
-    | (pid, ((IRepl i :: is) :: frms, stck, envs)) ->
-       (pid, ((IRepl i :: is) :: frms, stck, envs))
     | (pid, ((i :: is) :: frms, stck, envs)) ->
        loop (pid, (exec i (is :: frms) stck envs))
     | (pid, ([] :: frms, stck, envs)) -> loop (pid, (frms, stck, envs))

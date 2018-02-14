@@ -4,8 +4,7 @@ let F_bb = lam (), ?f2p, ?p2f .
     match rd ?p2f with
     | (P_i, 'Write, m_i) ->
       let db = (c, (P_i, m_i)) :: db in
-      wr (("S", 'Write, c, P_i, m_i), "C_I") -> ?f2p .
-      let c = c + 1 in 0
+      wr (("S", 'Write, c, P_i, m_i), "C_I") -> ?f2p
     | (P_j, 'Read, c) ->
       if mem c db then (* Clean this up *)
         let (P_i, m_i) = lookup c db in
@@ -25,7 +24,7 @@ nu f2p, p2f .
 	    let _ = rd f2p in
 	    wr (2, 'Write, "kevin") -> p2f .
 	    let _ = rd f2p in
-	    wr (3, 'Read, 2) -> p2f .
+	    wr (3, 'Read, 0) -> p2f .
 	    match rd f2p with
 	    | ((_, (_, 'Read, _, _, m)), _) -> "Read:" ++ m
 	    | ((_, (_, 'NoRead, _)), _) -> "NoRead"

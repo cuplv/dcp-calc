@@ -16,7 +16,6 @@ let is_blocked = function
   | (_, ((IRdBind _ :: _) :: _, _, _)) -> true
   | (_, ((IRd _ :: _) :: _, _, _)) -> true
   | (_, ((IChoice _ :: _) :: _, _, _)) -> true
-  | (_, ((IRepl _ :: _) :: _, _, _)) -> true
   | _ -> false
 
 let is_writing = function
@@ -27,7 +26,6 @@ let is_reading = function
   | (_, IRdBind _) -> true
   | (_, IRd _) -> true
   | (_, IChoice _) -> true
-  | (_, IRepl _) -> true (* Replication must be in read mode *)
   | _ -> false
 
 let get_comm_info = function
@@ -37,7 +35,6 @@ let get_comm_info = function
   | (pid, ((IChoice(pid', cid, (IRdBind (x1, x2))) :: _) :: _, _, _)) ->
       (pid, IChoice(pid', cid, IRdBind (x1,x2)))
   | (pid, ((IChoice(pid', cid, (IRd x)) :: _) :: _, _, _)) -> (pid, IChoice(pid', cid, IRd x))
-  | (pid, ((IRepl frm :: _) :: _, _, _)) -> (pid, IRepl frm)
   | _ -> error "Process not reading or writing"
 
 let combinations l1 l2 = 
@@ -48,10 +45,8 @@ let combinations l1 l2 =
 let can_comm = function
   | ((_, IWr (_, c)), (_, IRdBind (_, c'))) when c=c' -> true
   | ((_, IWr (_, c)), (_, (IChoice (_, _, IRdBind (_, c'))))) when c=c' -> true
-  | ((_, IWr (_, c)), (_, (IRepl (IRdBind (_, c') :: _)))) when c=c' -> true
   | ((_, IWr (_, c)), (_, IRd c')) when c=c' -> true
   | ((_, IWr (_, c)), (_, (IChoice (_, _, IRd c')))) when c=c' -> true
-  | ((_, IWr (_, c)), (_, (IRepl (IRd c' :: _)))) when c=c' -> true
   | _ -> print_endline "false"; false
 
 (* TODO: Generalize reads! *)
@@ -64,15 +59,6 @@ let update_state comm = function
            when (pid=pid2 && x1=x1' && x2=x2') ->
          [(pid, (is :: frms, stck, ((x1,v) :: env) :: envs))]
       | _ -> [(pid, ((IRdBind (x1,x2) :: is) :: frms, stck, env :: envs))])
-  | (pid, ((IRepl (IRdBind (x1,x2) :: rest_frm) :: is) :: frms, stck, env :: envs)) ->
-     (match comm with
-      | ((pid1, IWr (v, x)), (pid2, IRepl (IRdBind (x1', x2') :: rest_frm')))
-           when (pid=pid2 && x1=x1' && x2=x2') ->
-         let new_pid = !pid_counter in
-         incr pid_counter;
-         [(pid, (rest_frm :: is :: frms, stck, ((x1,v) :: env) :: envs));
-          (new_pid, ((IRepl (IRdBind (x1,x2) :: rest_frm) :: is) :: frms, stck, env :: envs))]
-      | _ -> [(pid, ((IRepl (IRdBind (x1,x2) :: rest_frm) :: is) :: frms, stck, env :: envs))])
   | (pid, ((IChoice (cpid, cid, (IRdBind (x1,x2))) :: is) :: frms, stck, env :: envs)) ->
      (match comm with
       | ((pid1, IWr (v, x)), (pid2, IChoice(cpid', cid', IRdBind (x1', x2'))))
@@ -88,15 +74,6 @@ let update_state comm = function
            when (pid=pid2 && x1=x1') ->
          [(pid, (is :: frms, v :: stck, envs))]
       | _ -> [(pid, ((IRd x1 :: is) :: frms, stck, envs))])
-  | (pid, ((IRepl (IRd x1 :: rest_frm) :: is) :: frms, stck, envs)) ->
-     (match comm with
-      | ((pid1, IWr (v, x)), (pid2, IRepl (IRd x1' :: rest_frm')))
-           when (pid=pid2 && x1=x1') ->
-         let new_pid = !pid_counter in
-         incr pid_counter;
-         [(pid, (rest_frm :: is :: frms, v :: stck, envs));
-          (new_pid, ((IRepl (IRd x1' :: rest_frm) :: is) :: frms, stck, envs))]
-      | _ -> [(pid, ((IRepl (IRd x1 :: rest_frm) :: is) :: frms, stck, envs))])
   | (pid, ((IChoice (cpid, cid, (IRd x1)) :: is) :: frms, stck, envs)) ->
      (match comm with
       | ((pid1, IWr (v, x)), (pid2, IChoice(cpid', cid', IRd x1')))

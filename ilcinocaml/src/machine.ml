@@ -183,7 +183,7 @@ and string_of_frame = function
 and string_of_mvalue = function
   | MInt n -> string_of_int n
   | MBool b -> string_of_bool b
-  | MString s -> s
+  | MString s -> "\"" ^ s ^ "\""
   | MThunk frm -> "Thunk(" ^ (string_of_frame frm) ^ ")"
   | MWCard -> "_"
   | MUnit -> "()"

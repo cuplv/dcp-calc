@@ -104,6 +104,8 @@
 %right PAR PARL CHOICE
 %right DOT
 %nonassoc LET_PREC
+%left SEMI
+%nonassoc ASSIGN_PREC
 %nonassoc THEN
 %nonassoc ELSE
 %right CONS CONCAT
@@ -164,7 +166,7 @@ expr:
     { LetP (p, e1, e2) }
   | LETREC x = NAME EQUAL e1 = expr IN e2 = expr %prec LET_PREC
     { LetRec (x, e1, e2) }
-  | LET x = NAME ASSIGN e = expr %prec LET_PREC
+  | LET x = NAME ASSIGN e = expr %prec ASSIGN_PREC
     { Assign (x, e) }
   | MATCH e1 = expr WITH bs = branches
     { Match (e1, bs) }    
@@ -174,7 +176,7 @@ expr:
     { IfTE (b, e1, e2) }
   | REQ e1 = expr IN e2 = expr %prec LET_PREC
     { Req (e1, e2) }
-  | e1 = expr DOT e2 = expr
+  | e1 = expr SEMI e2 = expr
     { Seq (e1, e2) }
    
 atom_expr:

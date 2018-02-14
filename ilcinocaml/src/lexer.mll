@@ -121,7 +121,7 @@ rule token = parse
                               { IMPNAME (Lexing.lexeme lexbuf) }
   
   | ['\'']
-    ['a'-'z' 'A'-'Z' '0'-'9' '_' '\'']*
+    ['a'-'z' 'A'-'Z' '0'-'9' '_' '-' '\'']*
                               { TAG (Lexing.lexeme lexbuf) }
   
   | ['0'-'9']+                { INT (int_of_string (Lexing.lexeme lexbuf)) }

@@ -1,17 +1,17 @@
-let F_smt = lam x, ?f2p, ?p2f .
+let F_crs = lam (), ?f2p, ?p2f .
   let (pid, sid) = rd ?p2f in
   let d = rand in
-    wr (pid, d) -> ?f2p . 
+    wr (pid, d) -> ?f2p ;
     letrec loop =
       (let (pid, sid) = rd ?p2f in
-        wr (pid, d) -> ?f2p . loop) in loop
+        wr (pid, d) -> ?f2p ; loop) in loop
 in	
 nu f2p, p2f .
   let (?f2p, ?p2f) = (f2p, p2f) in
-  F_smt 0 |
-  wr (0, 0) -> p2f . let (pid_0, d_0) = rd f2p in
-  wr (1, 1) -> p2f . let (pid_1, d_1) = rd f2p in
-  wr (2, 2) -> p2f . let (pid_2, d_2) = rd f2p in
+  F_crs () |
+  wr (0, 0) -> p2f ; let (pid_0, d_0) = rd f2p in
+  wr (1, 1) -> p2f ; let (pid_1, d_1) = rd f2p in
+  wr (2, 2) -> p2f ; let (pid_2, d_2) = rd f2p in
   show pid_0 ++ " received " ++ show d_0 ++ "\n" ++
   show pid_1 ++ " received " ++ show d_1 ++ "\n" ++
-  show pid_2 ++ " received " ++ show d_2 ++ "\n"
+  show pid_2 ++ " received " ++ show d_2

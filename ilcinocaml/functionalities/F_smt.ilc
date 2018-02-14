@@ -1,10 +1,16 @@
-(* Need way to parameterize functionality? *)
-(* Better way to check if delayed output to R *)
+(* TODO: Parameterize functionality
+ * Public delay not implemented *)
 
-nu p2f, f2p, f2a, a2f .
-let ('Send, S, R, sid, m) = rd p2f in
-    wr ('Sent, S, R, sid, l(m)) -> f2a .
-    (wr<priv, delay> (('Sent, S, sid, m), R) -> f2p) &
-    (let ('Corrupt, sid, P) = rd a2f in 
-        wr m -> f2a . let m' = rd a2f in
-            if P == S then wr (('Sent, S, sid, m'), R) -> f2p)
+let F_smt = lam (), ?f2p, ?p2f, ?f2a, ?a2f .
+  let ('Send, S, R, sid, m) = rd ?p2f in
+    wr (('Sent, S, R, sid, m), R) -> ?f2p ;
+    let ('Corrupt, sid, P) = rd ?a2f in
+      req mem P {S, R} in
+      wr m -> ?f2a ;
+      let m' = rd ?a2f in
+      if P == S (* && no output to R *) then
+      wr (('Sent, S, sid, m'), R) -> ?f2p
+in
+  nu f2p, p2f, f2a, a2f .
+    let (?f2p, ?p2f, ?f2a, ?a2f) = (f2p, p2f, f2a, a2f) in
+      F_smt () | 0

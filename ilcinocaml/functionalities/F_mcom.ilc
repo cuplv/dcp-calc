@@ -1,8 +1,18 @@
-(* We need to do two simultaneous writes,
-   but this shouldn't type check *)
-nu p2f, f2p .
-  match rd p2f with ('Commit, sid, cid, P_i, P_j, b) in
-    req mem b {0,1} in 
-      wr (('Receipt, sid, cid, P_i, P_j), {P_j, S}) -> f2p .
-        match rd p2f with ('Open, sid, cid, P_i, P_j) in
-          wr (('Open, sid, cid, P_i, P_j, b), {P_j, S}) -> f2p
+(* Performs two sequential (simultaneous) writes
+ * but this shouldn't type check *)
+
+
+let F_com = lam (), ?f2p, ?p2f .
+  let ('Commit, sid, cid, P_i, P_j, b) = rd ?p2f in
+    req mem b {0,1} in
+    wr (('Receipt, sid, cid, P_i, P_j), {P_j, "S"}) -> ?f2p ;
+    let ('Open, sid, cid, P_i, P_j) = rd ?p2f in
+    wr (('Open, sid, cid, P_i, P_j, b), {P_j, "S"}) -> f2p
+in 
+  nu f2p, p2f .
+    let (?f2p, ?p2f) = (f2p, p2f) in
+    F_com () | wr ('Commit, 0, 0, 1, 2, 0) -> p2f ;
+               let (('Receipt, sid, cid, P_i, P_j), _) = rd f2p in
+	       wr ('Open, sid, cid, P_i, P_j) -> p2f ;
+	       let (('Open, _, _, _, _, b), _) = rd f2p in
+	       b

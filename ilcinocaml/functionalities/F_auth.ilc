@@ -1,8 +1,16 @@
-(* Do not need corrupt sender in static corruptions world *)
-
-nu p2f, f2p, a2f .
-let ('Send, S, R, sid, m) = rd p2f in
-    (* Delayed write *)
-    (wr (('Sent, S, sid, m), R) -> f2p) &
-    (let ('Corrupt-sender, sid, m') = rd a2f in
-        wr (('Sent, S, sid, m'), R) -> f2p)
+(* Public delay not implemented
+ * Adversary not implemented *)
+ 
+let F_auth = lam (), ?f2p, ?p2f, ?a2f .
+  let ('Send, S, R, sid, m) = rd ?p2f in
+  (* Public delayed *)
+  wr (('Sent, S, sid, m), R) -> ?f2p ;
+  let ('Corrupt-sender, sid, m') = rd ?a2f in
+  (* If public delayed output not sent *)
+  wr (('Sent, S, sid, m'), R) -> f2p
+in
+  nu f2p, p2f, a2f .
+    let (?f2p, ?p2f, ?a2f) = (f2p, p2f, a2f) in
+    F_auth () | wr ('Send, 0, 1, 0, "msg") -> p2f ;
+                let (('Sent, S, sid, m), R) = rd f2p in
+		m

@@ -1,7 +1,16 @@
-(* Cleaner way to supply multiple args to function *)
-
-nu p2f, f2p .
-let ('Prove, x, w, B) = rd p2f in
-    wr ((A, B, x, (R x) w), S) -> f2p .
-    let 'ok = rd p2f in
-    wr (('Verified, A, x, (R x) w), B) -> f2p
+let F_zk = lam A, R, S, ?f2p, ?p2f .
+  let ('Prove, x, w, B) = rd ?p2f in
+    wr ((A, B, x, R x w), S) -> ?f2p ;
+    let 'ok = rd ?p2f in
+      wr (('Verified, A, x, R x w), B) -> ?f2p
+in
+  nu f2p, p2f .
+    let (?f2p, ?p2f) = (f2p, p2f) in
+    let A = 10 in
+    let R = lam x, w . true in
+    let S = 1 in
+      F_zk A R S | wr ('Prove, 1, 1, 11) -> p2f ;
+                 let _ = rd f2p in
+		 wr 'ok -> p2f ;
+		 let (('Verified, _, _, r), _) = rd f2p
+		 in r

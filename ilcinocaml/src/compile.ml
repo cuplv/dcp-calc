@@ -37,7 +37,7 @@ let get_vars p =
     | Tag _ :: rest -> aux acc rest
     | Wildcard :: rest -> aux acc rest
     | [] -> acc
-    | _ -> error "unexpected pattern"
+    | _ -> error ("unexpected pattern" ^ (string_of_expr (List.hd p)))
   in
   aux [] p
 

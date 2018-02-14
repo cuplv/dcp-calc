@@ -47,7 +47,7 @@ let can_comm = function
   | ((_, IWr (_, c)), (_, (IChoice (_, _, IRdBind (_, c'))))) when c=c' -> true
   | ((_, IWr (_, c)), (_, IRd c')) when c=c' -> true
   | ((_, IWr (_, c)), (_, (IChoice (_, _, IRd c')))) when c=c' -> true
-  | _ -> print_endline "false"; false
+  | _ -> false
 
 (* TODO: Generalize reads! *)
 (* TODO: equality for closures *)

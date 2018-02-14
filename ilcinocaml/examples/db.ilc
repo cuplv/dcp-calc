@@ -1,2 +1,0 @@
-let db = [(0, "a"), (2, "b"), (3, "c")] in
-let db = (0, "z") :: db in lookup 0 db

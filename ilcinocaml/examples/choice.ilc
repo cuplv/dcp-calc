@@ -2,7 +2,7 @@
 
 let GetBit = lam x.
     nu c, d . 
-       (rd a <- c. a & rd b <- d. b)
-    .| wr 1 -> c. 0
-    .| wr 2 -> d. 0 in
+       (rd a <- c; a & rd b <- d; b)
+    .| wr 1 -> c
+    .| wr 2 -> d in
 (GetBit 1)

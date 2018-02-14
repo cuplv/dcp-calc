@@ -5,18 +5,17 @@ let F_bb = lam (), ?f2p, ?p2f .
     | (P_i, 'Write, m_i) ->
       let db = (c, (P_i, m_i)) :: db in
       wr (("S", 'Write, c, P_i, m_i), "C_I") -> ?f2p .
-      let c = c + 1 in loop
+      let c = c + 1 in 0
     | (P_j, 'Read, c) ->
       if mem c db then (* Clean this up *)
         let (P_i, m_i) = lookup c db in
         wr ((("S", P_j, 'Read, c, P_j, "m"),
-	     (P_j, 'Read, c, P_i, m_i)), "C_I") -> ?f2p .
-	loop
+	     (P_j, 'Read, c, P_i, m_i)), "C_I") -> ?f2p
       else
         wr ((("S", P_j, 'NoRead, c),
-	     (P_j, 'NoRead, c)), "C_I") -> ?f2p .
-	loop
-    end in loop
+	     (P_j, 'NoRead, c)), "C_I") -> ?f2p
+    end .
+    loop in loop
 in
 nu f2p, p2f .
   let (?f2p, ?p2f) = (f2p, p2f) in

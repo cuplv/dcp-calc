@@ -485,7 +485,6 @@ let exec instr frms stck envs =
   | ILet x ->
      (match envs with
       | env :: env_tail ->
-         print_endline (string_of_environs envs);
          let (x', stck') = pop stck in
          let new_mapping = (x, x') :: env in
          (frms, stck', new_mapping :: env_tail)

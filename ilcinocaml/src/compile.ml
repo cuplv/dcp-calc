@@ -27,6 +27,18 @@ let force_thunks x = List.fold_left (fun acc instr ->
 
 let get_proj f l = List.fold_left (fun acc x -> f x :: acc) [] (List.rev l)
 
+let get_vars p =
+  let rec aux acc = function
+    | Tuple xs :: rest ->
+       (aux [] xs) @ aux acc rest
+    | Name x :: rest -> aux (x :: acc) rest
+    | ImpName x :: rest -> aux (x :: acc) rest
+    | Tag _ :: rest -> aux acc rest
+    | [] -> acc
+    | _ -> error "unexpected pattern"
+  in
+  aux [] p
+
 let rec compile = function
   (* Identifier, constants, values *)
   | Name x ->  [IVar x]
@@ -84,7 +96,8 @@ let rec compile = function
           | IImpVar x -> IImpVarP x :: acc
           | instr -> instr :: acc)
       [] (List.rev (List.fold_left (fun acc e -> acc @ (compile e))
-                                   [] p)) @ [IEndT lst_id] @ [ILetP] @ (compile e2)
+                                   [] p)) @ [IEndT lst_id] @ [ILetP] @ (compile
+  e2) @ [IUnscope (get_vars p)]
   | Match (e, es) ->
      let f acc = function
        | (p, expr) -> (compile p) @ [IMatchCond (compile expr)] @ acc in
@@ -95,9 +108,9 @@ let rec compile = function
                             | IVar x -> IVarP x
                             | IImpVar x -> IImpVarP x
                             | instr -> instr)
-                           (compile (Tuple e))
+                           (compile (Tuple e)) @ [IUnscope (get_vars e)]
      | List [] -> [IEmpListP]
-     | Cons(Name hd, Name tl) -> [IListP (hd, tl)]
+     | Cons(Name hd, Name tl) -> [IListP (hd, tl); IUnscope [hd; tl]]
      | _ -> error "Not implemented")
 
   (* Conditionals *)
@@ -120,7 +133,7 @@ let rec compile = function
   | Wr (e, x) -> (compile e) @ [IWr (MHole, x)]
   | Rd x -> [IRd x]
   | RdBind (x1, x2) -> [IRdBind (x1, x2)]
- | Nu (x, e) -> [INu x] @ (compile e)
+  | Nu (xs, e) -> [INu xs] @ (compile e) @ [IUnscope xs]
   | ParComp (e1, e2) ->
       let pid = !pid_counter in
       pid_counter := pid + 2; [IStartP pid] @

@@ -7,23 +7,26 @@ type name = Syntax.name
 
 type mvalue =
   | MInt of int
+  | MChan of name            
   | MBool of bool
   | MString of string
+  | MTag of string
+  | MUnit          
   | MList of mvalue list
+  | MNil
   | MSet of mvalue list
+  | MEmp
   | MTuple of mvalue list
-  | MWCard
-  | MUnit
+  | MThunk of frame  
   | MClosure of name * frame * environ
-  | MThunk of frame
+  (* Helper mvalues *)
   | MHole
   | MVarP of name
   | MEmpListP
-  | MListP of name * name
-  | MTag of string
-  | MId of int (* Hacky way to keep track of lists. Change later *)
+  | MId of int
   | MImpVarP of name
-  | MChan of name
+  | MWCard              
+  | MListP of name * name              
 and instr =
   | IVar of name
   | IVarP of name
@@ -72,14 +75,14 @@ and instr =
   | IRd of name
   | ISpawn
   | IHole of int
-  | IStartL of int
-  | IEndL of int
-  | IStartS of int
-  | IEndS of int
+  | IStartL
+  | IEndL
+  | IStartS
+  | IEndS
   | ICons
   | IConcat
-  | IStartT of int
-  | IEndT of int
+  | IStartT
+  | IEndT
   | IFst
   | ISnd
   | IRand
@@ -92,6 +95,8 @@ and instr =
   | IStartM
   | IEndM
   | IMatchCond of frame
+  | INil
+  | IEmp
 and frame = instr list
 and environ = (name * mvalue) list
 and stack = mvalue list
@@ -157,14 +162,14 @@ let rec string_of_instr = function
   | IBlock i -> sprintf "IBlock(%s)" (string_of_instr i)
   | ISpawn -> "ISpawn"
   | IHole n -> sprintf "IHole(%d)" n
-  | IStartL _ -> "IStartL"
-  | IEndL _ -> "IEndL"
-  | IStartS _ -> "IStartS"
-  | IEndS _ -> "IEndS"
+  | IStartL -> "IStartL"
+  | IEndL -> "IEndL"
+  | IStartS -> "IStartS"
+  | IEndS -> "IEndS"
   | ICons -> "ICons"
   | IConcat -> "IConcat"
-  | IStartT _ -> "IStartT"
-  | IEndT _ -> "IEndT"
+  | IStartT -> "IStartT"
+  | IEndT -> "IEndT"
   | IFst -> "IFst"
   | ISnd -> "ISnd"
   | IRand -> "IRand"
@@ -177,6 +182,8 @@ let rec string_of_instr = function
   | IStartM -> "IStartM"
   | IEndM -> "IEndM"
   | IMatchCond _ -> "IMatchCond()"
+  | INil -> "INil"
+  | IEmp -> "IEmp"
 and string_of_frame = function
   | [] -> "\n"
   | i::is -> string_of_instr i ^ "\n" ^ string_of_frame is
@@ -190,7 +197,9 @@ and string_of_mvalue = function
   | MClosure _ -> "<fun>"
   | MHole -> "hole"
   | MList l -> "[" ^ string_of_list string_of_mvalue l ^ "]"
+  | MNil -> "[]"
   | MSet l -> "{" ^ string_of_list string_of_mvalue l ^ "}"
+  | MEmp -> "{}"
   | MTuple l -> "(" ^ string_of_list string_of_mvalue l ^ ")"
   | MVarP p -> p
   | MEmpListP -> "empty list pattern"
@@ -258,9 +267,9 @@ let pop_app = function
   | v :: MClosure (x, f, e) :: s -> (x, f, e, v, s)
   | s -> error "value and closure expected"
 
-let pop_list n l = 
+let pop_list l = 
   let rec pop acc = function
-    | MId n :: s -> (acc, s)
+    | (MList []) :: s -> (acc, s)
     | mv :: s -> pop (mv :: acc) s
     | _ -> error "no list to pop"
   in
@@ -328,6 +337,7 @@ let neq = function
 
 let cons = function
   | (MList x) :: y :: s -> MList (y::x) :: s
+  | MNil :: y :: s -> MList [y] :: s
   | _ -> error "no list to cons"
 
 let concat = function
@@ -363,7 +373,9 @@ let length = function
   | (MString x) :: s -> MInt (String.length x) :: s
   | (MList xs) :: s -> MInt(List.length xs) :: s
   | (MTuple xs) :: s -> MInt(List.length xs) :: s
-  | (MSet xs) :: s -> MInt(List.length xs) :: s                      
+  | (MSet xs) :: s -> MInt(List.length xs) :: s
+  | MNil :: s -> MInt 0 :: s
+  | MEmp :: s -> MInt 0 :: s
   | _ -> error "no string to get length"
 
 let mem_assoc x = function
@@ -373,6 +385,8 @@ let mem_assoc x = function
 let mem = function
   | (MSet xs) :: x :: s -> MBool (List.mem x xs) :: s
   | (MList xs) :: x :: s -> MBool (List.exists (mem_assoc x) xs) :: s
+  | MNil :: s -> MBool false :: s
+  | MEmp :: s -> MBool false :: s
   | _ -> error "no set"
 
 let union = function
@@ -380,6 +394,7 @@ let union = function
      let f acc x = if List.mem x ys then acc
                    else acc @ [x] in
      MSet (List.fold_left f ys xs) :: s
+  (* TODO: Empty set *)
   | _ -> error "no sets to union"
 
 let print = function
@@ -546,20 +561,22 @@ let exec instr frms stck envs =
          let (fst_frm, snd_frm, rest_frm) = get_par_ps frm n in
          ([ISpawn] :: fst_frm :: snd_frm :: rest_frm :: rest_frms, stck, envs)
       | [] -> error "no processes to spawn")
-  | IStartL n -> (frms, (MId n) :: stck, envs)
-  | IEndL n ->
-     let (lst, stck') = pop_list n stck
+  | IStartL -> (frms, (MList []) :: stck, envs)
+  | IEndL ->
+     let (lst, stck') = pop_list stck
      in (frms, (MList lst) :: stck', envs)
-  | IStartS n -> (frms, (MId n) :: stck, envs)
-  | IEndS n ->
-     let (lst, stck') = pop_list n stck in
+  | INil -> (frms, MNil :: stck, envs)
+  | IStartS -> (frms, (MList []) :: stck, envs)
+  | IEndS ->
+     let (lst, stck') = pop_list stck in
      let set = remove_duplicates lst in
      (frms, (MSet set) :: stck', envs)
+  | IEmp -> (frms, MEmp :: stck, envs)
   | ICons -> (frms, cons stck, envs)
   | IConcat -> (frms, concat stck, envs)
-  | IStartT n -> (frms, (MId n) :: stck, envs)
-  | IEndT n ->
-     let (lst, stck') = pop_list n stck
+  | IStartT -> (frms, (MList []) :: stck, envs)
+  | IEndT ->
+     let (lst, stck') = pop_list stck
      in (frms, (MTuple lst) :: stck', envs)
   | IFst -> (frms, do_fst stck, envs)
   | ISnd -> (frms, do_snd stck, envs)

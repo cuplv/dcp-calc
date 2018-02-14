@@ -57,7 +57,6 @@ rule token = parse
   | "req"                     { REQ }
   | "end"		      { END }
   | "()"		      { UNIT }
-(*  | "ref"		      { REF }*)
   | "print"		      { PRINT }
   
   (* Operators *)
@@ -65,7 +64,6 @@ rule token = parse
   | ":="		      { ASSIGN }
   | "->"                      { RARROW }
   | "<-"                      { LARROW }
-(*  | "!"                       { BANG }*)
   | "|"                       { PAR }
   | ".|"                      { PARL }
   | "&"                       { CHOICE }

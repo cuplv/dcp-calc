@@ -7,12 +7,12 @@ open Syntax
 exception Compilation_error
 
 let pid_counter = ref 0
-let lst_counter = ref 0
 
 let convert_to_choice pid cid = function
   | instr :: instrs -> IChoice(pid, cid, instr) :: instrs
   | _ -> raise (Compilation_error)
 
+(* Unsugar letrec *)       
 let rec add_force x = function
   | IVar x' when x=x' -> [IVar x; IForce]
   | IBranch (f1,f2) ->
@@ -27,8 +27,7 @@ and add_force_branch x frm =
 let force_thunks x = List.fold_left (fun acc instr ->
                          acc @ (add_force x instr)) []
 
-let get_proj f l = List.fold_left (fun acc x -> f x :: acc) [] (List.rev l)
-
+(* Get variables in pattern *)                 
 let get_vars p =
   let rec aux acc = function
     | Tuple xs :: rest ->
@@ -51,17 +50,18 @@ let rec compile = function
   | Bool b -> [IBool b]
   | String s -> [IString s]
   | List es ->
-      let lst_id = !lst_counter in
-      incr lst_counter; [IStartL lst_id] @ List.fold_left (fun acc e -> acc @ (compile e))
-      [] es @ [IEndL lst_id]
+     (match es with
+     | [] -> [INil]
+     | _ -> [IStartL] @ List.fold_left (fun acc e -> acc @ (compile e))
+      [] es @ [IEndL])
   | Set es ->
-      let lst_id = !lst_counter in
-      incr lst_counter; [IStartS lst_id] @ List.fold_left (fun acc e -> acc @ (compile e))
-      [] es @ [IEndS lst_id]
+     (match es with
+      | [] -> [IEmp]
+      | _ -> [IStartS] @ List.fold_left (fun acc e -> acc @ (compile e))
+      [] es @ [IEndS])
   | Tuple es ->
-      let lst_id = !lst_counter in
-      incr lst_counter; [IStartT lst_id] @ List.fold_left (fun acc e -> acc @ (compile e))
-      [] es @ [IEndT lst_id]
+      [IStartT] @ List.fold_left (fun acc e -> acc @ (compile e))
+      [] es @ [IEndT]
   | Wildcard -> [IWCard]
   | Unit -> [IUnit]
   
@@ -91,15 +91,14 @@ let rec compile = function
       [IThunk (force_thunks x (compile e1))] @
       [ILet x] @ (force_thunks x (compile e2))
   | LetP (p, e1, e2) ->
-      let lst_id = !lst_counter in
-      incr lst_counter; (compile e1) @
-      [IStartT lst_id] @ List.fold_left (fun acc e ->
+      (compile e1) @
+      [IStartT] @ List.fold_left (fun acc e ->
           match e with
           | IVar x -> IVarP x :: acc
           | IImpVar x -> IImpVarP x :: acc
           | instr -> instr :: acc)
       [] (List.rev (List.fold_left (fun acc e -> acc @ (compile e))
-                                   [] p)) @ [IEndT lst_id] @ [ILetP] @ (compile
+                                   [] p)) @ [IEndT] @ [ILetP] @ (compile
                                                                           e2) @ [IUnscope (get_vars p)]
   | Assign (x, e) -> (compile e) @ [ILet x]
   | Match (e, es) ->

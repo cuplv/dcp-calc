@@ -7,7 +7,6 @@
     | Name x -> x
     | _ -> raise Parsing_error
 
-  (* Omits implicit args *)
   let curry_lambdas x acc =
     match x with
     | ImpName x -> acc
@@ -44,7 +43,6 @@
 %token REQ
 %token END
 %token UNIT
-/*%token REF*/
 %token PRINT
 
 /* Operators */
@@ -52,7 +50,6 @@
 %token ASSIGN
 %token LARROW
 %token RARROW
-/*%token BANG*/
 %token PAR
 %token PARL
 %token CHOICE
@@ -167,11 +164,8 @@ expr:
     { LetP (p, e1, e2) }
   | LETREC x = NAME EQUAL e1 = expr IN e2 = expr %prec LET_PREC
     { LetRec (x, e1, e2) }
-  /* Mutable stores */
   | LET x = NAME ASSIGN e = expr %prec LET_PREC
     { Assign (x, e) }
-  /*| BANG x = NAME
-    { Deref x }*/
   | MATCH e1 = expr WITH bs = branches
     { Match (e1, bs) }    
   | IF b = expr THEN e1 = expr

@@ -383,7 +383,7 @@ let union = function
   | _ -> error "no sets to union"
 
 let print = function
-  | (MString x) :: s -> print_endline x; s
+  | x :: s -> print_endline (string_of_mvalue x); s
   | _ -> error "no string to print"
 
 let pop_match = function

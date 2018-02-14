@@ -21,7 +21,6 @@ type mvalue =
   | MHole
   | MVarP of name
   | MEmpListP
-  | MId of int
   | MImpVarP of name
   | MWCard              
   | MListP of name * name              
@@ -197,7 +196,6 @@ and string_of_mvalue = function
   | MEmpListP -> "empty list pattern"
   | MListP _ -> "list pattern"
   | MTag s -> s
-  | MId n -> string_of_int n
   | MImpVarP x -> x
   | MChan x -> x           
 
@@ -425,16 +423,16 @@ let pattern_match p1 p2 =
   in
   compare [] p1 p2
 
+let rec remove_alts = function
+  | IEndM :: instrs -> instrs
+  | _ :: instrs -> remove_alts instrs
+  | [] -> []  
+
 (* Clearly I need to read Okasaki *)
 let remove_duplicates l =
   let uniqueify acc x = if List.mem x acc then acc
                         else x :: acc in
   List.fold_left uniqueify [] (List.rev l)
-
-let rec remove_alts = function
-  | IEndM :: instrs -> instrs
-  | _ :: instrs -> remove_alts instrs
-  | [] -> []
 
 let unscope_vars env xs =
   let unscope_var acc x = List.remove_assoc x acc in
@@ -593,6 +591,16 @@ let exec instr frms stck envs =
       | _ -> error "Pattern matching failed")
   | _ -> error ("illegal instruction")
 
+let chan_alloc_check c envs =
+  match envs with
+  | envs_hd :: envs_tl when List.mem_assoc c envs_hd -> (c, envs)
+  | envs_hd :: envs_tl when String.get c 0 == '?' ->
+       (match imp_lookup c envs with
+        | MChan c' -> (c', ((c', MChan c') :: envs_hd) :: envs_tl)
+        | _ -> error "channel not allocated")
+  | [] -> error "no environment"
+  | _ -> error "channel not allocated"
+
 (* Execute instructions *)
 (* TODO: Generalize read instructions *)
 (* TODO: Check for implicit arg channel allocation *)
@@ -601,49 +609,23 @@ let run p =
     | (pid, ([], [], e)) -> (pid, ([], [], e))
     | (pid, ([], [v], e)) -> (pid, ([], [v], e))
     | (pid, ((IRdBind (x1, x2) :: is) :: frms, stck, envs)) ->
-       if List.mem_assoc x2 (List.hd envs) || String.get x2 0 == '?' then
-         (pid, ((IRdBind (x1, x2) :: is) :: frms, stck, envs))
-       else error "channel not allocated 1"
-    | (pid, ((IChoice(pid', cid,  (IRdBind (x1, x2))) :: is) :: frms, stck, envs)) ->
-       if List.mem_assoc x2 (List.hd envs) || String.get x2 0 == '?'
-       then (pid, ((IChoice(pid', cid, (IRdBind (x1, x2))) :: is) :: frms, stck, envs))
-       else error "channel not allocated 2"
+       let (c, new_envs) = chan_alloc_check x2 envs in
+       (pid, ((IRdBind (x1, c) :: is) :: frms, stck, new_envs))
+    | (pid, ((IChoice (pid', cid,  (IRdBind (x1, x2))) :: is) :: frms, stck, envs)) ->
+       let (c, new_envs) = chan_alloc_check x2 envs in
+       (pid, ((IChoice (pid', cid, (IRdBind (x1, c))) :: is) :: frms, stck, new_envs))       
     | (pid, ((IRd x :: is) :: frms, stck, envs)) ->
-       if List.mem_assoc x (List.hd envs) then
-         (pid, ((IRd x :: is) :: frms, stck, envs))
-       else if String.get x 0 == '?' then
-         let chan =
-           (match imp_lookup x envs with
-            | MChan x -> x
-            | _ -> error "imp lookup failed") in
-         let new_envs =
-           (match envs with
-            | env :: env_tail -> ((chan, MChan chan) :: env) :: env_tail
-            | _ -> error "no env") in
-         (pid, ((IRd chan :: is) :: frms, stck, new_envs))
-       else error ( "channel not allocated " ^ (string_of_environs envs))
-    | (pid, ((IChoice(pid', cid,  (IRd x)) :: is) :: frms, stck, envs)) ->
-       if List.mem_assoc x (List.hd envs) || String.get x 0 == '?'              
-       then (pid, ((IChoice(pid', cid, (IRd x)) :: is) :: frms, stck, envs))
-       else error "channel not allocated 4"
+       let (c, new_envs) = chan_alloc_check x envs in
+       (pid, ((IRd c :: is) :: frms, stck, new_envs))
+    | (pid, ((IChoice (pid', cid, (IRd x)) :: is) :: frms, stck, envs)) ->
+       let (c, new_envs) = chan_alloc_check x envs in
+       (pid, ((IChoice (pid', cid, (IRd c)) :: is) :: frms, stck, new_envs))
     | (pid, ((IWr (MHole, x) :: is) :: frms, v :: stck, envs)) ->
-       if List.mem_assoc x (List.hd envs) || String.get x 0 == '?' then
-       (pid, ((IWr (v, x) :: is) :: frms, stck, envs))
-       else error "channel not allocated 5"
+       let (c, new_envs) = chan_alloc_check x envs in
+       (pid, ((IWr (MHole, c) :: is) :: frms, v :: stck, new_envs))              
     | (pid, ((IWr (v, x) :: is) :: frms, stck, envs)) ->
-       if List.mem_assoc x (List.hd envs) then
-         (pid, ((IWr (v, x) :: is) :: frms, stck, envs))
-       else if String.get x 0 == '?' then
-         let chan =
-           (match imp_lookup x envs with
-            | MChan x -> x
-            | _ -> error "imp lookup failed") in
-         let new_envs =
-           (match envs with
-            | env :: env_tail -> ((chan, MChan chan) :: env) :: env_tail
-            | _ -> error "no env") in
-         (pid, ((IWr (v, chan) :: is) :: frms, stck, new_envs))
-       else error "channel not allocated 6"
+       let (c, new_envs) = chan_alloc_check x envs in
+       (pid, ((IWr (v, c) :: is) :: frms, stck, new_envs))              
     | (pid, ([ISpawn] :: frms, stck, envs)) ->
        (pid, ([ISpawn] :: frms, stck, envs))
     | (pid, ((IHole n :: is) :: frms, stck, envs)) ->

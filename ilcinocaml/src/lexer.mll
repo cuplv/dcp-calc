@@ -57,14 +57,14 @@ rule token = parse
   | "req"                     { REQ }
   | "end"		      { END }
   | "()"		      { UNIT }
-  | "ref"		      { REF }
+(*  | "ref"		      { REF }*)
   
   (* Operators *)
   | "="                       { EQUAL }
   | ":="		      { ASSIGN }
   | "->"                      { RARROW }
   | "<-"                      { LARROW }
-  | "!"                       { BANG }
+(*  | "!"                       { BANG }*)
   | "|"                       { PAR }
   | ".|"                      { PARL }
   | "&"                       { CHOICE }

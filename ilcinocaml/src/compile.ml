@@ -98,7 +98,8 @@ let rec compile = function
           | instr -> instr :: acc)
       [] (List.rev (List.fold_left (fun acc e -> acc @ (compile e))
                                    [] p)) @ [IEndT lst_id] @ [ILetP] @ (compile
-  e2) @ [IUnscope (get_vars p)]
+                                                                          e2) @ [IUnscope (get_vars p)]
+  | Assign (x, e) -> (compile e) @ [ILet x]
   | Match (e, es) ->
      let f acc = function
        | (p, expr) -> (compile p) @ [IMatchCond (compile expr)] @ acc in

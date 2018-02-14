@@ -86,6 +86,7 @@ type expr =
   | Length of expr
   | Mem of expr * expr
   | Union of expr * expr
+  | Print of expr
   
 type process =
   | Process of expr
@@ -191,6 +192,7 @@ let string_of_expr e =
     | Length e -> "Length(" ^ to_str e ^ ")"
     | Mem (e1, e2) -> "Mem(" ^ to_str e1 ^ "," ^ to_str e2 ^ ")"
     | Union (e1, e2) -> "Union(" ^ to_str e1 ^ "," ^ to_str e2 ^ ")"
+    | Print e -> "Print(" ^ to_str e ^ ")"
   and str_of_match_pair = function
     | (e1, e2) -> "Alt(" ^ to_str e1 ^ "," ^ to_str e2 ^ ")"
   in to_str e

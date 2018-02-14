@@ -168,3 +168,4 @@ let rec compile = function
   | Length e -> (compile e) @ [ILength]
   | Mem (e1, e2) -> (compile e1) @ (compile e2) @[IMem]
   | Union (e1, e2) -> (compile e1) @ (compile e2) @[IUnion]
+  | Print e -> (compile e) @ [IPrint]

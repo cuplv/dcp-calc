@@ -45,6 +45,7 @@
 %token END
 %token UNIT
 /*%token REF*/
+%token PRINT
 
 /* Operators */
 %token EQUAL
@@ -283,6 +284,8 @@ app_expr:
     { Mem (e1, e2) }
   | UNION e1 = atom_expr e2 = atom_expr
     { Union (e1, e2) }
+  | PRINT e = expr %prec LET_PREC
+    { Print e }
 
 comm_expr:
   | WR e = expr RARROW c = NAME

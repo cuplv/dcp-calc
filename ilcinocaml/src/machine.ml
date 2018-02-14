@@ -88,6 +88,7 @@ and instr =
   | ILength
   | IMem
   | IUnion
+  | IPrint
   | IStartM
   | IEndM
   | IMatchCond of frame
@@ -172,6 +173,7 @@ let rec string_of_instr = function
   | ILength -> "ILength"
   | IMem -> "IMem"
   | IUnion -> "IUnion"
+  | IPrint -> "IPrint"
   | IStartM -> "IStartM"
   | IEndM -> "IEndM"
   | IMatchCond _ -> "IMatchCond()"
@@ -380,6 +382,10 @@ let union = function
      MSet (List.fold_left f ys xs) :: s
   | _ -> error "no sets to union"
 
+let print = function
+  | (MString x) :: s -> print_endline x; s
+  | _ -> error "no string to print"
+
 let pop_match = function
   | pattern :: tuple :: s -> (pattern, tuple, s)
   | _ -> error "pattern match failed 1"
@@ -563,6 +569,7 @@ let exec instr frms stck envs =
   | ILength -> (frms, length stck, envs)
   | IMem -> (frms, mem stck, envs)
   | IUnion -> (frms, union stck, envs)
+  | IPrint -> (frms, print stck, envs)
   | IStartM -> (frms, stck, envs)
   | IEndM -> error ("reached IEndM")
   | IMatchCond new_frm ->

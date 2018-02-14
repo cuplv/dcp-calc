@@ -58,6 +58,7 @@ rule token = parse
   | "end"		      { END }
   | "()"		      { UNIT }
 (*  | "ref"		      { REF }*)
+  | "print"		      { PRINT }
   
   (* Operators *)
   | "="                       { EQUAL }

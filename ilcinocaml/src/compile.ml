@@ -36,10 +36,13 @@ let get_vars p =
     | ImpName x :: rest -> aux (x :: acc) rest
     | Tag _ :: rest -> aux acc rest
     | Wildcard :: rest -> aux acc rest
+    | Cons (Name hd, Name tl) :: rest -> aux ([hd; tl] @ acc) rest
+    | Cons (Name hd, tl) :: rest -> (aux [] [tl]) @ aux (hd :: acc) rest
     | [] -> acc
     | _ -> error ("unexpected pattern" ^ (string_of_expr (List.hd p)))
   in
   aux [] p
+
 
 let rec compile = function
   (* Identifier, constants, values *)
@@ -49,14 +52,10 @@ let rec compile = function
   | Int n -> [IInt n]
   | Bool b -> [IBool b]
   | String s -> [IString s]
-  | List es -> [IStartL] @ List.fold_left (fun acc e -> acc @ (compile e))
-      [] es @ [IEndL]
-  | Set es -> [IStartS] @ List.fold_left (fun acc e -> acc @ (compile e))
-      [] es @ [IEndS]
-  | Tuple es ->
-      [IStartT] @ List.fold_left (fun acc e -> acc @ (compile e))
-      [] es @ [IEndT]
-  | Wildcard -> [IWCard]
+  | List es -> [IStartL] @ compile_list es @ [IEndL]
+  | Set es -> [IStartS] @ compile_list es @ [IEndS]
+  | Tuple es -> [IStartT] @ compile_list es @ [IEndT]
+  | Wildcard -> []
   | Unit -> [IUnit]
   
   (* Arithmetic operators *)
@@ -84,10 +83,10 @@ let rec compile = function
   | LetRec (x, e1, e2) ->
       [IThunk (force_thunks x (compile e1))] @
       [ILet (Name x)] @ (force_thunks x (compile e2))
-  | Assign(x, e) -> (compile e) @ [ILet (Name x)]
+  | Assign(x, e) -> (compile e) @ [ILet x]
   | Match (e, es) ->
      let f acc = function
-       | (p, expr) -> [IMatchCond (p, (compile expr))] @ acc in
+       | (p, expr) -> [IMatchCond (p, compile expr)] @ acc in
      [IStartM] @ (compile e) @ List.fold_left f [] (List.rev es) @ [IEndM]
 
   (* Conditionals *)
@@ -99,10 +98,10 @@ let rec compile = function
   (* Lambda *)
   | Lam (x, e) ->
      let arg = 
-       match x with
+       (match x with
        | Name x' -> x'
        | Unit -> "()"
-       | _ -> error "invalid argument in lambda" in
+       | _ -> error "invalid function parameter") in
      [IClosure ("anon", arg, compile e @ [IPopEnv])]
   | App (e1, e2) -> (compile e1) @ (compile e2) @ [ICall]
   
@@ -144,3 +143,4 @@ let rec compile = function
   | Mem (e1, e2) -> (compile e1) @ (compile e2) @[IMem]
   | Union (e1, e2) -> (compile e1) @ (compile e2) @[IUnion]
   | Print e -> (compile e) @ [IPrint]
+and compile_list es = List.fold_left (fun acc e -> acc @ (compile e)) [] es

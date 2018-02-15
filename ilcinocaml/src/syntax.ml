@@ -47,7 +47,7 @@ type expr =
   (* Let *)
   | Let of expr * expr * expr
   | LetRec of name * expr * expr
-  | Assign of name * expr
+  | Assign of expr * expr
   | Match of expr * (expr * expr) list
             
   (* Conditionals *)
@@ -146,7 +146,7 @@ let string_of_expr e =
       to_str e1 ^ "," ^ to_str e2 ^ ")"
     | LetRec (x, e1, e2) -> "LetRec(" ^ name_to_str x ^ "," ^ 
       to_str e1 ^ "," ^ to_str e2 ^ ")"
-    | Assign (x, e1) -> "Assign(" ^ name_to_str x ^ "," ^ 
+    | Assign (x, e1) -> "Assign(" ^ to_str x ^ "," ^ 
       to_str e1 ^ ")"
     | Match (e, es) ->
        "Match(" ^ to_str e ^ "," ^ str_of_list str_of_match_pair es ^ ")"

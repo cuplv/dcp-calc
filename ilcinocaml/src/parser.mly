@@ -161,7 +161,7 @@ expr:
     { List.fold_left fix_lets e2 (List.rev (List.combine xs e1)) }
   | LETREC x = NAME EQUAL e1 = expr IN e2 = expr %prec LET_PREC
     { LetRec (x, e1, e2) }
-  | LET x = NAME ASSIGN e = expr %prec ASSIGN_PREC
+  | LET x = expr ASSIGN e = expr %prec ASSIGN_PREC
     { Assign (x, e) }
   | MATCH e1 = expr WITH bs = branches
     { Match (e1, bs) }    

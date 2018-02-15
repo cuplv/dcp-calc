@@ -20,7 +20,7 @@ let F_bb = lam (), ?f2p, ?p2f .
     loop in loop
 in
   nu f2p, p2f .
-    let (?f2p, ?p2f) = (f2p, p2f) in
+    let ?f2p, ?p2f = f2p, p2f in
     F_bb () | wr (0, 'Write, "hi") -> p2f ;
               let _ = rd f2p in
 	      wr (1, 'Write, "im") -> p2f ;

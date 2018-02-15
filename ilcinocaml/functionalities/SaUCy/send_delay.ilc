@@ -1,6 +1,6 @@
 (* SaUCy prelude *)
 let sendDelayed = lam f, m, R, ?a2f, ?f2a, ?f2p .
-  wr f (m, R) -> ?f2a .
+  wr f (m, R) -> ?f2a ;
   match rd ?a2f with 'ok in
     wr (m, R) -> ?f2p
 in 
@@ -12,7 +12,5 @@ in
 
 (* Actual process *)
 nu a2f, f2a, f2p .
-  let ?a2f = a2f in
-    let ?f2a = f2a in
-      let ?f2p = f2p in
-        sendDelayed leak ('Sent, "hi") 1
+  let ?a2f, ?f2a, ?f2p = a2f, f2a, f2p in
+    sendDelayed leak ('Sent, "hi") 1

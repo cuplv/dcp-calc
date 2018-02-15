@@ -1,13 +1,13 @@
 let F_crs = lam (), ?f2p, ?p2f .
   let (pid, sid) = rd ?p2f in
-  let d = rand in
+  let d = rand () in
     wr (pid, d) -> ?f2p ;
     letrec loop =
       (let (pid, sid) = rd ?p2f in
         wr (pid, d) -> ?f2p ; loop) in loop
 in	
 nu f2p, p2f .
-  let (?f2p, ?p2f) = (f2p, p2f) in
+  let ?f2p, ?p2f = f2p, p2f in
   F_crs () |
   wr (0, 0) -> p2f ; let (pid_0, d_0) = rd f2p in
   wr (1, 1) -> p2f ; let (pid_1, d_1) = rd f2p in

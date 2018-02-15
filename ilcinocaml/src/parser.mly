@@ -163,8 +163,10 @@ expr:
     { LetRec (x, e1, e2) }
   | LET x = expr ASSIGN e = expr %prec ASSIGN_PREC
     { Assign (x, e) }
+  | MATCH e1 = expr WITH e2 = expr IN e3 = expr %prec LET_PREC
+    { Let (e2, e1, e3) }
   | MATCH e1 = expr WITH bs = branches
-    { Match (e1, bs) }    
+    { Match (e1, bs) }
   | IF b = expr THEN e1 = expr
     { IfT (b, e1) }
   | IF b = expr THEN e1 = expr ELSE e2 = expr
@@ -203,7 +205,7 @@ atom_expr:
     { Set e }
   | LPAREN e1 = expr COMMA e2 = comma_list RPAREN
     { Tuple (e1::e2) }
-  | RAND
+  | RAND UNIT
     { Rand }
   | LPAREN e = expr RPAREN
     { e }

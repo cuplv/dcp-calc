@@ -10,7 +10,7 @@ let F_auth = lam (), ?f2p, ?p2f, ?a2f .
   wr (('Sent, S, sid, m'), R) -> f2p
 in
   nu f2p, p2f, a2f .
-    let (?f2p, ?p2f, ?a2f) = (f2p, p2f, a2f) in
+    let ?f2p, ?p2f, ?a2f = f2p, p2f, a2f in
     F_auth () | wr ('Send, 0, 1, 0, "msg") -> p2f ;
                 let (('Sent, S, sid, m), R) = rd f2p in
 		m

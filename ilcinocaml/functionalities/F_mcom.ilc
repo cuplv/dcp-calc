@@ -10,7 +10,7 @@ let F_com = lam (), ?f2p, ?p2f .
     wr (('Open, sid, cid, P_i, P_j, b), {P_j, "S"}) -> f2p
 in 
   nu f2p, p2f .
-    let (?f2p, ?p2f) = (f2p, p2f) in
+    let ?f2p, ?p2f = f2p, p2f in
     F_com () | wr ('Commit, 0, 0, 1, 2, 0) -> p2f ;
                let (('Receipt, sid, cid, P_i, P_j), _) = rd f2p in
 	       wr ('Open, sid, cid, P_i, P_j) -> p2f ;

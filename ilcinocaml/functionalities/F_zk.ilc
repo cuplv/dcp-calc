@@ -5,7 +5,7 @@ let F_zk = lam A, R, S, ?f2p, ?p2f .
       wr (('Verified, A, x, R x w), B) -> ?f2p
 in
   nu f2p, p2f .
-    let (?f2p, ?p2f) = (f2p, p2f) in
+    let ?f2p, ?p2f = f2p, p2f in
     let A = 10 in
     let R = lam x, w . true in
     let S = 1 in

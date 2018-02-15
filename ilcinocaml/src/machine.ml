@@ -51,7 +51,7 @@ and instr =
   | IForce
   | ILet of expr
   | IUnscope of name list
-  | IStartP of int
+  | IStartP of int (* TODO: Fix process spawning *)
   | IEndP of int
   | IChoice of int * int * instr
   | IBlock of instr

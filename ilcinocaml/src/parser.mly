@@ -14,6 +14,9 @@
 
   let curry acc e = App(acc, e)
 
+  let fix_lets acc map =
+    match map with
+    | (pattern, expr) -> Let(pattern, expr, acc)
 %}
 
 /* Identifier and constants */
@@ -154,16 +157,8 @@ expr:
     { e }
   | LAM xs = arg_list DOT e = expr
     { List.fold_right curry_lambdas xs e }
-  | LET x = NAME EQUAL e1 = expr IN e2 = expr %prec LET_PREC
-    { Let (x, e1, e2) }
-  | LET x = IMPNAME EQUAL e1 = expr IN e2 = expr %prec LET_PREC
-    { Let (x, e1, e2) }
-  | LET USCORE EQUAL e1 = expr IN e2 = expr %prec LET_PREC
-    { LetP ([Wildcard], e1, e2) }
-  | LET t = TAG EQUAL e1 = expr IN e2 = expr %prec LET_PREC
-    { LetP ([Tag t], e1, e2) }
-  | LET LPAREN p = comma_list RPAREN EQUAL e1 = expr IN e2 = expr %prec LET_PREC
-    { LetP (p, e1, e2) }
+  | LET xs = comma_list EQUAL e1 = comma_list IN e2 = expr %prec LET_PREC
+    { List.fold_left fix_lets e2 (List.rev (List.combine xs e1)) }
   | LETREC x = NAME EQUAL e1 = expr IN e2 = expr %prec LET_PREC
     { LetRec (x, e1, e2) }
   | LET x = NAME ASSIGN e = expr %prec ASSIGN_PREC
@@ -296,7 +291,6 @@ comm_expr:
     { Rd c }
   | RD c = IMPNAME
     { Rd c }
-  /* Channels can only be strings */
   | NU xs = arg_list DOT e = expr %prec NU_PREC
     { let names = List.map get_names xs in
       Nu (names, e) }
@@ -337,6 +331,6 @@ atom_list:
 
 branches:
   | PAR e1 = expr RARROW e2 = expr END
-    { [(Pattern e1, e2)] }
+    { [(e1, e2)] }
   | PAR e1 = expr RARROW e2 = expr bs = branches
-    { (Pattern e1, e2) :: bs }
+    { (e1, e2) :: bs }

@@ -19,10 +19,7 @@ type mvalue =
   | MClosure of name * frame * environ
   (* Helper mvalues *)
   | MHole
-  | MVarP of name
   | MEmpListP
-  | MImpVarP of name
-  | MWCard              
   | MListP of name * name              
 and instr =
   | IVar of name
@@ -30,7 +27,6 @@ and instr =
   | IEmpListP
   | IListP of name * name
   | IImpVar of name
-  | IImpVarP of name
   | ITag of string
   | IWCard
   | IUnit
@@ -60,8 +56,7 @@ and instr =
   | IPopEnv
   | IThunk of frame
   | IForce
-  | ILet of name
-  | ILetP
+  | ILet of expr
   | IUnscope of name list
   | IStartP of int
   | IEndP of int
@@ -91,7 +86,7 @@ and instr =
   | IPrint
   | IStartM
   | IEndM
-  | IMatchCond of frame
+  | IMatchCond of expr * frame
 and frame = instr list
 and environ = (name * mvalue) list
 and stack = mvalue list
@@ -113,7 +108,6 @@ let rec string_of_instr = function
   | IEmpListP -> "IEmpListP"
   | IListP (hd, tl) -> sprintf "IListP(%s,%s)" hd tl
   | IImpVar x -> sprintf "IImpVar(%s)" x
-  | IImpVarP x -> sprintf "IImpVarP(%s)" x
   | ITag x -> sprintf "ITag(%s)" x
   | IWCard -> "IWCard"
   | IUnit -> "IUnit"
@@ -145,9 +139,8 @@ let rec string_of_instr = function
   | IPopEnv -> "IPopEnv"
   | IThunk e -> "IThunk" ^ List.fold_left (fun acc x -> acc ^ "," ^ string_of_instr x) "" e
   | IForce -> "IForce"
-  | ILet x -> sprintf "ILet(%s)" x
+  | ILet x -> sprintf "ILet(%s)" (string_of_expr x)
   | IUnscope xs -> sprintf "IUnscope(%s)" "" (* TODO: Print *)
-  | ILetP -> "ILetP"
   | IWr (v, x) -> sprintf "IWr(%s,%s)" (string_of_mvalue v) x
   | IRdBind (x1, x2) -> sprintf "IRdBind(%s,%s)" x1 x2 
   | IRd x -> sprintf "IRd(%s)" x
@@ -185,18 +178,15 @@ and string_of_mvalue = function
   | MBool b -> string_of_bool b
   | MString s -> "\"" ^ s ^ "\""
   | MThunk frm -> "Thunk(" ^ (string_of_frame frm) ^ ")"
-  | MWCard -> "_"
   | MUnit -> "()"
   | MClosure _ -> "<fun>"
   | MHole -> "hole"
   | MList l -> "[" ^ string_of_list string_of_mvalue l ^ "]"
   | MSet l -> "{" ^ string_of_list string_of_mvalue l ^ "}"
   | MTuple l -> "(" ^ string_of_list string_of_mvalue l ^ ")"
-  | MVarP p -> p
   | MEmpListP -> "empty list pattern"
   | MListP _ -> "list pattern"
   | MTag s -> s
-  | MImpVarP x -> x
   | MChan x -> x           
 
 let rec string_of_stack = function
@@ -408,15 +398,15 @@ exception Pattern_match_fail
 let pattern_match p1 p2 =
   let rec compare mapping p1' p2' =
     match (p1', p2') with
-    | (MTuple x :: rest1, MTuple y :: rest2) ->
+    | (Tuple x :: rest1, MTuple y :: rest2) ->
        (compare [] x y) @ compare mapping rest1 rest2
-    | (MTag x :: rest1, MTag y :: rest2) when x=y ->
+    | (Tag x :: rest1, MTag y :: rest2) when x=y ->
        compare mapping rest1 rest2
-    | (MWCard :: rest1, y :: rest2) ->
+    | (Wildcard :: rest1, y :: rest2) ->
        compare mapping rest1 rest2
-    | (MVarP x :: rest1, y :: rest2) ->
+    | (Name x :: rest1, y :: rest2) ->
        compare ((x, y) :: mapping) rest1 rest2
-    | (MImpVarP x :: rest1, y :: rest2) ->
+    | (ImpName x :: rest1, y :: rest2) ->
        compare ((x, y) :: mapping) rest1 rest2
     | ([], []) -> mapping
     | _ -> raise Pattern_match_fail
@@ -455,13 +445,10 @@ let exec instr frms stck envs =
   | IEq -> (frms, eq stck, envs)
   | INeq -> (frms, neq stck, envs)
   | IVar x -> (frms, (lookup x envs) :: stck, envs)
-  | IVarP x -> (frms, (MVarP x) :: stck, envs)
   | IEmpListP -> (frms, MEmpListP :: stck, envs)
   | IListP (hd, tl) -> (frms, MListP (hd, tl) :: stck, envs)
   | IImpVar x -> (frms, (imp_lookup x envs) :: stck, envs)
-  | IImpVarP x -> (frms, (MImpVarP x) :: stck, envs)
   | ITag x -> (frms, (MTag x) :: stck, envs)
-  | IWCard -> (frms, MWCard :: stck, envs)
   | IUnit -> (frms, MUnit :: stck, envs)
   | IInt n -> (frms, (MInt n) :: stck, envs)
   | IBool b -> (frms, (MBool b) :: stck, envs)
@@ -480,7 +467,7 @@ let exec instr frms stck envs =
       | env :: _ ->
          let named =
            match frms with
-           | (ILet x :: _) :: _ -> x
+           | (ILet Name x :: _) :: _ -> x
            | _ -> f
          in
          let rec c = MClosure (x, frm, (named, c) :: env)
@@ -489,9 +476,16 @@ let exec instr frms stck envs =
   | ILet x ->
      (match envs with
       | env :: env_tail ->
-         let (x', stck') = pop stck in
-         let new_mapping = (x, x') :: env in
-         (frms, stck', new_mapping :: env_tail)
+         let (v, stck') = pop stck in
+         let new_mapping = 
+         (match (x, v) with
+          | (Name x', v') -> [(x', v')]
+          | (ImpName x', v') -> [(x', v')]
+          | (Tag t, MTag t') when t=t' -> []
+          | (Wildcard, _) -> []
+          | (Tuple xs', MTuple vs') -> pattern_match xs' vs'
+          | _ -> error "pattern match failed") in
+         (frms, stck', (new_mapping @ env) :: env_tail)
       | [] -> error "no environment for variable")
   | IUnscope xs ->
      (match envs with
@@ -499,19 +493,6 @@ let exec instr frms stck envs =
          let new_env = unscope_vars env xs in
          (frms, stck, new_env :: env_tail)
       | [] -> error "no environment to unscope")
-  | ILetP ->
-     (match envs with
-      | env :: env_tail ->
-         let (pattern, stck') = pop stck in
-         let (tuple, stck') = pop stck' in
-         let new_mapping =
-           (match (pattern, tuple) with
-            | (MTuple [MWCard], _) -> []
-            | (MTuple [MTag t], MTag t') when t=t'-> []
-            | (MTuple x, MTuple y) -> pattern_match x y
-            | _ -> error "pattern match failed") in
-         (frms, stck', (new_mapping @ env) :: env_tail)
-      | [] -> error "no environment for variable")
   | INu xs ->
      (match envs with
       | env :: env_tail ->
@@ -572,22 +553,25 @@ let exec instr frms stck envs =
   | IPrint -> (frms, print stck, envs)
   | IStartM -> (frms, stck, envs)
   | IEndM -> error ("reached IEndM")
-  | IMatchCond new_frm ->
+  | IMatchCond (p, new_frm) ->
      (match (frms, envs) with
       | (frm :: frm_tail, env :: env_tail) ->
-         let (pattern, expr, stck') = pop_match stck in
-         (try let new_mapping =
-                (match (pattern, expr) with
-                 | (MTuple [MWCard], _) -> []
-                 | (MTuple [MTag t], MTag t') when t=t'-> []
-                 | (MTuple x, MTuple y) -> pattern_match x y
-                 | (MEmpListP, MList []) -> []
-                 | (MListP (hd, tl), MList (hd' :: tl')) ->
+         let (v, stck') = pop stck in
+         (try let new_mapping = 
+                (match (p, v) with
+                 | (Name x', v') -> [(x', v')]
+                 | (ImpName x', v') -> [(x', v')]
+                 | (Tag t, MTag t') when t=t' -> []
+                 | (Wildcard, _) -> []
+                 | (List [], MList []) -> []
+                 | (Cons (Name hd, Name tl), MList (hd' :: tl')) ->
                     [(hd, hd'); (tl, MList tl')]
+                 | (Tuple xs', MTuple vs') -> pattern_match xs' vs'
                  | _ -> raise Pattern_match_fail) in
               let rest_frm = remove_alts frm in
-              (new_frm :: rest_frm :: frm_tail, stck', (new_mapping @ env) :: env_tail) with
-          | Pattern_match_fail -> (frms, expr :: stck', env :: env_tail))
+              (new_frm :: rest_frm :: frm_tail, stck', (new_mapping @ env) ::
+                                                         env_tail) with
+          | Pattern_match_fail -> (frms, v :: stck', env :: env_tail))
       | _ -> error "Pattern matching failed")
   | _ -> error ("illegal instruction")
 

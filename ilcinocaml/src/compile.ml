@@ -80,35 +80,15 @@ let rec compile = function
   | Neq (e1, e2) -> (compile e1) @ (compile e2) @ [INeq]
   
   (* Let *)
-  | Let (x, e1, e2) -> (compile e1) @ [ILet x] @ (compile e2) @ [IUnscope [x]]
+  | Let (x, e1, e2) -> (compile e1) @ [ILet x] @ (compile e2) @ [IUnscope (get_vars [x])]
   | LetRec (x, e1, e2) ->
       [IThunk (force_thunks x (compile e1))] @
-      [ILet x] @ (force_thunks x (compile e2))
-  | LetP (p, e1, e2) ->
-      (compile e1) @
-      [IStartT] @ List.fold_left (fun acc e ->
-          match e with
-          | IVar x -> IVarP x :: acc
-          | IImpVar x -> IImpVarP x :: acc
-          | instr -> instr :: acc)
-      [] (List.rev (List.fold_left (fun acc e -> acc @ (compile e))
-                                   [] p)) @ [IEndT] @ [ILetP] @ (compile
-                                                                          e2) @ [IUnscope (get_vars p)]
-  | Assign (x, e) -> (compile e) @ [ILet x]
+      [ILet (Name x)] @ (force_thunks x (compile e2))
+  | Assign(x, e) -> (compile e) @ [ILet (Name x)]
   | Match (e, es) ->
      let f acc = function
-       | (p, expr) -> (compile p) @ [IMatchCond (compile expr)] @ acc in
+       | (p, expr) -> [IMatchCond (p, (compile expr))] @ acc in
      [IStartM] @ (compile e) @ List.fold_left f [] (List.rev es) @ [IEndM]
-  | Pattern e ->
-     (match e with
-     | Tuple e -> List.map (function
-                            | IVar x -> IVarP x
-                            | IImpVar x -> IImpVarP x
-                            | instr -> instr)
-                           (compile (Tuple e)) @ [IUnscope (get_vars e)]
-     | List [] -> [IEmpListP]
-     | Cons(Name hd, Name tl) -> [IListP (hd, tl); IUnscope [hd; tl]]
-     | _ -> error "Not implemented")
 
   (* Conditionals *)
   | IfTE (e1, e2, e3) ->

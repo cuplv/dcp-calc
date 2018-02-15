@@ -45,12 +45,10 @@ type expr =
   | Neq of expr * expr
   
   (* Let *)
-  | Let of name * expr * expr
+  | Let of expr * expr * expr
   | LetRec of name * expr * expr
-  | LetP of expr list * expr * expr
   | Assign of name * expr
   | Match of expr * (expr * expr) list
-  | Pattern of expr
             
   (* Conditionals *)
   | IfTE of expr * expr * expr
@@ -144,17 +142,14 @@ let string_of_expr e =
     | Neq (e1, e2) -> "Neq(" ^ to_str e1 ^ "," ^ to_str e2 ^ ")"
 
     (* Let *)
-    | Let (x, e1, e2) -> "Let(" ^ name_to_str x ^ "," ^ 
+    | Let (x, e1, e2) -> "Let(" ^  to_str x ^ "," ^ 
       to_str e1 ^ "," ^ to_str e2 ^ ")"
     | LetRec (x, e1, e2) -> "LetRec(" ^ name_to_str x ^ "," ^ 
       to_str e1 ^ "," ^ to_str e2 ^ ")"
-    | LetP (p, e1, e2) -> "LetP(" ^ "(" ^ str_of_list to_str p ^ ")," ^ 
-                            to_str e1 ^ "," ^ to_str e2 ^ ")"
     | Assign (x, e1) -> "Assign(" ^ name_to_str x ^ "," ^ 
       to_str e1 ^ ")"
     | Match (e, es) ->
        "Match(" ^ to_str e ^ "," ^ str_of_list str_of_match_pair es ^ ")"
-    | Pattern e -> "Pattern(" ^ to_str e ^ ")"
                       
     (* Conditionals *)
     | IfTE (e1, e2, e3) -> "IfTE(" ^ to_str e1 ^ "," ^ 

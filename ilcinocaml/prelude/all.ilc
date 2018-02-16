@@ -1,10 +1,10 @@
-let forall = lam f, lst .
+let all = lam f, lst .
   match lst with
   | [] -> true
-  | x :: xs -> if f x then forall f xs
+  | x :: xs -> if f x then all f xs
                else false
   end
 in
   let is_even = lam x . if x % 2 == 0 then true else false in
-    forall is_even [2, 4, 6, 8]
+    all is_even [2, 4, 6, 8]
   

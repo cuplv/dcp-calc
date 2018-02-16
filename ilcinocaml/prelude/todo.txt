@@ -1,0 +1,16 @@
+null
+foldl1
+foldr1
+scanl
+scanl1
+scanr
+scanr1
+repeat
+drop
+splitat
+takewhile
+dropwhile
+sum
+product
+min
+max

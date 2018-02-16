@@ -310,6 +310,7 @@ let cons = function
 
 let concat = function
   | (MString x) :: (MString y) :: s -> MString (y ^ x) :: s
+  | (MList y) :: (MList x) :: s -> MList (x @ y) :: s
   | _ -> error "no strings to concat"
 
 let do_fst = function

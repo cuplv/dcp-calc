@@ -1,7 +1,7 @@
-let map = lam f, l .
-  match l with
+let map = lam f, xs .
+  match xs with
   | [] -> []
-  | hd :: tl -> (f hd) :: (map f tl)
+  | x :: xs' -> (f x) :: (map f xs')
   end
 in
   let plus1 = lam x . x + 1 in

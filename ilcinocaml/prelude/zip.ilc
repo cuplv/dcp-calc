@@ -1,0 +1,8 @@
+let zip = lam l1, l2 .
+  match (l1, l2) with
+  | ([], _) -> []
+  | (_, []) -> []
+  | (x::xs, y::ys) -> (x, y) :: (zip xs ys)
+  end
+in
+  zip [1, 2, 3] ["a", "b", "c"]

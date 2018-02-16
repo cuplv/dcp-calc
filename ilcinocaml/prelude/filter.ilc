@@ -1,9 +1,9 @@
-let filter = lam f, l .
-  match l with
+let filter = lam f, xs .
+  match xs with
   | [] -> []
-  | hd :: tl -> if f hd
-                then hd :: (filter f tl)
-                else filter f tl
+  | x :: xs' -> if f x
+                then x :: (filter f xs')
+                else filter f xs'
   end
 in
   let is_even = lam x . if x % 2 == 0 then true else false in

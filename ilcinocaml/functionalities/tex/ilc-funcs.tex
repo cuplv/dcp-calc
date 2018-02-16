@@ -186,7 +186,7 @@ From~\cite{wikstrom2004universally}.
     \begin{enumerate}
         \item Initialize a list $L = \emptyset$, and set $J_P = \emptyset$ and $J_M = \emptyset$.
         \item Suppose $(P_i, \texttt{Send}, m_i)$, $m_i \in G_q$ is received from $C_\mathcal{I}$. If $i \not \in J_P$, set $J_P \leftarrow J_P \cup \{i\}$, and append $m_i$ to the list $L$. Then hand $(S, P_i, \texttt{Send})$ to $C_\mathcal{I}$.
-        \item Suppose $(M_j, \texttt{Run})$ is received from $C_\mathcal{I}$. Set $J_M \leftarrow J_M \cup \{j\}$. If $|J_M| \geq k/2$, then sort the list $L$ lexicographically to form a list $L'$, and hand $((S, M_j, \texttt{Output}, L'), {\{M_l, \texttt{Output}, L')\}}^{k}_{l=1})$ to $C_\mathcal{I}$. Otherwise, hand $C_\mathcal{I}$ the list $(S, M_j, \texttt{Run})$.
+        \item Suppose $(M_j, \texttt{Run})$ is received from $C_\mathcal{I}$. Set $J_M \leftarrow J_M \cup \{j\}$. If $|J_M| \geq k/2$, then sort the list $L$ lexicographically to form a list $L'$, and hand $((S, M_j, \texttt{Output}, L'), {\{(M_l, \texttt{Output}, L')\}}^{k}_{l=1})$ to $C_\mathcal{I}$. Otherwise, hand $C_\mathcal{I}$ the list $(S, M_j, \texttt{Run})$.
     \end{enumerate}
 \end{framed}
 

@@ -143,4 +143,7 @@ let rec compile = function
   | Mem (e1, e2) -> (compile e1) @ (compile e2) @[IMem]
   | Union (e1, e2) -> (compile e1) @ (compile e2) @[IUnion]
   | Print e -> (compile e) @ [IPrint]
+  | Map (f, e) -> (compile e) @ (compile f) @ [IMap]
+  | Filter (f, e) -> (compile e) @ (compile f) @ [IFilter]
+  | Rev e -> (compile e) @ [IRev]
 and compile_list es = List.fold_left (fun acc e -> acc @ (compile e)) [] es

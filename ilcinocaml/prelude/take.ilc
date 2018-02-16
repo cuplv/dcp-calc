@@ -1,0 +1,8 @@
+let take = lam n, lst .
+  match lst with
+  | [] -> "error"
+  | x::xs -> if n == 1 then [x]
+             else x :: (take (n-1) xs)
+  end
+in
+  take 4 [1, 2, 3, 4, 5]

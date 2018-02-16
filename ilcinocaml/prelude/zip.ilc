@@ -1,5 +1,5 @@
-let zip = lam l1, l2 .
-  match (l1, l2) with
+let zip = lam lst1, lst2 .
+  match (lst1, lst2) with
   | ([], _) -> []
   | (_, []) -> []
   | (x::xs, y::ys) -> (x, y) :: (zip xs ys)

@@ -1,0 +1,10 @@
+let exists = lam f, lst .
+  match lst with
+  | [] -> false
+  | x :: xs -> if f x then true
+               else exists f xs
+  end
+in
+  let is_even = lam x . if x % 2 == 0 then true else false in
+    exists is_even [1, 3, 5, 7, 8]
+  

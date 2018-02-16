@@ -1,0 +1,14 @@
+let foldr = lam f, lst, acc .
+  match lst with
+  | [] -> acc
+  | x::xs -> f x (foldr f xs acc)
+  end
+in
+let unzip = lam lst .
+  foldr (lam tup, acc . match (tup, acc) with
+                        | ((x, y), (lst1, lst2)) ->
+                           (x::lst1, y::lst2)
+                        end)
+  lst ([], [])
+in
+  unzip [(1, "a"), (2, "b"), (3, "c")]

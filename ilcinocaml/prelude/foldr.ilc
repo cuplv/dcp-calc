@@ -1,7 +1,7 @@
-let foldr = lam f, xs, acc .
-  match xs with
+let foldr = lam f, lst, acc .
+  match lst with
   | [] -> acc
-  | x::xs' -> f x (foldr f xs' acc)
+  | x::xs -> f x (foldr f xs acc)
   end
 in
   let concat_list = lam x, acc . x ++ acc in

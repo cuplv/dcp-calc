@@ -396,6 +396,12 @@ let pattern_match p1 p2 =
        compare ((x, y) :: mapping) rest1 rest2
     | (ImpName x :: rest1, y :: rest2) ->
        compare ((x, y) :: mapping) rest1 rest2
+    | (Int x :: rest1, MInt y :: rest2) when x=y ->
+       compare mapping rest1 rest2
+    | (String x :: rest1, MString y :: rest2) when x=y ->
+       compare mapping rest1 rest2
+    | (Bool x :: rest1, MBool y :: rest2) when x=y ->
+       compare mapping rest1 rest2      
     | (List [] :: rest1, MList [] :: rest2) ->
        compare mapping rest1 rest2
     | (Cons (Name hd, Name tl) :: rest1, MList (hd'::tl') :: rest2) ->

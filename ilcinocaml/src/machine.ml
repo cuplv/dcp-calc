@@ -18,7 +18,6 @@ type mvalue =
   | MThunk of frame  
   | MClosure of name * frame * environ
   | MHole
-  | MAcc of mvalue list
 and instr =
   | IVar of name
   | IImpVar of name
@@ -78,14 +77,10 @@ and instr =
   | IMem
   | IUnion
   | IPrint
-  | IMap
-  | IFilter
   | IRev
   | IStartM
   | IEndM
   | IMatchCond of expr * frame
-  | IAcc
-  | IEndAcc
 and frame = instr list
 and environ = (name * mvalue) list
 and stack = mvalue list
@@ -162,14 +157,10 @@ let rec string_of_instr = function
   | IMem -> "IMem"
   | IUnion -> "IUnion"
   | IPrint -> "IPrint"
-  | IMap -> "IMap"
-  | IFilter -> "IFilter"
   | IRev -> "IRev"
   | IStartM -> "IStartM"
   | IEndM -> "IEndM"
   | IMatchCond (expr, frm) -> sprintf "IMatchCond(%s)" (string_of_frame frm)
-  | IAcc -> "IAcc"
-  | IEndAcc -> "IEndAcc"
 and string_of_frame = function
   | [] -> "\n"
   | i::is -> string_of_instr i ^ "\n" ^ string_of_frame is
@@ -186,7 +177,6 @@ and string_of_mvalue = function
   | MTuple l -> "(" ^ string_of_list string_of_mvalue l ^ ")"
   | MTag s -> s
   | MChan x -> x
-  | MAcc l -> "Acc[" ^ string_of_list string_of_mvalue l ^ "]"
 
 let rec string_of_stack = function
   | [] -> ""
@@ -373,23 +363,6 @@ let union = function
 let print = function
   | x :: s -> print_endline (string_of_mvalue x); s
   | _ -> error "no string to print"
-
-let list_repeat x n =
-  let rec aux acc n' =
-    if n' = 0 then acc else aux (x @ acc) (n'-1)
-  in aux [] n
-    
-let map = function
-  | MClosure (n, f, e) :: MList xs :: s ->
-     let new_frm = list_repeat ([ICall; IAcc]) (List.length xs) @ [IEndAcc] in
-     let f x acc = [x; MClosure (n, f, e)] @ acc in
-     let new_stck = (List.fold_right f (List. rev xs) []) @ [MAcc []] in
-     (new_frm, new_stck @ s)
-  | _ -> error "no function and list for map"
-
-let filter = function
-  | MClosure _ :: MList xs :: s -> s
-  | _ -> error "no function and list for filter"
        
 let rev = function
   | MList xs :: s -> MList (List.rev xs) :: s
@@ -448,19 +421,6 @@ let remove_duplicates l =
 let unscope_vars env xs =
   let unscope_var acc x = List.remove_assoc x acc in
   List.fold_left unscope_var env xs
-
-let acc = function
-  | v :: s ->
-     let rec aux acc = function
-       | MAcc l :: rest -> (List.rev acc) @ [MAcc ([v] @ l)] @ rest
-       | v' :: rest -> aux (v' :: acc) rest
-       | [] -> error "no accumulator to add value"
-     in aux [] s
-  | [] -> error "no stack"
-
-let end_acc = function
-  | MAcc l :: s -> MList l :: s
-  | _ -> error "no accumulator"
 
 let exec instr frms stck envs = 
   match instr with
@@ -577,14 +537,6 @@ let exec instr frms stck envs =
   | IMem -> (frms, mem stck, envs)
   | IUnion -> (frms, union stck, envs)
   | IPrint -> (frms, print stck, envs)
-  | IMap ->
-     (match frms with
-      | frms_hd :: frms_tl ->
-         let (new_frm, stck') = map stck in
-         let new_frms = (new_frm @ frms_hd) :: frms_tl in
-         (new_frms, stck', envs)
-      | _ -> error "no frames")
-  | IFilter -> (frms, filter stck, envs)
   | IRev -> (frms, rev stck, envs)
   | IStartM -> (frms, stck, envs)
   | IEndM -> error ("reached IEndM")
@@ -598,8 +550,6 @@ let exec instr frms stck envs =
                                                          env_tail) with
           | Pattern_match_fail -> (frms, v :: stck', env :: env_tail))
       | _ -> error "Pattern matching failed")
-  | IAcc -> (frms, acc stck, envs)
-  | IEndAcc -> (frms, end_acc stck, envs)
   | _ -> error ("illegal instruction")
 
 let chan_alloc_check c envs =

@@ -99,10 +99,6 @@ rule token = parse
   | "length"                  { LENGTH }
   | "mem"                     { MEM }
   | "union"                   { UNION }
-  | "map"                     { MAP }
-  | "filter"                  { FILTER }
-(*  | "foldl"                   { FOLDL }
-  | "foldr"                   { FOLDR }*)
   | "rev"                     { REV }
   
   (* Punctuation *)

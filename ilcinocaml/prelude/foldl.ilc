@@ -1,0 +1,8 @@
+let foldl = lam f, acc, xs .
+  match xs with
+  | [] -> acc
+  | x::xs' -> foldl f (f acc x) xs'
+  end
+in
+  let concat_list = lam acc, x . acc ++ x in
+  foldl concat_list "" ["a", "b", "c", "d"]

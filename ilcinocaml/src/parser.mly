@@ -88,10 +88,6 @@
 %token MEM
 %token UNION
 %token PRINT
-%token MAP
-%token FILTER
-/*%token FOLDL
-%token FOLR*/
 %token REV
 
 /* Punctuation */
@@ -284,10 +280,6 @@ app_expr:
     { Union (e1, e2) }
   | PRINT e = expr %prec LET_PREC
     { Print e }
-  | MAP f = atom_expr l = atom_expr
-    { Map (f, l) }
-  | FILTER f = atom_expr l = atom_expr
-    { Filter (f, l) }
   | REV e = atom_expr
     { Rev e }
 

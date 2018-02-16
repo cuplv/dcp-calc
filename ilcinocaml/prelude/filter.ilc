@@ -1,0 +1,11 @@
+let filter = lam f, l .
+  match l with
+  | [] -> []
+  | hd :: tl -> if f hd
+                then hd :: (filter f tl)
+                else filter f tl
+  end
+in
+  let is_even = lam x . if x % 2 == 0 then true else false in
+    filter is_even [1, 2, 3, 4, 5, 6]
+  

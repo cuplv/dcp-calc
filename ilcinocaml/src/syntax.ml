@@ -85,8 +85,6 @@ type expr =
   | Mem of expr * expr
   | Union of expr * expr
   | Print of expr
-  | Map of expr * expr
-  | Filter of expr * expr
   | Rev of expr
   
 type process =
@@ -191,8 +189,6 @@ let string_of_expr e =
     | Mem (e1, e2) -> "Mem(" ^ to_str e1 ^ "," ^ to_str e2 ^ ")"
     | Union (e1, e2) -> "Union(" ^ to_str e1 ^ "," ^ to_str e2 ^ ")"
     | Print e -> "Print(" ^ to_str e ^ ")"
-    | Map (f, e) -> "Map(" ^ to_str f ^ "," ^ to_str e ^ ")"
-    | Filter (f, e) -> "Filter(" ^ to_str f ^ "," ^ to_str e ^ ")"
     | Rev e -> "Rev(" ^ to_str e ^ ")"
   and str_of_match_pair = function
     | (e1, e2) -> "Alt(" ^ to_str e1 ^ "," ^ to_str e2 ^ ")"

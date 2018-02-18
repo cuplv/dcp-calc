@@ -34,9 +34,9 @@
       | _ -> raise (Process_error "illegal final state")
 
     (* Run everything, including communication *)
-    let run_full ps = 
+    let run_full env ps = 
       let init_ps = List.mapi (fun i p ->
-        Machine.run (i, ([p], [], [[]]))) ps in
+        Machine.run (i, ([p], [], [env]))) ps in
       let rec loop = function
         | (true, ps') -> ps'
         | (false, ps') ->
@@ -59,12 +59,21 @@
                     acc ^ (Machine.string_of_frame (Compile.compile p)) ^ "\n") in
               print_string (List.fold_left f "" ps)
 
-    let exec verbose = function
+    let exec verbose env = function
       | ps -> let f = function
                 | Syntax.Process p -> Compile.compile p in
               let compiled_ps = List.map f ps in
               let print = if verbose then printr_verbose else printr in
-              List.iter print (run_full compiled_ps)
+              List.iter print (run_full env compiled_ps)
+
+    let load_prelude = function
+      | ps -> let f = function
+                  | Syntax.Process p -> Compile.compile p in
+               let compiled_ps = List.map f ps in
+               (match (run_full [] compiled_ps) with
+               | [(_, (_, _, env))] -> (List.hd env)
+               | _ -> raise (Process_error "failed to load prelude"))
+                   
 end) ;;
 
 ILC.main ()

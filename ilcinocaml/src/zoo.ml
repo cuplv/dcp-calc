@@ -86,7 +86,8 @@ sig
   val toplevel_parser : (Lexing.lexbuf -> process list) option
   val print_ast : process list -> unit
   val print_ir : process list -> unit
-  val exec : bool -> process list -> unit
+  val exec : bool -> (Syntax.name * Machine.mvalue) list -> process list -> unit
+  val load_prelude : process list -> (Syntax.name * Machine.mvalue) list
 end
 
 module Main (L : LANGUAGE) =
@@ -103,6 +104,8 @@ struct
   let print_ir = ref false
 
   let verbose = ref false
+
+  let prelude = ref ""
 
   (** The usage message. *)
   let usage = 
@@ -144,6 +147,9 @@ struct
     ("--verbose",
      Arg.Unit (fun () -> verbose := true),
      " Print verbose execution output");
+    ("--prelude",
+     Arg.String (fun str -> prelude := str),
+     " <file> Load <file> into prelude");    
   ] @
   L.options
 
@@ -189,7 +195,14 @@ struct
       | Failure "lexing: empty token" ->
         syntax_error ~loc:(location_of_lex lex) "unrecognised symbol"
       | _ ->
-        syntax_error ~loc:(location_of_lex lex) "general confusion"
+         syntax_error ~loc:(location_of_lex lex) "general confusion"
+
+  let get_prelude filename =
+    match L.file_parser with
+    | Some f ->
+       let prelude_functions = read_file (wrap_syntax_errors f) filename in
+       L.load_prelude prelude_functions
+    | None -> fatal_error "Cannot load prelude"        
 
   (** Load directives from the given file. *)
   let use_file (filename, interactive) =
@@ -199,10 +212,12 @@ struct
        (match (!print_ast, !print_ir) with
        | (true, _) -> L.print_ast processes
        | (_, true) -> L.print_ir processes
-       | _ -> L.exec !verbose processes)
+       | _ -> let prelude_env =  if !prelude <> "" then get_prelude !prelude
+                                 else [] in
+          L.exec !verbose prelude_env processes)
     | None ->
        fatal_error "Cannot load files, only interactive shell is available"
-
+                               
   (** Interactive toplevel *)
   let toplevel ctx =
     (*let eof = match Sys.os_type with
@@ -220,10 +235,11 @@ struct
         let _ = ref ctx in
           while true do
             try
+              let prelude_env = if !prelude <> "" then get_prelude !prelude else [] in
               let cmd = read_toplevel (wrap_syntax_errors toplevel_parser) () in
               if !print_ast then L.print_ast cmd
               else if !print_ir then L.print_ir cmd
-              else L.exec !verbose cmd;
+              else L.exec !verbose prelude_env cmd;
             with
               (*| Error err -> print_error err*)
               | Sys.Break -> prerr_endline "Interrupted."

@@ -1,5 +1,0 @@
-scanl
-scanl1
-scanr
-scanr1
-repeat

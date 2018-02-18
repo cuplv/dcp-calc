@@ -24,6 +24,18 @@ let foldl1 := lam f, lst .
   | x::xs -> foldl f x xs
   end ;
 
+let scanl := lam f, s, lst .
+  s :: match lst with
+       | [] -> []
+       | x::xs -> scanl f (f s x) xs
+       end ;
+
+let scanl1 := lam f, lst .
+  match lst with
+  | [] -> []
+  | x::xs -> scanl f x xs
+  end ;
+
 let foldr := lam f, lst, acc .
   match lst with
   | [] -> acc
@@ -35,6 +47,8 @@ let foldr1 := lam f, lst .
   | [] -> "error: empty list"
   | x::xs -> foldr f xs s
   end ;
+
+(* TODO: scanr, scanr1 *)
 
 let all := lam f, lst .
   match lst with
@@ -48,6 +62,20 @@ let any := lam f, lst .
   | [] -> false
   | x :: xs -> if f x then true
                else any f xs
+  end ;
+
+let and := lam lst .
+  match lst with
+  | [] -> true
+  | x::xs -> if x then and xs
+             else false
+  end ;
+
+let or := lam lst .
+  match lst with
+  | [] -> false
+  | x::xs -> if x then true
+          else or xs
   end ;
 
 let nth := lam n, lst .
@@ -129,4 +157,18 @@ let minimum := lam lst .
   foldl1 min lst ;
 
 let maximum := lam lst .
-  foldl1 max lst
+  foldl1 max lst ;
+
+let init := lam lst .
+  match lst with
+  | [x] -> []
+  | x::xs -> x :: (init xs)
+  end ;
+
+let replicate := lam n, x .
+  match n with
+  | 0 -> []
+  | n' -> x :: replicate (n'-1) x
+  end
+
+(* TODO: span, break *)

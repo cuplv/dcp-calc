@@ -405,6 +405,8 @@ let pattern_match p1 p2 =
        compare mapping rest1 rest2      
     | (List [] :: rest1, MList [] :: rest2) ->
        compare mapping rest1 rest2
+    | (List [x] :: rest1, MList [y] :: rest2) ->
+       (compare [] [x] [y]) @ compare mapping rest1 rest2      
     | (Cons (Name hd, Name tl) :: rest1, MList (hd'::tl') :: rest2) ->
        compare ([(hd, hd'); (tl, MList tl')] @ mapping) rest1 rest2
     | (Cons (Name hd, tl) :: rest1, MList (hd'::tl') :: rest2) ->

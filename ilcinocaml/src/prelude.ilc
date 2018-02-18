@@ -18,10 +18,22 @@ let foldl := lam f, acc, lst .
   | x::xs -> foldl f (f acc x) xs
   end ;
 
+let foldl1 := lam f, lst .
+  match lst with
+  | [] -> "error: empty list"
+  | x::xs -> foldl f x xs
+  end ;
+
 let foldr := lam f, lst, acc .
   match lst with
   | [] -> acc
   | x::xs -> f x (foldr f xs acc)
+  end ;
+
+let foldr1 := lam f, lst .
+  match lst with
+  | [] -> "error: empty list"
+  | x::xs -> foldr f xs s
   end ;
 
 let all := lam f, lst .
@@ -52,6 +64,30 @@ let take := lam n, lst .
              else x :: (take (n-1) xs)
   end ;
 
+let drop := lam n, lst .
+  match lst with
+  | [] -> []
+  | x::xs -> if n <= 0 then x::xs
+             else drop (n-1) xs
+  end ;
+
+let splitAt := lam n, lst .
+  (take n lst, drop n lst) ;
+
+let takeWhile := lam f, lst .
+  match lst with
+  | [] -> []
+  | x::xs -> if f x then x :: (takeWhile f xs)
+             else takeWhile f xs
+  end ;
+
+let dropWhile := lam f, lst .
+  match lst with
+  | [] -> []
+  | x::xs -> if f x then dropWhile f xs
+             else x::xs
+  end ;
+
 let zip := lam lst1, lst2 .
   match (lst1, lst2) with
   | ([], _) -> []
@@ -63,4 +99,34 @@ let foldr := lam f, lst, acc .
   match lst with
   | [] -> acc
   | x::xs -> f x (foldr f xs acc)
-  end
+  end ;
+
+let null := lam lst .
+  match lst with
+  | [] -> true
+  | _ -> false
+  end ;
+
+let sum := lam lst .
+  match lst with
+  | [] -> 0
+  | x::xs -> x + sum xs
+  end ;
+
+let product := lam lst .
+  match lst with
+  | [] -> 0
+  | x::xs -> x + product xs
+  end ;
+
+let min := lam x, y .
+  if x < y then x else y ;
+
+let max := lam x, y .
+  if x > y then x else y ;
+
+let minimum := lam lst .
+  foldl1 min lst ;
+
+let maximum := lam lst .
+  foldl1 max lst

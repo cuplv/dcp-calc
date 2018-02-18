@@ -1,9 +1,0 @@
-let nth = lam n, lst .
-  match (n, lst) with
-  | (_, []) -> "not found" (* TODO: Error handling *)
-  | (1, x::xs) -> x
-  | (n', x::xs) -> nth (n'-1) xs
-  end
-in
-  nth 3 [1, 2, 3, 4]
-  

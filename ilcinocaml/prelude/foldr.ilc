@@ -1,8 +1,0 @@
-let foldr = lam f, lst, acc .
-  match lst with
-  | [] -> acc
-  | x::xs -> f x (foldr f xs acc)
-  end
-in
-  let concat_list = lam x, acc . x ++ acc in
-  foldr concat_list ["a", "b", "c", "d"] ""

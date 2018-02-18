@@ -106,10 +106,10 @@
 /* Precedence and assoc */
 %nonassoc NU_PREC
 %right PAR PARL CHOICE
-%right DOT
 %nonassoc LET_PREC
 %left SEMI
 %nonassoc ASSIGN_PREC
+%nonassoc DOT
 %nonassoc THEN
 %nonassoc ELSE
 %right CONS CONCAT

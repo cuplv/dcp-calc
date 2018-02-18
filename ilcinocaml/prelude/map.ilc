@@ -1,8 +1,0 @@
-let map = lam f, lst .
-  match lst with
-  | [] -> []
-  | x :: xs -> (f x) :: (map f xs)
-  end
-in
-  let plus1 = lam x . x + 1 in
-  map plus1 [1, 2, 3, 4, 5]

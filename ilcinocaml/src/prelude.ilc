@@ -1,0 +1,66 @@
+let map := lam f, lst .
+  match lst with
+  | [] -> []
+  | x :: xs -> (f x) :: (map f xs)
+  end ;
+
+let filter := lam f, lst .
+  match lst with
+  | [] -> []
+  | x :: xs -> if f x
+                then x :: (filter f xs)
+                else filter f xs
+  end ;
+
+let foldl := lam f, acc, lst .
+  match lst with
+  | [] -> acc
+  | x::xs -> foldl f (f acc x) xs
+  end ;
+
+let foldr := lam f, lst, acc .
+  match lst with
+  | [] -> acc
+  | x::xs -> f x (foldr f xs acc)
+  end ;
+
+let all := lam f, lst .
+  match lst with
+  | [] -> true
+  | x :: xs -> if f x then all f xs
+               else false
+  end ;
+
+let any := lam f, lst .
+  match lst with
+  | [] -> false
+  | x :: xs -> if f x then true
+               else any f xs
+  end ;
+
+let nth := lam n, lst .
+  match (n, lst) with
+  | (_, []) -> "not found" (* TODO: Error handling *)
+  | (1, x::xs) -> x
+  | (n', x::xs) -> nth (n'-1) xs
+  end ;
+
+let take := lam n, lst .
+  match lst with
+  | [] -> "error"
+  | x::xs -> if n == 1 then [x]
+             else x :: (take (n-1) xs)
+  end ;
+
+let zip := lam lst1, lst2 .
+  match (lst1, lst2) with
+  | ([], _) -> []
+  | (_, []) -> []
+  | (x::xs, y::ys) -> (x, y) :: (zip xs ys)
+  end ;
+
+let foldr := lam f, lst, acc .
+  match lst with
+  | [] -> acc
+  | x::xs -> f x (foldr f xs acc)
+  end

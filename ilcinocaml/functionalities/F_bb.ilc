@@ -7,7 +7,7 @@ let F_bb = lam (), ?f2p, ?p2f .
       let db := (c, (P_i, m_i)) :: db ;
       wr (("S", 'Write, c, P_i, m_i), "C_I") -> ?f2p ;
       let c := c + 1 ;
-      print "c: " ++ show c 
+      print ("c: " ++ show c)
     | (P_j, 'Read, c) ->
       if mem c db then (* Clean this up *)
         let (P_i, m_i) = lookup c db in
@@ -18,8 +18,8 @@ let F_bb = lam (), ?f2p, ?p2f .
 	     (P_j, 'NoRead, c)), "C_I") -> ?f2p
     end ;
     loop in loop
-in
-  nu f2p, p2f .
+in 
+  nu f2p, p2f . 
     let ?f2p, ?p2f = f2p, p2f in
     F_bb () | wr (0, 'Write, "hi") -> p2f ;
               let _ = rd f2p in

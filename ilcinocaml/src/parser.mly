@@ -107,9 +107,9 @@
 %nonassoc NU_PREC
 %right PAR PARL CHOICE
 %nonassoc LET_PREC
+%nonassoc DOT
 %left SEMI
 %nonassoc ASSIGN_PREC
-%nonassoc DOT
 %nonassoc THEN
 %nonassoc ELSE
 %right CONS CONCAT
@@ -278,7 +278,7 @@ app_expr:
     { Mem (e1, e2) }
   | UNION e1 = atom_expr e2 = atom_expr
     { Union (e1, e2) }
-  | PRINT e = expr %prec LET_PREC
+  | PRINT e = atom_expr
     { Print e }
   | REV e = atom_expr
     { Rev e }

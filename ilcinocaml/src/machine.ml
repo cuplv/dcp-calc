@@ -222,7 +222,7 @@ let lookup x = function
 
 let imp_lookup x = function
   | _ ::env:: _ -> (try List.assoc x env with Not_found -> error ("unknown " ^ x))
-  | _ -> error "no environment to look up implicit arg"
+  | _ -> error ("no environment to look up implicit arg" ^ x)
 
 let pop = function
   | [] -> error "empty stack"

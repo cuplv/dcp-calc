@@ -1,10 +1,46 @@
 let name = "ILC"
 
+let version = "0.0.1"
+
+let interactive_shell = ref true
+
+let show_ast = ref false
+
+let show_ir = ref false
+
+let verbose = ref false
+
+let prelude_path = ref None
+
+let file = ref None         
+
 let read_more _ = false
 
-let file_parser = Some (Parser.file Lexer.token)
+let file_parser = Parser.file Lexer.token
 
-let toplevel_parser = Some (Parser.toplevel Lexer.token)
+let toplevel_parser = Parser.toplevel Lexer.token
+
+let options =
+  Arg.align [
+      ("--ast",
+       Arg.Unit (fun () -> show_ast := true),
+       " Print abstract syntax tree");
+      ("--ir",
+       Arg.Unit (fun () -> show_ir := true),
+       " Print intermediate representation");
+      ("--verbose",
+       Arg.Unit (fun () -> verbose := true),
+       " Print verbose execution output");
+      ("--prelude",
+       Arg.String (fun str -> prelude_path := Some str),
+       "<file> Load <file> into prelude");
+    ]
+
+let parse_args () =
+  Arg.parse options
+            (fun filename -> file := Some filename;
+                             interactive_shell := false)
+            ("Usage: " ^ name ^ " [options] ... [file] ...")
 
 exception Process_error of string
 
@@ -22,16 +58,6 @@ let printr_verbose = function
      Printf.printf "%s%d:\n0\n" "process" pid 
   | _ -> raise (Process_error "illegal final state")
 
-let run_full env ps = 
-  let init_ps = List.mapi (fun i p ->
-                    Machine.run (i, ([p], [], [env]))) ps in
-  let rec loop = function
-    | (true, ps') -> ps'
-    | (false, ps') ->
-       loop (Communication.run_comm (Machine.run_until_blocked ps'))
-  in
-  Machine.init_pid_counter (List.length init_ps);
-  loop (Communication.run_comm (Machine.run_until_blocked init_ps))
 
 let print_ast = function
   | ps -> let f acc x =
@@ -47,6 +73,17 @@ let print_ir = function
                 acc ^ (Machine.string_of_frame (Compile.compile p)) ^ "\n") in
           print_string (List.fold_left f "" ps)
 
+let run_full env ps = 
+  let init_ps = List.mapi (fun i p ->
+                    Machine.run (i, ([p], [], [env]))) ps in
+  let rec loop = function
+    | (true, ps') -> ps'
+    | (false, ps') ->
+       loop (Communication.run_comm (Machine.run_until_blocked ps'))
+  in
+  Machine.init_pid_counter (List.length init_ps);
+  loop (Communication.run_comm (Machine.run_until_blocked init_ps))          
+
 let exec verbose env = function
   | ps -> let f = function
             | Syntax.Process p -> Compile.compile p in
@@ -54,85 +91,22 @@ let exec verbose env = function
           let print = if verbose then printr_verbose else printr in
           List.iter print (run_full env compiled_ps)
 
-let load_prelude = function
-  | ps -> let f = function
-            | Syntax.Process p -> Compile.compile p in
-          let compiled_ps = List.map f ps in
-          (match (run_full [] compiled_ps) with
-           | [(_, (_, _, env))] -> (List.hd env)
-           | _ -> raise (Process_error "failed to load prelude"))
-                                      
-let interactive_shell = ref true
-
-let wrapper = ref (Some ["rlwrap"; "ledit"])
-
-let show_ast = ref false
-
-let show_ir = ref false
-
-let verbose = ref false
-
-let prelude = ref ""
-
-let file = ref None
-
-let usage = 
-  match file_parser with
-  | Some _ -> "Usage: " ^ name ^ " [option] ... [file] ..."
-  | None   -> "Usage:" ^ name ^ " [option] ..."
-
-
-let add_file interactive filename = (file := Some (filename, interactive))
-
-let options =
-  Arg.align [
-      ("-v",
-       Arg.Unit (fun () ->
-           print_endline (name ^ " " ^ "(" ^ Sys.os_type ^ ")");
-           exit 0),
-       " Print language information and exit");
-      ("-n",
-       Arg.Clear interactive_shell,
-       " Do not run the interactive toplevel");
-      ("-l",
-       Arg.String (fun str -> add_file false str),
-       "<file> Load <file> into the initial environment");
-      ("--ast",
-       Arg.Unit (fun () -> show_ast := true),
-       " Print abstract syntax tree of source");
-      ("--ir",
-       Arg.Unit (fun () -> show_ir := true),
-       " Print intermediate representation of source");
-      ("--verbose",
-       Arg.Unit (fun () -> verbose := true),
-       " Print verbose execution output");
-      ("--prelude",
-       Arg.String (fun str -> prelude := str),
-       " <file> Load <file> into prelude");    
-    ]
-
-let anonymous str =
-  add_file true str;
-  interactive_shell := false
-
-(** Parse the contents from a file, using a given [parser]. *)
-let read_file parser fn =
+let parse_file parser filename =
   try
-    let fh = open_in fn in
+    let fh = open_in filename in
     let lex = Lexing.from_channel fh in
-    lex.Lexing.lex_curr_p <- {lex.Lexing.lex_curr_p with Lexing.pos_fname = fn};
+    lex.Lexing.lex_curr_p <- {lex.Lexing.lex_curr_p with Lexing.pos_fname = filename};
     try
-      let terms = parser lex in
+      let results = parser lex in
       close_in fh;
-      terms
+      results
     with
-      (* Close the file in case of any parsing errors. *)
-      Support.Error err -> close_in fh ; raise (Support.Error err)
+    | Support.Error err -> close_in fh ; raise (Support.Error err)
+    | _ -> Support.syntax_error ~loc:(Support.location_of_lex lex) "general confusion"
+
   with
-    (* Any errors when opening or closing a file are fatal. *)
     Sys_error msg -> Support.fatal_error "%s" msg
 
-(** Parse input from toplevel, using the given [parser]. *)
 let read_toplevel parser () =
   let prompt = ">>> "
   and prompt_more = String.make (String.length name) ' ' ^ "> " in
@@ -144,77 +118,51 @@ let read_toplevel parser () =
   done ;
   parser (Lexing.from_string (!str ^ "\n"))
 
-(** Parser wrapper that catches syntax-related errors and converts them to errors. *)
-let wrap_syntax_errors parser lex =
-  try
-    parser lex
-  with
-  | _ ->
-     Support.syntax_error ~loc:(Support.location_of_lex lex) "general confusion"
+let prelude_env = function
+  | Syntax.Process p :: [] ->
+     let compiled_p = Compile.compile p in
+     let final_state = run_full [] [compiled_p] in
+     (match final_state with
+     | [(_, (_, _, env::env_tail))] -> env
+     | _ -> raise (Process_error "failed to compile prelude"))
+  | _ -> raise (Process_error "invalid prelude")  
 
 let get_prelude filename =
-  match file_parser with
-  | Some f ->
-     let prelude_functions = read_file (wrap_syntax_errors f) filename in
-     load_prelude prelude_functions
-  | None -> Support.fatal_error "Cannot load prelude"        
+  match filename with
+  | Some path -> prelude_env (parse_file file_parser path)
+  | None -> []
 
-(** Load directives from the given file. *)
-let use_file (filename, interactive) =
-  match file_parser with
-  | Some f ->
-     let processes = read_file (wrap_syntax_errors f) filename in
-     (match (!show_ast, !show_ir) with
-      | (true, _) -> print_ast processes
-      | (_, true) -> print_ir processes
-      | _ -> let prelude_env =  if !prelude <> "" then get_prelude !prelude
-                                else [] in
-             exec !verbose prelude_env processes)
-  | None ->
-     Support.fatal_error "Cannot load files, only interactive shell is available"
+let use_file filename prelude =
+  let ps = parse_file file_parser filename in
+  if !show_ast then print_ast ps
+  else if !show_ir then print_ir ps
+  else exec !verbose prelude ps
                                
-(** Interactive toplevel *)
 let toplevel ctx =
-  (*let eof = match Sys.os_type with
-      | "Unix" | "Cygwin" -> "Ctrl-D"
-      | "Win32" -> "Ctrl-Z"
-      | _ -> "EOF"
-    in*)
-  let toplevel_parser =
-    match toplevel_parser with
-    | Some p -> p
-    | None -> Support.fatal_error "I am sorry but this language has no interactive toplevel."
-  in
-  Format.printf "%si, version 0.0.1 @." name ;
+  Format.printf "%si, version %s @." name version;
   try
     let _ = ref ctx in
     while true do
       try
-        let prelude_env = if !prelude <> "" then get_prelude !prelude else [] in
-        let cmd = read_toplevel (wrap_syntax_errors toplevel_parser) () in
+        let prelude_env = get_prelude !prelude_path in
+        let cmd = read_toplevel toplevel_parser () in
         if !show_ast then print_ast cmd
         else if !show_ir then print_ir cmd
         else exec !verbose prelude_env cmd;
       with
-      (*| Error err -> print_error err*)
       | Sys.Break -> prerr_endline "Interrupted."
     done
   with End_of_file -> ()
 
-(** Main program *)
 let main () =
-  (* Intercept Ctrl-C by the user *)
   Sys.catch_break true;
-  (* Parse the arguments. *)
-  Arg.parse options anonymous usage;
-  (* Attempt to wrap yourself with a line-editing wrapper. *)
-  if !interactive_shell then
-  (* Set the maximum depth of pretty-printing, after which it prints ellipsis. *)
+  parse_args ();
   Format.set_max_boxes 42 ;
   Format.set_ellipsis_text "..." ;
+  let prelude = get_prelude !prelude_path in
   try
     match !file with
-    | Some f -> use_file f
+    | Some f -> use_file f prelude
     | None -> if !interactive_shell then toplevel ()
   with
     Support.Error err -> Support.print_error err; exit 1

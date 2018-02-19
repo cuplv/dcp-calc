@@ -135,6 +135,7 @@ _build
 *.d
 ilc-paper.pdf
 ilc-funcs.pdf
+.merlin
 
 # Emacs
 *~

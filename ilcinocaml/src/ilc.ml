@@ -22,6 +22,11 @@ let toplevel_parser = Parser.toplevel Lexer.token
 
 let options =
   Arg.align [
+      ("--version",
+       Arg.Unit (fun () ->
+           print_endline
+                 ("The Interactive Lambda Calculus, version " ^ version)),
+       " Print version number");
       ("--ast",
        Arg.Unit (fun () -> show_ast := true),
        " Print abstract syntax tree");

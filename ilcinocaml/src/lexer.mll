@@ -32,7 +32,8 @@
 
 rule token = parse
   (* Whitespace *)
-  | [' ' '\t' '\r' '\n']      { token lexbuf }
+  | [' ' '\t' '\r']           { token lexbuf }
+  | "\n"                      { Lexing.new_line lexbuf; token lexbuf }
   
   (* Comments *)
   | "(*"                      { comment 1 lexbuf }
@@ -133,15 +134,16 @@ and comment depth = parse
   | "*)"                      { if depth = 1
                                 then token lexbuf
                                 else comment (pred depth) lexbuf }
+  | "\n"                      { Lexing.new_line lexbuf; comment depth lexbuf }
   | _                         { comment depth lexbuf }
 and string = parse
   | '"'                       { STRING (getStr ()) }
   | '\\'                      { addStr(escaped lexbuf); string lexbuf }
-  | '\n'                      { addStr '\n'; string lexbuf }
+  | '\n'                      { Lexing.new_line lexbuf; addStr '\n'; string lexbuf }
   | eof                       { raise (SyntaxError "String not terminated") }
   | _                         { addStr (Lexing.lexeme_char lexbuf 0); string lexbuf }
 and escaped = parse
-  | 'n'                       { '\n' }
+  | 'n'                       { Lexing.new_line lexbuf; '\n' }
   | 't'                       { '\t' }
   | '\\'                      { '\\' }
   | '"'                       { '\034' }

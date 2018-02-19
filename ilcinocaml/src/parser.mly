@@ -106,7 +106,7 @@
 /* Precedence and assoc */
 %nonassoc NU_PREC
 %right PAR PARL CHOICE
-%nonassoc LET_PREC
+%nonassoc IN_PREC
 %nonassoc DOT
 %left SEMI
 %nonassoc ASSIGN_PREC
@@ -158,13 +158,13 @@ expr:
     { e }
   | LAM xs = arg_list DOT e = expr
     { List.fold_right curry_lambdas xs e }
-  | LET xs = comma_list EQUAL e1 = comma_list IN e2 = expr %prec LET_PREC
+  | LET xs = comma_list EQUAL e1 = comma_list IN e2 = expr %prec IN_PREC
     { List.fold_left fix_lets e2 (List.rev (List.combine xs e1)) }
-  | LETREC x = NAME EQUAL e1 = expr IN e2 = expr %prec LET_PREC
+  | LETREC x = NAME EQUAL e1 = expr IN e2 = expr %prec IN_PREC
     { LetRec (x, e1, e2) }
   | LET x = expr ASSIGN e = expr %prec ASSIGN_PREC
     { Assign (x, e) }
-  | MATCH e1 = expr WITH e2 = expr IN e3 = expr %prec LET_PREC
+  | MATCH e1 = expr WITH e2 = expr IN e3 = expr %prec IN_PREC
     { Let (e2, e1, e3) }
   | MATCH e1 = expr WITH bs = branches
     { Match (e1, bs) }
@@ -172,7 +172,7 @@ expr:
     { IfT (b, e1) }
   | IF b = expr THEN e1 = expr ELSE e2 = expr
     { IfTE (b, e1, e2) }
-  | REQ e1 = expr IN e2 = expr %prec LET_PREC
+  | REQ e1 = expr IN e2 = expr %prec IN_PREC
     { Req (e1, e2) }
   | e1 = expr SEMI e2 = expr
     { Seq (e1, e2) }

@@ -171,6 +171,19 @@ let replicate := (lam n, x .
   match n with
   | 0 -> []
   | n' -> x :: replicate (n'-1) x
-  end)
+  end) ;
 
 (* TODO: span, break *)
+
+let insert := (lam elem, lst .
+  match lst with
+  | [] -> [elem]
+  | x::xs -> if elem < x then elem :: x :: xs
+             else x :: (insert elem xs)
+  end) ;
+
+let sort := (lam lst .
+  match lst with
+  | [] -> []
+  | x::xs -> insert x (sort xs)
+  end)

@@ -3,8 +3,8 @@
 (* let Double : Int -> Int in .... *)
 
 let Double = lam x. x + x in
-nu {c, d} .
+nu c, d .
 5 + (
-     wr 3 -> c. rd x <- d. Double x .|
-     rd y <- c. wr y -> d. 0
+     wr 3 -> c ; rd x <- d ; Double x .|
+     rd y <- c ; wr y -> d
     )

@@ -1,0 +1,5 @@
+let x = ('Bye, 2) in
+match x with
+| ('Hi, b) -> b
+| ('Bye, d) -> d + 1
+end

@@ -1,0 +1,34 @@
+let F_bb = lam (), ?f2p, ?p2f .
+  let db := [] ;
+  let c := 0 ;
+  letrec loop = 
+    match rd ?p2f with
+    | (P_i, 'Write, m_i) ->
+      let db := (c, (P_i, m_i)) :: db ;
+      wr (("S", 'Write, c, P_i, m_i), "C_I") -> ?f2p ;
+      let c := c + 1 ;
+      print ("c: " ++ show c)
+    | (P_j, 'Read, c) ->
+      if mem c db then (* Clean this up *)
+        let (P_i, m_i) = lookup c db in
+        wr ((("S", P_j, 'Read, c, P_j, "m"),
+	     (P_j, 'Read, c, P_i, m_i)), "C_I") -> ?f2p
+      else
+        wr ((("S", P_j, 'NoRead, c),
+	     (P_j, 'NoRead, c)), "C_I") -> ?f2p
+    end ;
+    loop in loop
+in 
+  nu f2p, p2f . 
+    let ?f2p, ?p2f = f2p, p2f in
+    F_bb () | wr (0, 'Write, "hi") -> p2f ;
+              let _ = rd f2p in
+	      wr (1, 'Write, "im") -> p2f ;
+	      let _ = rd f2p in
+  	      wr (2, 'Write, "kevin") -> p2f ;
+  	      let _ = rd f2p in
+  	      wr (3, 'Read, 0) -> p2f ;
+  	      match rd f2p with
+	      | ((_, (_, 'Read, _, _, m)), _) -> "Read:" ++ m
+              | ((_, (_, 'NoRead, _)), _) -> "NoRead"
+	      end

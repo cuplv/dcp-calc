@@ -1,0 +1,2 @@
+let plus1 = lam x . x + 1 in
+map plus1 [1, 2, 3, 4, 5]

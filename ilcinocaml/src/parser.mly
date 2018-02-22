@@ -1,18 +1,37 @@
 %{
-    open Syntax
+  open Syntax
+  
+  exception Parsing_error
+  
+  let get_names = function 
+    | Name x -> x
+    | _ -> raise Parsing_error
 
-    exception Parsing_error
+  let curry_lambdas x acc =
+    match x with
+    | ImpName x -> acc
+    | x -> Lam (x, acc)
+
+  let curry acc e = App(acc, e)
+
+  let fix_lets acc map =
+    match map with
+    | (pattern, expr) -> Let(pattern, expr, acc)
 %}
 
 /* Identifier and constants */
 %token <Syntax.name> NAME
+%token <Syntax.name> IMPNAME
+%token <string> TAG
 %token <int> INT
 %token <string> STRING 
 
 /* Reserved words */
 %token LET
-%token IN
 %token LETREC
+%token IN
+%token MATCH
+%token WITH
 %token LAM
 %token NU
 %token WR
@@ -24,12 +43,15 @@
 %token FALSE
 %token THUNK
 %token FORCE
+%token REQ
+%token END
+%token UNIT
 
 /* Operators */
 %token EQUAL
+%token ASSIGN
 %token LARROW
 %token RARROW
-%token REPL
 %token PAR
 %token PARL
 %token CHOICE
@@ -62,6 +84,16 @@
 %token CONS
 %token CONCAT
 %token LOOKUP
+%token LENGTH
+%token MEM
+%token UNION
+%token PRINT
+%token REV
+
+/* Types */
+%token TYINT
+%token TYBOOL
+%token TYSTRING
 
 /* Punctuation */
 %token DOT
@@ -73,25 +105,28 @@
 %token RBRACE
 %token COMMA
 %token SEMI
+%token USCORE
+%token COLON
 %token EOF
 
 /* Precedence and assoc */
 %nonassoc NU_PREC
 %right PAR PARL CHOICE
-%nonassoc REPL
-%right DOT
-%nonassoc LET_PREC
+%nonassoc IN_PREC
+%nonassoc DOT
+%left SEMI
+%nonassoc ASSIGN_PREC
 %nonassoc THEN
 %nonassoc ELSE
 %right CONS CONCAT
 %nonassoc SHOW
+%nonassoc LENGTH
 %nonassoc OR
 %nonassoc AND
 %nonassoc NOT
 %nonassoc LT GT LEQ GEQ EQ NEQ
 %left PLUS MINUS
 %left TIMES DIVIDE MOD
-%left APP
 
 %start file
 %type <Syntax.process list> file
@@ -103,156 +138,236 @@
 /* Grammar */
 
 file:
-    | EOF
-      { [] }
-    | e = expr EOF
-      { [Process e] }
-    | e = expr SEMI SEMI lst = file
-      { Process e :: lst }
+  | EOF
+    { [] }
+  | e = expr EOF
+    { [Process e] }
+  | e = expr SEMI SEMI lst = file
+    { Process e :: lst }
 
 toplevel:
-    | e = expr EOF
-      { [Process e] }
+  | e = expr EOF
+    { [Process e] }
 
 expr:
-    | e = atom_expr
-      { e }
-    | e = arith_expr
-      { e }
-    | e = bool_expr
-      { e }
-    | e = app_expr
-      { e }
-    | e = comm_expr
-      { e }
-    | e = proc_expr
-      { e }
-    | LAM x = NAME DOT e = expr
-      { Lam (x, e) }
-    | LET x = NAME EQUAL e1 = expr IN e2 = expr %prec LET_PREC
-      { Let (x, e1, e2) }
-    | LET LPAREN p = comma_list RPAREN EQUAL e1 = expr IN e2 = expr %prec LET_PREC
-      { LetP (p, e1, e2) }
-    | LETREC x = NAME EQUAL e1 = expr IN e2 = expr %prec LET_PREC
-      { LetRec (x, e1, e2) }
-    | IF b = expr THEN e1 = expr
-      { IfT (b, e1) }
-    | IF b = expr THEN e1 = expr ELSE e2 = expr
-      { IfTE (b, e1, e2) }
-    | e1 = expr DOT e2 = expr
-      { Seq (e1, e2) }
-
+  | e = atom_expr
+    { e }
+  | e = arith_expr
+    { e }
+  | e = bool_expr
+    { e }
+  | e = app_expr
+    { e }
+  | e = comm_expr
+    { e }
+  | e = proc_expr
+    { e }
+  | LAM xs = arg_list DOT e = expr
+    { List.fold_right curry_lambdas xs e }
+  | LET xs = comma_list EQUAL e1 = comma_list IN e2 = expr %prec IN_PREC
+    { List.fold_left fix_lets e2 (List.rev (List.combine xs e1)) }
+  | LET xs = var_ty_list EQUAL e1 = comma_list IN e2 = expr %prec IN_PREC
+    { List.fold_left fix_lets e2 (List.rev (List.combine xs e1)) }
+  | LETREC x = NAME EQUAL e1 = expr IN e2 = expr %prec IN_PREC
+    { LetRec (x, e1, e2) }
+  | LET x = expr ASSIGN e = expr %prec ASSIGN_PREC
+    { Assign (x, e) }
+  | LET x = expr COLON t = ty ASSIGN e = expr %prec ASSIGN_PREC
+    { Assign (x, e) }    
+  | MATCH e1 = expr WITH e2 = expr IN e3 = expr %prec IN_PREC
+    { Let (e2, e1, e3) }
+  | MATCH e1 = expr WITH bs = branches
+    { Match (e1, bs) }
+  | IF b = expr THEN e1 = expr
+    { IfT (b, e1) }
+  | IF b = expr THEN e1 = expr ELSE e2 = expr
+    { IfTE (b, e1, e2) }
+  | REQ e1 = expr IN e2 = expr %prec IN_PREC
+    { Req (e1, e2) }
+  | e1 = expr SEMI e2 = expr
+    { Seq (e1, e2) }
+   
 atom_expr:
-    | x = NAME
-      { Name x }
-    | n = INT
-      { Int n }
-    | s = STRING
-      { String s }
-    | TRUE
-      { Bool true }
-    | FALSE
-      { Bool false }
-    | LBRACK RBRACK
-      { List [] }
-    | LBRACK e = comma_list RBRACK
-      { List e }
-    | LPAREN e1 = expr COMMA e2 = comma_list RPAREN
-      { Tuple (e1::e2) }
-    | RAND
-      { Rand }
-    | LPAREN e = expr RPAREN
-      { e }
+  | x = NAME
+    { Name x }
+  | x = IMPNAME
+    { ImpName x }
+  | USCORE
+    { Wildcard }
+  | UNIT
+    { Unit }
+  | t = TAG
+    { Tag t }
+  | n = INT
+    { Int n }
+  | s = STRING
+    { String s }
+  | TRUE
+    { Bool true }
+  | FALSE
+    { Bool false }
+  | LBRACK RBRACK
+    { List [] }
+  | LBRACK e = comma_list RBRACK
+    { List e }
+  | LBRACE RBRACE
+    { Set [] }
+  | LBRACE e = comma_list RBRACE
+    { Set e }
+  | LPAREN e1 = expr COMMA e2 = comma_list RPAREN
+    { Tuple (e1::e2) }
+  | RAND UNIT
+    { Rand }
+  | LPAREN e = expr RPAREN
+    { e }
     
 arith_expr:
-    | e1 = expr PLUS e2 = expr
-      { Plus (e1, e2) }
-    | e1 = expr MINUS e2 = expr
-      { Minus (e1, e2) }
-    | e1 = expr TIMES e2 = expr
-      { Times (e1, e2) }
-    | e1 = expr DIVIDE e2 = expr
-      { Divide (e1, e2) }
-    | e1 = expr MOD e2 = expr
-      { Mod (e1, e2) }
+  | e1 = expr PLUS e2 = expr
+    { Plus (e1, e2) }
+  | e1 = expr MINUS e2 = expr
+    { Minus (e1, e2) }
+  | e1 = expr TIMES e2 = expr
+    { Times (e1, e2) }
+  | e1 = expr DIVIDE e2 = expr
+    { Divide (e1, e2) }
+  | e1 = expr MOD e2 = expr
+    { Mod (e1, e2) }
 
 bool_expr:
-    | e1 = expr LT e2 = expr
-      { Lt (e1, e2) }
-    | e1 = expr GT e2 = expr
-      { Gt (e1, e2) }
-    | e1 = expr LEQ e2 = expr
-      { Leq (e1, e2) }
-    | e1 = expr GEQ e2 = expr
-      { Geq (e1, e2) }
-    | e1 = expr OR e2 = expr
-      { Or (e1, e2) }
-    | e1 = expr AND e2 = expr
-      { And (e1, e2) }
-    | NOT e1 = expr
-      { Not e1 }
-    | e1 = expr EQ e2 = expr
-      { Eq (e1, e2) }
-    | e1 = expr NEQ e2 = expr
-      { Neq (e1, e2) }
+  | e1 = expr LT e2 = expr
+    { Lt (e1, e2) }
+  | e1 = expr GT e2 = expr
+    { Gt (e1, e2) }
+  | e1 = expr LEQ e2 = expr
+    { Leq (e1, e2) }
+  | e1 = expr GEQ e2 = expr
+    { Geq (e1, e2) }
+  | e1 = expr OR e2 = expr
+    { Or (e1, e2) }
+  | e1 = expr AND e2 = expr
+    { And (e1, e2) }
+  | NOT e1 = expr
+    { Not e1 }
+  | e1 = expr EQ e2 = expr
+    { Eq (e1, e2) }
+  | e1 = expr NEQ e2 = expr
+    { Neq (e1, e2) }
 
 app_expr:
-    | x = NAME e = expr %prec APP
-      { App (Name x, e) }
-    | LPAREN x = expr RPAREN e = expr %prec APP
-      { App (x, e) }
-    | THUNK x = NAME
-      { Thunk (Name x) }
-    | THUNK LPAREN e = expr RPAREN
-      { Thunk e }
-    | FORCE x = NAME
-      { Force (Name x) }
-    | FORCE LPAREN e = expr RPAREN
-      { Force e }
-    | FST x = NAME
-      { Fst (Name x) }
-    | FST LPAREN e = expr RPAREN
-      { Fst e }
-    | SND x = NAME
-      { Snd (Name x) }
-    | SND LPAREN e = expr RPAREN
-      { Snd e }
-    | SHOW e = expr
-      { Show e }
-    | e1 = expr CONS e2 = expr
-      { Cons (e1, e2) }
-    | e1 = expr CONCAT e2 = expr
-      { Concat (e1, e2) }
-    | LOOKUP e1 = expr IN e2 = expr %prec LET_PREC
-      { Lookup (e1, e2) }
+  | x = NAME es = atom_list
+    { List.fold_left curry (Name x) es }
+  | LPAREN x = expr RPAREN es = atom_list
+    { List.fold_left curry x es }
+  | THUNK x = NAME
+    { Thunk (Name x) }
+  | THUNK LPAREN e = expr RPAREN
+    { Thunk e }
+  | FORCE x = NAME
+    { Force (Name x) }
+  | FORCE LPAREN e = expr RPAREN
+    { Force e }
+  | FST x = NAME
+    { Fst (Name x) }
+  | FST LPAREN e = expr RPAREN
+    { Fst e }
+  | SND x = NAME
+    { Snd (Name x) }
+  | SND LPAREN e = expr RPAREN
+    { Snd e }
+  | SHOW e = expr
+    { Show e }
+  | e1 = expr CONS e2 = expr
+    { Cons (e1, e2) }
+  | e1 = expr CONCAT e2 = expr
+    { Concat (e1, e2) }
+  | LOOKUP e1 = atom_expr e2 = atom_expr
+    { Lookup (e1, e2) }
+  | LENGTH e = expr
+    { Length e }
+  | MEM e1 = atom_expr e2 = atom_expr
+    { Mem (e1, e2) }
+  | UNION e1 = atom_expr e2 = atom_expr
+    { Union (e1, e2) }
+  | PRINT e = atom_expr
+    { Print e }
+  | REV e = atom_expr
+    { Rev e }
 
 comm_expr:
-    | WR e = expr RARROW c = NAME
-      { Wr (e, c) }
-    | RD x = NAME LARROW c = NAME
-      { RdBind (x, c) }
-    | RD c = NAME
-      { Rd c }
-    | NU x = NAME DOT e = expr %prec NU_PREC
-      { Nu ([x], e) }
-    | NU LBRACE x = comma_list RBRACE DOT e = expr %prec NU_PREC
-      { Nu (List.map (function
-          | Name x -> x
-          | _ -> raise Parsing_error)
-        x, e) }
+  | WR e = expr RARROW c = NAME
+    { Wr (e, c) }
+  | WR e = expr RARROW c = IMPNAME
+    { Wr (e, c) }
+  | RD x = NAME LARROW c = NAME
+    { RdBind (x, c) }
+  | RD x = NAME LARROW c = IMPNAME
+    { RdBind (x, c) }
+  | RD c = NAME
+    { Rd c }
+  | RD c = IMPNAME
+    { Rd c }
+  | NU xs = arg_list DOT e = expr %prec NU_PREC
+    { let names = List.map get_names xs in
+      Nu (names, e) }
 
 proc_expr:
-    | REPL e = expr
-      { Repl e }
-    | e1 = expr PAR e2 = expr
-      { ParComp (e1, e2) }
-    | e1 = expr PARL e2 = expr
-      { ParLeft (e1, e2) }
-    | e1 = expr CHOICE e2 = expr
-      { Choice (e1, e2) }
+  | e1 = expr PAR e2 = expr
+    { ParComp (e1, e2) }
+  | e1 = expr PARL e2 = expr
+    { ParLeft (e1, e2) }
+  | e1 = expr CHOICE e2 = expr
+    { Choice (e1, e2) }
 
 comma_list:
-    | e = expr
-      { [e] }
-    | e1 = expr COMMA e2 = comma_list
-      { e1 :: e2 }
+  | e = expr
+    { [e] }
+  | e1 = expr COMMA e2 = comma_list
+    { e1 :: e2 }
+
+var_ty_list:
+  | e = expr COLON ty
+    { [e] }
+  | e1 = expr COLON ty COMMA e2 = var_ty_list
+    { e1 :: e2 }
+
+arg_list:
+  | e = NAME
+    { [Name e] }
+  | e = IMPNAME
+    { [ImpName e] }
+  | UNIT
+    { [Unit] }
+  | e1 = NAME COMMA e2 = arg_list
+    { Name e1 :: e2 }
+  | e1 = IMPNAME COMMA e2 = arg_list
+    { ImpName e1 :: e2 }
+  | UNIT COMMA e2 = arg_list
+    { Unit :: e2 }
+
+atom_list:
+  | e = atom_expr
+    { [e] }
+  | e1 = atom_expr e2 = atom_list
+    { e1 :: e2 }
+
+branches:
+  | PAR e1 = expr RARROW e2 = expr END
+    { [(e1, e2)] }
+  | PAR e1 = expr RARROW e2 = expr bs = branches
+    { (e1, e2) :: bs }
+
+atom_ty :
+  | TYINT
+    { TyInt }
+  | TYBOOL
+    { TyBool }
+  | TYSTRING
+    { TyString }
+  | LPAREN t = atom_ty RPAREN
+    { t }
+
+ty :
+  | t1 = atom_ty RARROW t2 = ty
+    { TyArrow (t1, t2) }
+  | t = atom_ty
+    { t }

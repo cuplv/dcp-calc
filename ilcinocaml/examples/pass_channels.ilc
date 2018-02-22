@@ -1,4 +1,0 @@
-nu c . nu d .
-((rd x <- c . let d = rand in wr d -> x . !(rd x <- c . wr d -> x)) |
-(wr a -> c . rd d <- a . d) |
-(wr b -> c . rd d <- b . d))

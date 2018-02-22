@@ -1,0 +1,31 @@
+(* Prelude *)
+let sendDelayed = lam f, m, R, ?f2p, ?f2a, ?a2f .
+  wr f (m, R) -> ?f2a ;
+  match rd ?a2f with 'ok in
+    wr (m, R) -> ?f2p
+in
+
+(* Functionality *)
+let F_smt = lam l, ?f2p, ?p2f, ?f2a, ?a2f .
+  let ('Send, S, R, sid, m) = rd ?p2f in
+  sendDelayed l m R ?f2p ?f2a ?a2f ;
+  promise (rd r <- ?a2f) ;
+  let ('Corrupt, sid, P) = rd ?a2f in
+    req mem P {S, R} in
+    wr m -> ?f2a ;
+    let m' = rd ?a2f in
+    if P == S && (match future r with
+                  | Success 'ok -> true
+                  | Failure     -> false
+                  end)
+    then
+      wr (('Sent, S, sid, m'), R) -> ?f2p
+in
+
+(* Instance *)
+  nu f2p, p2f, f2a, a2f .
+    let ?f2p, ?p2f, ?f2a, ?a2f = f2p, p2f, f2a, a2f in
+    let leak = lam x . match x with (('Sent, msg), R) in
+      (('Sent, length msg), R)
+    in
+      F_smt leak | 0

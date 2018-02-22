@@ -133,4 +133,11 @@ _build
 *.output
 *.make
 *.d
-*/ilc-paper.pdf
+ilc-paper.pdf
+ilc-funcs.pdf
+.merlin
+
+# Emacs
+*~
+\#*\#
+.\#*

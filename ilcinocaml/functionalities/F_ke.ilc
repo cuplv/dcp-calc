@@ -1,10 +1,15 @@
-(* No idea what S or KE are. Will read about it later *)
+(* TODO: Find detailed functionality *)
 
-nu { p2f, f2p } .
-let (KE, B) = rd p2f in
-    let k = rand in
-        wr (A, B) -> f2p.S .
-        rd (KE, B) = rd p2f .
-        wr (A, B) -> f2p.S .
-        let ("ok", P) = rd p2f in
-            wr (A, B, k) -> f2p.P
+let F_ke = lam (), ?f2p, ?p2f .
+  let (KE, B) = rd ?p2f in
+  let k = rand () in
+    wr ((A, B), "S") -> ?f2p ;
+    let (KE, B) = rd ?p2f in
+    wr ((A, B), "S") -> ?f2p ;
+    let ('ok, P) = rd ?p2f in
+      req mem P {A, B} in
+      wr ((A, B, k), P) -> ?f2p
+in
+  nu f2p, p2f .
+  let ?f2p, ?p2f = f2p, p2f in
+    F_ke () | 0

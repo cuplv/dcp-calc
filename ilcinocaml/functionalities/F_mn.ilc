@@ -1,0 +1,18 @@
+(* TODO: Fix this later *)
+
+nu f2p, p2f .
+  let (L, J_P, J_M) = ([], {}, {}) in
+    match rd p2f with (P_i, 'Send, m_i) in
+      req mem m_i G_q in
+        if not mem P_i J_P then
+          let J_P = union J_P {P_i} in
+            let L = m_i :: L in
+              wr ((S, P_i, 'Send), C_I) -> f2p .
+  match rd p2f (M_j, 'Run) in
+    let J_M = union J_M {M_j} in
+      if length J_M >= k/2 then (* TODO: length on list *)
+        let L' = sort L in (* TODO: sort? *)
+          (* TODO: ... *)
+          wr (((S, M_j, 'Output, L'), ...), M_I) -> f2p
+      else
+        wr ((S, M_j, 'Run), C_I) -> f2p

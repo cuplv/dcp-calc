@@ -10,6 +10,18 @@ type ty =
   | TyString
   | TyArrow of ty * ty
 
+type pattern =
+  | PatName of name
+  | PatImpName of name
+  | PatTag of string
+  | PatInt of int
+  | PatBool of bool
+  | PatString of string
+  | PatUnit
+  | PatWildcard
+  | PatTuple of pattern list
+  | PatCons of pattern * pattern
+    
 type expr =
   (* Identifier, constants, values *)
   | Name of name

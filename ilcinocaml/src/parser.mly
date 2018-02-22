@@ -14,7 +14,7 @@
 
   let curry acc e = App(acc, e)
 
-  let fix_lets acc map =
+  let desugar_let acc map =
     match map with
     | (pattern, expr) -> Let(pattern, expr, acc)
 %}
@@ -55,6 +55,7 @@
 %token PAR
 %token PARL
 %token CHOICE
+%token PIPE
 
 /* Arithmetic operators */
 %token PLUS
@@ -91,9 +92,9 @@
 %token REV
 
 /* Types */
-%token TYINT
+/*%token TYINT
 %token TYBOOL
-%token TYSTRING
+%token TYSTRING*/
 
 /* Punctuation */
 %token DOT
@@ -106,7 +107,8 @@
 %token COMMA
 %token SEMI
 %token USCORE
-%token COLON
+/*%token COLON*/
+%token RRARROW
 %token EOF
 
 /* Precedence and assoc */
@@ -151,46 +153,41 @@ toplevel:
 
 /* PATTERNS --- The LHS of a case arm. */
 
-/* TODO */
-/* pat: ... */
-  
+pat_list:
+  | p = pat_atom
+    { [p] }
+  | p = pat_atom COMMA ps = pat_list
+    { p :: ps }
 
-/* TODO */
-/* pat_commas: ... */
-
-/*
 pat_atom:
   | x = NAME
-    { Name x }
+    { PatName x }
   | x = IMPNAME
-    { ImpName x }
+    { PatImpName x }
   | USCORE
-    { Wildcard }
+    { PatWildcard }
   | UNIT
-    { Unit }
+    { PatUnit }
   | t = TAG
-    { Tag t }
+    { PatTag t }
   | n = INT
-    { Int n }
+    { PatInt n }
   | s = STRING
-    { String s }
+    { PatString s }
   | TRUE
-    { Bool true }
+    { PatBool true }
   | FALSE
-    { Bool false }
+    { PatBool false }
   | LBRACK RBRACK
-    { List [] }
-  | LBRACK p = pat_commas RBRACK
-    { List p }
-  | LBRACE RBRACE
-    { Set [] }
-  | LBRACE p = pat_commas RBRACE
-    { Set p }
-  | LPAREN p1 = pat_commas COMMA e2 = pat_commas RPAREN
-    { Tuple (p1::p2) }
-  | LPAREN p = pat RPAREN
+    { PatList [] }
+  | LBRACK p = pat_list RBRACK
+    { PatList p }
+/*  | p1 = pat CONS p2 = pat
+    { PatCons (p1, p2) }*/
+  | LPAREN p1 = pat_atom COMMA p2 = pat_list RPAREN
+    { PatTuple (p1::p2) }
+  | LPAREN p = pat_atom RPAREN
     { p }
-*/
 
 expr:
   | e = atom_expr
@@ -207,18 +204,18 @@ expr:
     { e }
   | LAM xs = arg_list DOT e = expr
     { List.fold_right curry_lambdas xs e }
-  | LET xs = comma_list EQUAL e1 = comma_list IN e2 = expr %prec IN_PREC
-    { List.fold_left fix_lets e2 (List.rev (List.combine xs e1)) }
-  | LET xs = var_ty_list EQUAL e1 = comma_list IN e2 = expr %prec IN_PREC
-    { List.fold_left fix_lets e2 (List.rev (List.combine xs e1)) }
+  | LET xs = pat_list EQUAL e1 = expr_list IN e2 = expr %prec IN_PREC
+    { List.fold_left desugar_let e2 (List.rev (List.combine xs e1)) }
+/*  | LET xs = var_ty_list EQUAL e1 = expr_list IN e2 = expr %prec IN_PREC
+    { List.fold_left desugar_let e2 (List.rev (List.combine xs e1)) } */
   | LETREC x = NAME EQUAL e1 = expr IN e2 = expr %prec IN_PREC
     { LetRec (x, e1, e2) }
-  | LET x = expr ASSIGN e = expr %prec ASSIGN_PREC
-    { Assign (x, e) }
-  | LET x = expr COLON t = ty ASSIGN e = expr %prec ASSIGN_PREC
-    { Assign (x, e) }    
-  | MATCH e1 = expr WITH e2 = expr IN e3 = expr %prec IN_PREC
-    { Let (e2, e1, e3) }
+  | LET p = pat_atom ASSIGN e = expr %prec ASSIGN_PREC
+    { Assign (p, e) }
+/*  | LET x = expr COLON t = ty ASSIGN e = expr %prec ASSIGN_PREC
+    { Assign (x, e) }*/
+  | MATCH e1 = expr WITH p = pat_atom IN e3 = expr %prec IN_PREC
+    { Let (p, e1, e3) }
   | MATCH e1 = expr WITH bs = branches
     { Match (e1, bs) }
   | IF b = expr THEN e1 = expr
@@ -252,13 +249,13 @@ atom_expr:
     { Bool false }
   | LBRACK RBRACK
     { List [] }
-  | LBRACK e = comma_list RBRACK
+  | LBRACK e = expr_list RBRACK
     { List e }
   | LBRACE RBRACE
     { Set [] }
-  | LBRACE e = comma_list RBRACE
+  | LBRACE e = expr_list RBRACE
     { Set e }
-  | LPAREN e1 = expr COMMA e2 = comma_list RPAREN
+  | LPAREN e1 = expr COMMA e2 = expr_list RPAREN
     { Tuple (e1::e2) }
   | RAND UNIT
     { Rand }
@@ -302,21 +299,13 @@ app_expr:
     { List.fold_left curry (Name x) es }
   | LPAREN x = expr RPAREN es = atom_list
     { List.fold_left curry x es }
-  | THUNK x = NAME
-    { Thunk (Name x) }
-  | THUNK LPAREN e = expr RPAREN
+  | THUNK e = atom_expr
     { Thunk e }
-  | FORCE x = NAME
-    { Force (Name x) }
-  | FORCE LPAREN e = expr RPAREN
+  | FORCE e = atom_expr
     { Force e }
-  | FST x = NAME
-    { Fst (Name x) }
-  | FST LPAREN e = expr RPAREN
+  | FST e = atom_expr
     { Fst e }
-  | SND x = NAME
-    { Snd (Name x) }
-  | SND LPAREN e = expr RPAREN
+  | SND e = atom_expr
     { Snd e }
   | SHOW e = expr
     { Show e }
@@ -362,17 +351,17 @@ proc_expr:
   | e1 = expr CHOICE e2 = expr
     { Choice (e1, e2) }
 
-comma_list:
+expr_list:
   | e = expr
     { [e] }
-  | e1 = expr COMMA e2 = comma_list
+  | e1 = expr COMMA e2 = expr_list
     { e1 :: e2 }
 
-var_ty_list:
+/*var_ty_list:
   | e = expr COLON ty
     { [e] }
   | e1 = expr COLON ty COMMA e2 = var_ty_list
-    { e1 :: e2 }
+    { e1 :: e2 }*/
 
 arg_list:
   | e = NAME
@@ -396,12 +385,12 @@ atom_list:
 
 /* Matt says: The LHS of a match should be a _pattern_, not an expression */
 branches:
-  | PAR e1 = expr RARROW e2 = expr END
-    { [(e1, e2)] }
-  | PAR e1 = expr RARROW e2 = expr bs = branches
-    { (e1, e2) :: bs }
+  | PIPE p = pat_atom RRARROW e = expr END
+    { [(p,e)] }
+  | PIPE p = pat_atom RRARROW e = expr bs = branches
+    { (p,e) :: bs }
 
-atom_ty :
+/*atom_ty :
   | TYINT
     { TyInt }
   | TYBOOL
@@ -416,3 +405,4 @@ ty :
     { TyArrow (t1, t2) }
   | t = atom_ty
     { t }
+*/

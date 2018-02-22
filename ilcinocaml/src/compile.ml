@@ -1,4 +1,4 @@
-z(* -------------------------------------------------------------------------- *)
+(* -------------------------------------------------------------------------- *)
 (* Compile to stack-based language *)
 
 open Machine
@@ -79,15 +79,15 @@ let rec compile = function
   | Neq (e1, e2) -> (compile e1) @ (compile e2) @ [INeq]
   
   (* Let *)
-  | Let (x, e1, e2) -> (compile e1) @ [ILet x] @ (compile e2) @ [IUnscope (get_vars [x])]
+  (*  | Let (x, e1, e2) -> (compile e1) @ [ILet x] @ (compile e2) @ [IUnscope (get_vars [x])]*)
   | LetRec (x, e1, e2) ->
       [IThunk (force_thunks x (compile e1))] @
       [ILet (Name x)] @ (force_thunks x (compile e2))
-  | Assign(x, e) -> (compile e) @ [ILet x]
-  | Match (e, es) ->
+  (*  | Assign(x, e) -> (compile e) @ [ILet x]*)
+(*  | Match (e, es) ->
      let f acc = function
        | (p, expr) -> [IMatchCond (p, compile expr)] @ acc in
-     [IStartM] @ (compile e) @ List.fold_left f [] (List.rev es) @ [IEndM]
+     [IStartM] @ (compile e) @ List.fold_left f [] (List.rev es) @ [IEndM]*)
 
   (* Conditionals *)
   | IfTE (e1, e2, e3) ->
@@ -144,4 +144,5 @@ let rec compile = function
   | Union (e1, e2) -> (compile e1) @ (compile e2) @[IUnion]
   | Print e -> (compile e) @ [IPrint]
   | Rev e -> (compile e) @ [IRev]
+  | _ -> raise Compilation_error
 and compile_list es = List.fold_left (fun acc e -> acc @ (compile e)) [] es

@@ -1,16 +1,45 @@
 (* SaUCy prelude *)
+(* f :((tag, string), int) -> ((tag, string), int)
+   m : string
+   R : int *)
 let sendDelayed = lam f, m, R, ?a2f, ?f2a, ?f2p .
-  wr f (m, R) -> ?f2a ;
+  wr (f (m, R)) -> ?f2a ;
   match rd ?a2f with 'ok in
     wr (m, R) -> ?f2p
 in 
+
+let leak = lam x. x 
 
 (* User-defined leakage *)
 let leak = lam x . match x with (('Sent, msg), R) in
   (('Sent, length msg), R)
 in
 
-(* Actual process *)
+(* Example functionality *)
 nu a2f, f2a, f2p .
   let ?a2f, ?f2a, ?f2p = a2f, f2a, f2p in
     sendDelayed leak ('Sent, "hi") 1
+    sendDelayed leak ('Sent, "hi") 2
+
+(*
+
+  a2f
+  ------------ Deliver(i)
+          | |- GetQueue
+          |  
+          ---------------a2fF
+                       functionality
+ *)
+
+
+let functionalityWithDelayedAndLeak functionality =
+  nu a2fF.
+  let buffer := [] in
+  !( match rd ?a2f with
+     | 'Deliver(i) -> match buffer[i] with (m, R) in wr (m, R) -> f2p
+     | 'GetQueue -> wr (map leak !buffer) -> f2a
+     | 'Passthrough(m) -> wr m -> a2fF
+   )
+  | let ?a2f = a2fF in.
+    let ?sendPublicDelayed = lam() in.
+      functionality

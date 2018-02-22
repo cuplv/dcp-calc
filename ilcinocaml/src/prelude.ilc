@@ -3,13 +3,13 @@
 let map := (lam f, lst .
   match lst with
   | [] -> []
-  | x :: xs -> (f x) :: (map f xs)
+  | x::xs -> (f x) :: (map f xs)
   end) ;
 
 let filter := (lam f, lst .
   match lst with
   | [] -> []
-  | x :: xs -> if f x
+  | x::xs -> if f x
                 then x :: (filter f xs)
                 else filter f xs
   end) ;

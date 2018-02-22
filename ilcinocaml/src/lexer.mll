@@ -59,16 +59,17 @@ rule token = parse
   | "end"		      { END }
   | "()"		      { UNIT }
   | "print"		      { PRINT }
-  | "int"                     { TYINT }
+(*  | "int"                     { TYINT }
   | "bool"                    { TYBOOL }
-  | "string"                  { TYSTRING }
+  | "string"                  { TYSTRING }*)
   
   (* Operators *)
   | "="                       { EQUAL }
   | ":="		      { ASSIGN }
   | "->"                      { RARROW }
   | "<-"                      { LARROW }
-  | "|"                       { PAR }
+  | "|"                       { PIPE }
+  | ".|."                     { PAR }
   | ".|"                      { PARL }
   | "&"                       { CHOICE }
   
@@ -116,7 +117,8 @@ rule token = parse
   | ","                       { COMMA }
   | ";"                       { SEMI }
   | "_"                       { USCORE }
-  | ":"                       { COLON }
+(*  | ":"                       { COLON }*)
+  | "=>"                      { RRARROW }
   
   (* Identifier and constants *)
   | ['a'-'z' 'A'-'Z']

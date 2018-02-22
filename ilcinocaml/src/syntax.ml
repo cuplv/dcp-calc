@@ -17,6 +17,7 @@ type pattern =
   | PatInt of int
   | PatBool of bool
   | PatString of string
+  | PatList of pattern list
   | PatUnit
   | PatWildcard
   | PatTuple of pattern list
@@ -57,10 +58,10 @@ type expr =
   | Neq of expr * expr
   
   (* Let *)
-  | Let of expr * expr * expr
+  | Let of pattern * expr * expr
   | LetRec of name * expr * expr
-  | Assign of expr * expr
-  | Match of expr * (expr * expr) list
+  | Assign of pattern * expr
+  | Match of expr * (pattern * expr) list
             
   (* Conditionals *)
   | IfTE of expr * expr * expr
@@ -155,11 +156,11 @@ let string_of_expr e =
     | Neq (e1, e2) -> "Neq(" ^ to_str e1 ^ "," ^ to_str e2 ^ ")"
 
     (* Let *)
-    | Let (x, e1, e2) -> "Let(" ^  to_str x ^ "," ^ 
+    | Let (x, e1, e2) -> "Let(" ^  str_of_pattern x ^ "," ^ 
       to_str e1 ^ "," ^ to_str e2 ^ ")"
     | LetRec (x, e1, e2) -> "LetRec(" ^ name_to_str x ^ "," ^ 
       to_str e1 ^ "," ^ to_str e2 ^ ")"
-    | Assign (x, e1) -> "Assign(" ^ to_str x ^ "," ^ 
+    | Assign (x, e1) -> "Assign(" ^ str_of_pattern x ^ "," ^ 
       to_str e1 ^ ")"
     | Match (e, es) ->
        "Match(" ^ to_str e ^ "," ^ str_of_list str_of_match_pair es ^ ")"
@@ -203,5 +204,18 @@ let string_of_expr e =
     | Print e -> "Print(" ^ to_str e ^ ")"
     | Rev e -> "Rev(" ^ to_str e ^ ")"
   and str_of_match_pair = function
-    | (e1, e2) -> "Alt(" ^ to_str e1 ^ "," ^ to_str e2 ^ ")"
+    | (e1, e2) -> "Alt(" ^ str_of_pattern e1 ^ "," ^ to_str e2 ^ ")"
+  and str_of_pattern = function
+    | PatName x -> "PatName(" ^ x ^ ")"
+    | PatImpName x -> "PatImpName(" ^ x ^ ")"
+    | PatTag s -> "PatTag(" ^ s ^ ")"
+    | PatInt n -> "PatInt(" ^ (string_of_int n) ^ ")"
+    | PatBool b -> "PatBool(" ^ (string_of_bool b) ^ ")"
+    | PatString s -> "PatString(" ^ s ^ ")"
+    | PatList l -> "PatList(" ^ str_of_list str_of_pattern l ^ ")"
+    | PatUnit -> "PatUnit"
+    | PatWildcard -> "PatWildcard"
+    | PatTuple ps -> "PatTuple(" ^ str_of_list str_of_pattern ps ^ ")"
+    | PatCons (hd, tl)-> "PatCons(" ^ str_of_pattern hd ^ "," ^ str_of_pattern tl
+    ^ ")"
   in to_str e

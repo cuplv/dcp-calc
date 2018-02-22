@@ -99,8 +99,8 @@
 \newcommand{\Inj}[1]{\inj{#1}}
 
 \newcommand{\vPair}[2]{\Lparen{#1}\texttt{,}{#2}\Rparen}
-\newcommand{\vInj}[2]{\keyword{inj}_{#1}(#2)}
-\newcommand{\vThunk}[1]{\keyword{thunk}(#1)}
+\newcommand{\vInj}[2]{\keyword{inj}_{#1}\Lparen#2\Rparen}
+\newcommand{\vThunk}[1]{\keyword{thunk}\Lparen#1\Rparen}
 
 \newcommand{\eSplit}[4]{\keyword{split}\Lparen{#1}, {#2}.{#3}.{#4}\Rparen}
 \newcommand{\eCase}[5]{\keyword{case}\Lparen{#1}, {#2}.{#3}, {#4}.{#5}\Rparen}
@@ -229,38 +229,23 @@
 \newcommand{\LetBang}[3]{\keyword{let!}\Lparen{#1},{#2}.{#3}\Rparen}
 
 % Channel read and Channel write expressions
-\newcommand{\eRd}[1]{\textsf{rd}(#1)}
-\newcommand{\eWr}[2]{\textsf{wr}(#1<-#2)}
+\newcommand{\eRd}[1]{\keyword{rd}\Lparen#1\Rparen}
+\newcommand{\eWr}[2]{\keyword{wr}\Lparen#1<-#2\Rparen}
 \newcommand{\eNu}[2]{\nu#1.\,#2}
-
-% DEPRECATED: % DEPRECATED: % DEPRECATED:
-% Channel read and Channel write expressions
-\newcommand{\rdexp}[1]{\textsf{rd}\,#1}
-\newcommand{\wrexp}[2]{\textsf{wr}\,#1<-#2}
-\newcommand{\nuexp}[2]{\nu#1.\,#2}
 
 \newcommand{\xstoretype}{\textsf{has-store-type}}
 \newcommand{\storetype}{\;\xstoretype\;}
-\newcommand{\xisname}{\textsf{is-name}}
-\newcommand{\isname}{\;\xisname}
-
-\newcommand{\PreSt}[3]{{#1}\vdash^{#2}_{#3}}
 
 \newcommand{\xterminal}{\textsf{terminal}}
 \newcommand{\terminal}{\;\xterminal}
 
-\newcommand{\nscons}[2]{\left[\!\left[ #1~(#2) \right]\!\right]} % Namespace/Name cons operation
-% \newcommand{\nsEval}[3]{\vdash t\;p !! q}
-% use \nteval (infix) instead
-
-\newcommand{\emptygraph}{\varepsilon}
-\newcommand{\emptyctxt}{\varepsilon}
-
 \newcommand{\Config}[2]{\left<#1;#2\right>}
 
 \newcommand{\Chans}{\Sigma}
-\newcommand{\vChan}[1]{\texttt{chan}(#1)}
+\newcommand{\vChan}[1]{\texttt{chan}\Lparen#1\Rparen}
 \newcommand{\emptyChans}{\varepsilon}
+
+\newcommand{\emptyctxt}{\cdot}
 
 \newcommand{\Procs}{\pi}
 \newcommand{\proc}{e}

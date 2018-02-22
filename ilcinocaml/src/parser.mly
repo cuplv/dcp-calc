@@ -149,6 +149,49 @@ toplevel:
   | e = expr EOF
     { [Process e] }
 
+/* PATTERNS --- The LHS of a case arm. */
+
+/* TODO */
+/* pat: ... */
+  
+
+/* TODO */
+/* pat_commas: ... */
+
+/*
+pat_atom:
+  | x = NAME
+    { Name x }
+  | x = IMPNAME
+    { ImpName x }
+  | USCORE
+    { Wildcard }
+  | UNIT
+    { Unit }
+  | t = TAG
+    { Tag t }
+  | n = INT
+    { Int n }
+  | s = STRING
+    { String s }
+  | TRUE
+    { Bool true }
+  | FALSE
+    { Bool false }
+  | LBRACK RBRACK
+    { List [] }
+  | LBRACK p = pat_commas RBRACK
+    { List p }
+  | LBRACE RBRACE
+    { Set [] }
+  | LBRACE p = pat_commas RBRACE
+    { Set p }
+  | LPAREN p1 = pat_commas COMMA e2 = pat_commas RPAREN
+    { Tuple (p1::p2) }
+  | LPAREN p = pat RPAREN
+    { p }
+*/
+
 expr:
   | e = atom_expr
     { e }
@@ -182,6 +225,7 @@ expr:
     { IfT (b, e1) }
   | IF b = expr THEN e1 = expr ELSE e2 = expr
     { IfTE (b, e1, e2) }
+/* Matt says: "What's REQ?" */
   | REQ e1 = expr IN e2 = expr %prec IN_PREC
     { Req (e1, e2) }
   | e1 = expr SEMI e2 = expr
@@ -350,6 +394,7 @@ atom_list:
   | e1 = atom_expr e2 = atom_list
     { e1 :: e2 }
 
+/* Matt says: The LHS of a match should be a _pattern_, not an expression */
 branches:
   | PAR e1 = expr RARROW e2 = expr END
     { [(e1, e2)] }

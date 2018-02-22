@@ -1,8 +1,28 @@
 (* Do not need corrupt sender in static corruptions world *)
 (* f2p.R notation? *)
 
+type Pid
+p2f : Rd __
+a2f : Rd __
+f2p : Wr ((MsgTag, Pid, PiD, Msg), Pid)
+MsgTag = Sent | CorruptSender | ...
+
 nu { p2f, f2p, a2f } .
 let ("Send", S, R, sid, m) = rd p2f in
-    (wr[pub, delay] ("Sent", S, sid, m) -> f2p.R) &
+    (wr[pub, delay] (("Sent", S, sid, m), R) -> f2p) &
     (let ("Corrupt-sender", sid, m') = rd a2f in
-        wr ("Sent", S, sid, m') -> f2p.R)
+        wr (("Sent", S, sid, m'), R) -> f2p)
+
+
+wr[pub, delay] (("Sent", S, sid, m), R) -> f2p)
+===>
+
+wrPubDelay (thunk (("Sent", S, sid, m), R) -> f2p)
+===>
+
+  ( let _ = rd waitFromAdv ;
+    wr (("Sent", S, sid, m), R) -> f2p
+  )
+  |  wrToAdversary ()
+  
+

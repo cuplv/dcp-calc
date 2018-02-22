@@ -5,10 +5,10 @@ type name = string
 
 (* Types *)
 type ty = 
-  | TNat
-  | TBool
-  | TString of string
-  | TArrow of ty * ty
+  | TyInt
+  | TyBool
+  | TyString
+  | TyArrow of ty * ty
 
 type expr =
   (* Identifier, constants, values *)

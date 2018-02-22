@@ -90,6 +90,11 @@
 %token PRINT
 %token REV
 
+/* Types */
+%token TYINT
+%token TYBOOL
+%token TYSTRING
+
 /* Punctuation */
 %token DOT
 %token LPAREN
@@ -101,6 +106,7 @@
 %token COMMA
 %token SEMI
 %token USCORE
+%token COLON
 %token EOF
 
 /* Precedence and assoc */
@@ -160,10 +166,14 @@ expr:
     { List.fold_right curry_lambdas xs e }
   | LET xs = comma_list EQUAL e1 = comma_list IN e2 = expr %prec IN_PREC
     { List.fold_left fix_lets e2 (List.rev (List.combine xs e1)) }
+  | LET xs = var_ty_list EQUAL e1 = comma_list IN e2 = expr %prec IN_PREC
+    { List.fold_left fix_lets e2 (List.rev (List.combine xs e1)) }
   | LETREC x = NAME EQUAL e1 = expr IN e2 = expr %prec IN_PREC
     { LetRec (x, e1, e2) }
   | LET x = expr ASSIGN e = expr %prec ASSIGN_PREC
     { Assign (x, e) }
+  | LET x = expr COLON t = ty ASSIGN e = expr %prec ASSIGN_PREC
+    { Assign (x, e) }    
   | MATCH e1 = expr WITH e2 = expr IN e3 = expr %prec IN_PREC
     { Let (e2, e1, e3) }
   | MATCH e1 = expr WITH bs = branches
@@ -314,6 +324,12 @@ comma_list:
   | e1 = expr COMMA e2 = comma_list
     { e1 :: e2 }
 
+var_ty_list:
+  | e = expr COLON ty
+    { [e] }
+  | e1 = expr COLON ty COMMA e2 = var_ty_list
+    { e1 :: e2 }
+
 arg_list:
   | e = NAME
     { [Name e] }
@@ -339,3 +355,19 @@ branches:
     { [(e1, e2)] }
   | PAR e1 = expr RARROW e2 = expr bs = branches
     { (e1, e2) :: bs }
+
+atom_ty :
+  | TYINT
+    { TyInt }
+  | TYBOOL
+    { TyBool }
+  | TYSTRING
+    { TyString }
+  | LPAREN t = atom_ty RPAREN
+    { t }
+
+ty :
+  | t1 = atom_ty RARROW t2 = ty
+    { TyArrow (t1, t2) }
+  | t = atom_ty
+    { t }

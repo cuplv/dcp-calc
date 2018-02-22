@@ -13,10 +13,10 @@
     let x = !stringEnd in
     let buffer = !stringBuffer
   in
-    if x = String.length buffer then
+    if x = Bytes.length buffer then
       begin
         let newBuffer = Bytes.create (x*2) in
-        Bytes.blit_string buffer 0 newBuffer 0 x;
+        Bytes.blit_string (Bytes.to_string buffer) 0 newBuffer 0 x;
         Bytes.set newBuffer x ch;
         stringBuffer := newBuffer;
         stringEnd := x+1
@@ -27,7 +27,7 @@
         stringEnd := x+1
       end
   
-  let getStr () = String.sub (!stringBuffer) 0 (!stringEnd)
+  let getStr () = String.sub (Bytes.to_string !stringBuffer) 0 (!stringEnd)
 }
 
 rule token = parse
@@ -59,6 +59,9 @@ rule token = parse
   | "end"		      { END }
   | "()"		      { UNIT }
   | "print"		      { PRINT }
+  | "int"                     { TYINT }
+  | "bool"                    { TYBOOL }
+  | "string"                  { TYSTRING }
   
   (* Operators *)
   | "="                       { EQUAL }
@@ -113,6 +116,7 @@ rule token = parse
   | ","                       { COMMA }
   | ";"                       { SEMI }
   | "_"                       { USCORE }
+  | ":"                       { COLON }
   
   (* Identifier and constants *)
   | ['a'-'z' 'A'-'Z']

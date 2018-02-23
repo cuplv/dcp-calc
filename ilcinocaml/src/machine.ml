@@ -49,7 +49,7 @@ and instr =
   | IPopEnv
   | IThunk of frame
   | IForce
-  | ILet of expr
+  | ILet of pattern
   | IUnscope of name list
   | IStartP of int (* TODO: Fix process spawning *)
   | IEndP of int
@@ -80,7 +80,7 @@ and instr =
   | IRev
   | IStartM
   | IEndM
-  | IMatchCond of expr * frame
+  | IMatchCond of pattern * frame
 and frame = instr list
 and environ = (name * mvalue) list
 and stack = mvalue list
@@ -129,7 +129,8 @@ let rec string_of_instr = function
   | IPopEnv -> "IPopEnv"
   | IThunk e -> "IThunk" ^ List.fold_left (fun acc x -> acc ^ "," ^ string_of_instr x) "" e
   | IForce -> "IForce"
-  | ILet x -> sprintf "ILet(%s)" (string_of_expr x)
+  (*  | ILet x -> sprintf "ILet(%s)" (string_of_expr x)*)
+  | ILet x -> "ILet()"      
   | IUnscope xs -> sprintf "IUnscope(%s)" "" (* TODO: Print *)
   | IWr (v, x) -> sprintf "IWr(%s,%s)" (string_of_mvalue v) x
   | IRdBind (x1, x2) -> sprintf "IRdBind(%s,%s)" x1 x2 
@@ -160,7 +161,8 @@ let rec string_of_instr = function
   | IRev -> "IRev"
   | IStartM -> "IStartM"
   | IEndM -> "IEndM"
-  | IMatchCond (expr, frm) -> sprintf "IMatchCond(%s)" (string_of_frame frm)
+  (*  | IMatchCond (expr, frm) -> sprintf "IMatchCond(%s)" (string_of_frame frm)*)
+  | IMatchCond (pattern, frm) -> "IMatchCond()"
 and string_of_frame = function
   | [] -> "\n"
   | i::is -> string_of_instr i ^ "\n" ^ string_of_frame is
@@ -387,29 +389,31 @@ exception Pattern_match_fail
 let pattern_match p1 p2 =
   let rec compare mapping p1' p2' =
     match (p1', p2') with
-    | (Tuple x :: rest1, MTuple y :: rest2) ->
+    | (PatTuple x :: rest1, MTuple y :: rest2) ->
        (compare [] x y) @ compare mapping rest1 rest2
-    | (Tag x :: rest1, MTag y :: rest2) when x=y ->
+    | (PatTag x :: rest1, MTag y :: rest2) when x=y ->
        compare mapping rest1 rest2
-    | (Wildcard :: rest1, _ :: rest2) ->
+    | (PatWildcard :: rest1, _ :: rest2) ->
        compare mapping rest1 rest2
-    | (Name x :: rest1, y :: rest2) ->
+    | (PatName x :: rest1, y :: rest2) ->
        compare ((x, y) :: mapping) rest1 rest2
-    | (ImpName x :: rest1, y :: rest2) ->
+    | (PatImpName x :: rest1, y :: rest2) ->
        compare ((x, y) :: mapping) rest1 rest2
-    | (Int x :: rest1, MInt y :: rest2) when x=y ->
+    | (PatInt x :: rest1, MInt y :: rest2) when x=y ->
        compare mapping rest1 rest2
-    | (String x :: rest1, MString y :: rest2) when x=y ->
+    | (PatString x :: rest1, MString y :: rest2) when x=y ->
        compare mapping rest1 rest2
-    | (Bool x :: rest1, MBool y :: rest2) when x=y ->
+    | (PatBool x :: rest1, MBool y :: rest2) when x=y ->
        compare mapping rest1 rest2      
-    | (List [] :: rest1, MList [] :: rest2) ->
+    | (PatList [] :: rest1, MList [] :: rest2) ->
        compare mapping rest1 rest2
-    | (List [x] :: rest1, MList [y] :: rest2) ->
-       (compare [] [x] [y]) @ compare mapping rest1 rest2      
-    | (Cons (Name hd, Name tl) :: rest1, MList (hd'::tl') :: rest2) ->
+    | (PatList [x] :: rest1, MList [y] :: rest2) ->
+       (compare [] [x] [y]) @ compare mapping rest1 rest2
+    | (PatList xs :: rest1, MList ys :: rest2) ->
+       (compare [] xs ys) @ compare mapping rest1 rest2
+    | (PatCons (PatName hd, PatName tl) :: rest1, MList (hd'::tl') :: rest2) ->
        compare ([(hd, hd'); (tl, MList tl')] @ mapping) rest1 rest2
-    | (Cons (Name hd, tl) :: rest1, MList (hd'::tl') :: rest2) ->
+    | (PatCons (PatName hd, tl) :: rest1, MList (hd'::tl') :: rest2) ->
        (compare [] [tl] [MList tl']) @ compare mapping rest1 rest2
     | ([], []) -> mapping
     | _ -> raise Pattern_match_fail
@@ -468,7 +472,7 @@ let exec instr frms stck envs =
       | env :: _ ->
          let named =
            match frms with
-           | (ILet Name x :: _) :: _ -> x
+           | (ILet PatName x :: _) :: _ -> x
            | _ -> f
          in
          let rec c = MClosure (x, frm, (named, c) :: env)
@@ -574,8 +578,8 @@ let chan_alloc_check c envs =
 (* Execute instructions *)
 let run p = 
   let rec loop = function
-    | (pid, ([], [], e)) -> (pid, ([], [], e))
-    | (pid, ([], [v], e)) -> (pid, ([], [v], e))
+    | (pid, ([], [], e)) as s -> s
+    | (pid, ([], [v], e)) as s-> s
     | (pid, ((IRdBind (x1, x2) :: is) :: frms, stck, envs)) ->
        let (c, new_envs) = chan_alloc_check x2 envs in
        (pid, ((IRdBind (x1, c) :: is) :: frms, stck, new_envs))
@@ -594,12 +598,9 @@ let run p =
     | (pid, ((IWr (v, x) :: is) :: frms, stck, envs)) ->
        let (c, new_envs) = chan_alloc_check x envs in
        (pid, ((IWr (v, c) :: is) :: frms, stck, new_envs))              
-    | (pid, ([ISpawn] :: frms, stck, envs)) ->
-       (pid, ([ISpawn] :: frms, stck, envs))
-    | (pid, ((IHole n :: is) :: frms, stck, envs)) ->
-       (pid, ((IHole n :: is) :: frms, stck, envs))
-    | (pid, ((IBlock i :: is) :: frms, stck, envs)) ->
-       (pid, ((IBlock i :: is) :: frms, stck, envs))
+    | (pid, ([ISpawn] :: frms, stck, envs)) as s -> s
+    | (pid, ((IHole n :: is) :: frms, stck, envs)) as s -> s
+    | (pid, ((IBlock i :: is) :: frms, stck, envs)) as s -> s
     | (pid, ((i :: is) :: frms, stck, envs)) ->
        loop (pid, (exec i (is :: frms) stck envs))
     | (pid, ([] :: frms, stck, envs)) -> loop (pid, (frms, stck, envs))

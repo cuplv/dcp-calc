@@ -30,16 +30,18 @@ let force_thunks x = List.fold_left (fun acc instr ->
 (* Get variables in pattern *)                 
 let get_vars p =
   let rec aux acc = function
-    | Tuple xs :: rest ->
+    | PatTuple xs :: rest ->
        (aux [] xs) @ aux acc rest
-    | Name x :: rest -> aux (x :: acc) rest
-    | ImpName x :: rest -> aux (x :: acc) rest
-    | Tag _ :: rest -> aux acc rest
-    | Wildcard :: rest -> aux acc rest
-    | Cons (Name hd, Name tl) :: rest -> aux ([hd; tl] @ acc) rest
-    | Cons (Name hd, tl) :: rest -> (aux [] [tl]) @ aux (hd :: acc) rest
+    | PatName x :: rest -> aux (x :: acc) rest
+    | PatImpName x :: rest -> aux (x :: acc) rest
+    | PatTag _ :: rest -> aux acc rest
+    | PatWildcard :: rest -> aux acc rest
+    | PatCons (PatName hd, PatName tl) :: rest -> aux ([hd; tl] @ acc) rest
+    | PatCons (PatName hd, tl) :: rest -> (aux [] [tl]) @ aux (hd :: acc) rest
+    | PatList xs :: rest ->
+       (aux [] xs) @ aux acc rest
+    | _ :: rest -> aux acc rest
     | [] -> acc
-    | _ -> error ("unexpected pattern" ^ (string_of_expr (List.hd p)))
   in
   aux [] p
 
@@ -79,15 +81,15 @@ let rec compile = function
   | Neq (e1, e2) -> (compile e1) @ (compile e2) @ [INeq]
   
   (* Let *)
-  (*  | Let (x, e1, e2) -> (compile e1) @ [ILet x] @ (compile e2) @ [IUnscope (get_vars [x])]*)
+  | Let (x, e1, e2) -> (compile e1) @ [ILet x] @ (compile e2) @ [IUnscope (get_vars [x])]
   | LetRec (x, e1, e2) ->
       [IThunk (force_thunks x (compile e1))] @
-      [ILet (Name x)] @ (force_thunks x (compile e2))
-  (*  | Assign(x, e) -> (compile e) @ [ILet x]*)
-(*  | Match (e, es) ->
+      [ILet (PatName x)] @ (force_thunks x (compile e2))
+  | Assign(x, e) -> (compile e) @ [ILet x]
+  | Match (e, es) ->
      let f acc = function
        | (p, expr) -> [IMatchCond (p, compile expr)] @ acc in
-     [IStartM] @ (compile e) @ List.fold_left f [] (List.rev es) @ [IEndM]*)
+     [IStartM] @ (compile e) @ List.fold_left f [] (List.rev es) @ [IEndM]
 
   (* Conditionals *)
   | IfTE (e1, e2, e3) ->
@@ -144,5 +146,4 @@ let rec compile = function
   | Union (e1, e2) -> (compile e1) @ (compile e2) @[IUnion]
   | Print e -> (compile e) @ [IPrint]
   | Rev e -> (compile e) @ [IRev]
-  | _ -> raise Compilation_error
 and compile_list es = List.fold_left (fun acc e -> acc @ (compile e)) [] es

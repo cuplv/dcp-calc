@@ -53,12 +53,12 @@ let can_comm = function
 (* TODO: equality for closures *)
 let update_state comm = function
   (* Rd w/ bind *)
-  | (pid, ((IRdBind (x1,x2) :: is) :: frms, stck, env :: envs)) ->
+  | (pid, ((IRdBind (x1,x2) :: is) :: frms, stck, env :: envs)) as s->
      (match comm with
       | ((pid1, IWr (v, x)), (pid2, IRdBind (x1', x2')))
            when (pid=pid2 && x1=x1' && x2=x2') ->
          [(pid, (is :: frms, stck, ((x1,v) :: env) :: envs))]
-      | _ -> [(pid, ((IRdBind (x1,x2) :: is) :: frms, stck, env :: envs))])
+      | _ -> [s])
   | (pid, ((IChoice (cpid, cid, (IRdBind (x1,x2))) :: is) :: frms, stck, env :: envs)) ->
      (match comm with
       | ((pid1, IWr (v, x)), (pid2, IChoice(cpid', cid', IRdBind (x1', x2'))))
@@ -68,12 +68,12 @@ let update_state comm = function
          [(pid, ((IBlock(IRdBind (x1', x2')) :: is) :: frms, stck, env :: envs))]
       | _ -> [(pid, ((IRdBind (x1,x2) :: is) :: frms, stck, env :: envs))])
   (* Rd w/o bind *)
-  | (pid, ((IRd x1 :: is) :: frms, stck, envs)) ->
+  | (pid, ((IRd x1 :: is) :: frms, stck, envs)) as s ->
      (match comm with
       | ((pid1, IWr (v, x)), (pid2, IRd x1'))
            when (pid=pid2 && x1=x1') ->
          [(pid, (is :: frms, v :: stck, envs))]
-      | _ -> [(pid, ((IRd x1 :: is) :: frms, stck, envs))])
+      | _ -> [s])
   | (pid, ((IChoice (cpid, cid, (IRd x1)) :: is) :: frms, stck, envs)) ->
      (match comm with
       | ((pid1, IWr (v, x)), (pid2, IChoice(cpid', cid', IRd x1')))
@@ -83,21 +83,21 @@ let update_state comm = function
          [(pid, ((IBlock(IRd x1') :: is) :: frms, stck, envs))]
       | _ -> [(pid, ((IRd x1 :: is) :: frms, stck, envs))])
   (* Wr *)
-  | (pid, ((IWr (MClosure (n, f, e),x) :: is) :: frms, stck, envs)) ->
+  | (pid, ((IWr (MClosure (n, f, e),x) :: is) :: frms, stck, envs)) as s ->
      (match comm with
       | ((pid', IWr (MClosure (n',f',e'), x')), _)
            when (pid=pid' && n=n' && x=x') ->
          [(pid, (is :: frms, stck, envs))]
-      | _ -> [(pid, ((IWr (MClosure (n,f,e),x) :: is) :: frms, stck, envs))])
-  | (pid, ((IWr (v,x) :: is) :: frms, stck, envs)) ->
+      | _ -> [s])
+  | (pid, ((IWr (v,x) :: is) :: frms, stck, envs)) as s ->
      (match comm with
       | ((pid', IWr (MClosure _, x')), _) ->
          [(pid, ((IWr (v,x) :: is) :: frms, stck, envs))]
       | ((pid', IWr (v', x')), _)
            when (pid=pid' && v=v' && x=x') ->
          [(pid, (is :: frms, stck, envs))]
-      | _ -> [(pid, ((IWr (v,x) :: is) :: frms, stck, envs))])
-  | (p, state) -> [(p, state)]
+      | _ -> [s])
+  | (p, state) as s -> [s]
 
 let run_comm ps =
   let open List in

@@ -34,8 +34,6 @@ let get_vars p =
        (aux [] xs) @ aux acc rest
     | PatName x :: rest -> aux (x :: acc) rest
     | PatImpName x :: rest -> aux (x :: acc) rest
-    | PatTag _ :: rest -> aux acc rest
-    | PatWildcard :: rest -> aux acc rest
     | PatCons (PatName hd, PatName tl) :: rest -> aux ([hd; tl] @ acc) rest
     | PatCons (PatName hd, tl) :: rest -> (aux [] [tl]) @ aux (hd :: acc) rest
     | PatList xs :: rest ->

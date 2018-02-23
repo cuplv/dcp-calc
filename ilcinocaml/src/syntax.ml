@@ -119,6 +119,22 @@ let str_of_list f es =
   in
   to_str "" es
 
+let str_of_pattern p =
+  let rec to_str = function
+    | PatName x -> "PatName(" ^ x ^ ")"
+    | PatImpName x -> "PatImpName(" ^ x ^ ")"
+    | PatTag s -> "PatTag(" ^ s ^ ")"
+    | PatInt n -> "PatInt(" ^ (string_of_int n) ^ ")"
+    | PatBool b -> "PatBool(" ^ (string_of_bool b) ^ ")"
+    | PatString s -> "PatString(" ^ s ^ ")"
+    | PatList l -> "PatList(" ^ str_of_list to_str l ^ ")"
+    | PatUnit -> "PatUnit"
+    | PatWildcard -> "PatWildcard"
+    | PatTuple ps -> "PatTuple(" ^ str_of_list to_str ps ^ ")"
+    | PatCons (hd, tl)-> "PatCons(" ^ to_str hd ^ "," ^ to_str tl
+                         ^ ")"
+  in to_str p
+
 let string_of_expr e =
   let rec to_str e = 
     match e with
@@ -205,17 +221,4 @@ let string_of_expr e =
     | Rev e -> "Rev(" ^ to_str e ^ ")"
   and str_of_match_pair = function
     | (e1, e2) -> "Alt(" ^ str_of_pattern e1 ^ "," ^ to_str e2 ^ ")"
-  and str_of_pattern = function
-    | PatName x -> "PatName(" ^ x ^ ")"
-    | PatImpName x -> "PatImpName(" ^ x ^ ")"
-    | PatTag s -> "PatTag(" ^ s ^ ")"
-    | PatInt n -> "PatInt(" ^ (string_of_int n) ^ ")"
-    | PatBool b -> "PatBool(" ^ (string_of_bool b) ^ ")"
-    | PatString s -> "PatString(" ^ s ^ ")"
-    | PatList l -> "PatList(" ^ str_of_list str_of_pattern l ^ ")"
-    | PatUnit -> "PatUnit"
-    | PatWildcard -> "PatWildcard"
-    | PatTuple ps -> "PatTuple(" ^ str_of_list str_of_pattern ps ^ ")"
-    | PatCons (hd, tl)-> "PatCons(" ^ str_of_pattern hd ^ "," ^ str_of_pattern tl
-    ^ ")"
   in to_str e

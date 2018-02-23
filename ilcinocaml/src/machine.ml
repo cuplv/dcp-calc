@@ -129,8 +129,7 @@ let rec string_of_instr = function
   | IPopEnv -> "IPopEnv"
   | IThunk e -> "IThunk" ^ List.fold_left (fun acc x -> acc ^ "," ^ string_of_instr x) "" e
   | IForce -> "IForce"
-  (*  | ILet x -> sprintf "ILet(%s)" (string_of_expr x)*)
-  | ILet x -> "ILet()"      
+  | ILet p -> sprintf "ILet(%s)" (str_of_pattern p)
   | IUnscope xs -> sprintf "IUnscope(%s)" "" (* TODO: Print *)
   | IWr (v, x) -> sprintf "IWr(%s,%s)" (string_of_mvalue v) x
   | IRdBind (x1, x2) -> sprintf "IRdBind(%s,%s)" x1 x2 
@@ -161,8 +160,7 @@ let rec string_of_instr = function
   | IRev -> "IRev"
   | IStartM -> "IStartM"
   | IEndM -> "IEndM"
-  (*  | IMatchCond (expr, frm) -> sprintf "IMatchCond(%s)" (string_of_frame frm)*)
-  | IMatchCond (pattern, frm) -> "IMatchCond()"
+  | IMatchCond (pat, frm) -> sprintf "IMatchCond(%s)" (string_of_frame frm)
 and string_of_frame = function
   | [] -> "\n"
   | i::is -> string_of_instr i ^ "\n" ^ string_of_frame is

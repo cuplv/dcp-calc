@@ -12,4 +12,4 @@ let F_ke = lam (), ?f2p, ?p2f .
 in
   nu f2p, p2f .
   let ?f2p, ?p2f = f2p, p2f in
-    F_ke () | 0
+    F_ke () .|. 0

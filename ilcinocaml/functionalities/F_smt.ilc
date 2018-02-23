@@ -1,7 +1,7 @@
 (* TODO: Parameterize functionality
  * Public delay not implemented *)
 
-let F_smt = lam (), ?f2p, ?p2f, ?f2a, ?a2f .
+let F_smt = lam () .
   let ('Send, S, R, sid, m) = rd ?p2f in
     wr (('Sent, S, R, sid, m), R) -> ?f2p ;
     let ('Corrupt, sid, P) = rd ?a2f in

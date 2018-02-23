@@ -1,6 +1,6 @@
 (* TODO: Find detailed functionality *)
 
-let F_ke = lam (), ?f2p, ?p2f .
+let F_ke = lam () .
   let (KE, B) = rd ?p2f in
   let k = rand () in
     wr ((A, B), "S") -> ?f2p ;

@@ -1,4 +1,4 @@
-let F_crs = lam (), ?f2p, ?p2f .
+let F_crs = lam () .
   let (pid, sid) = rd ?p2f in
   let d = rand () in
     wr (pid, d) -> ?f2p ;

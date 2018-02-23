@@ -1,7 +1,7 @@
 (* Performs two sequential (simultaneous) writes
  * but this shouldn't type check *)
 
-let F_com = lam (), ?f2p, ?p2f .
+let F_com = lam () .
   let ('Commit, sid, P_i, P_j, b) = rd ?p2f in
     req mem b {0,1} in
     wr (('Receipt, sid, P_i, P_j), {P_j, "S"}) -> ?f2p ;

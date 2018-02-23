@@ -1,4 +1,4 @@
-let F_zk = lam A, R, S, ?f2p, ?p2f .
+let F_zk = lam A, R, S .
   let ('Prove, x, w, B) = rd ?p2f in
     wr ((A, B, x, R x w), S) -> ?f2p ;
     let 'ok = rd ?p2f in
@@ -9,7 +9,7 @@ in
     let A = 10 in
     let R = lam x, w . true in
     let S = 1 in
-      F_zk A R S | wr ('Prove, 1, 1, 11) -> p2f ;
+      F_zk A R S .|. wr ('Prove, 1, 1, 11) -> p2f ;
                  let _ = rd f2p in
 		 wr 'ok -> p2f ;
 		 let (('Verified, _, _, r), _) = rd f2p

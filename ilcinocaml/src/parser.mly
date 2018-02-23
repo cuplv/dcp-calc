@@ -9,7 +9,6 @@
 
   let curry_lambdas x acc =
     match x with
-    | ImpName x -> acc
     | x -> Lam (x, acc)
 
   let curry acc e = App(acc, e)
@@ -366,14 +365,10 @@ expr_list:
 arg_list:
   | e = NAME
     { [Name e] }
-  | e = IMPNAME
-    { [ImpName e] }
   | UNIT
     { [Unit] }
   | e1 = NAME COMMA e2 = arg_list
     { Name e1 :: e2 }
-  | e1 = IMPNAME COMMA e2 = arg_list
-    { ImpName e1 :: e2 }
   | UNIT COMMA e2 = arg_list
     { Unit :: e2 }
 

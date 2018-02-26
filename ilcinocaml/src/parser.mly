@@ -150,8 +150,6 @@ toplevel:
   | e = expr EOF
     { [Process e] }
 
-/* PATTERNS --- The LHS of a case arm. */
-
 pat_list:
   | p = pat_atom
     { [p] }
@@ -181,8 +179,8 @@ pat_atom:
     { PatList [] }
   | LBRACK p = pat_list RBRACK
     { PatList p }
-/*  | p1 = pat CONS p2 = pat
-    { PatCons (p1, p2) }*/
+  | p1 = pat_atom CONS p2 = pat_atom
+    { PatCons (p1, p2) }
   | LPAREN p1 = pat_atom COMMA p2 = pat_list RPAREN
     { PatTuple (p1::p2) }
   | LPAREN p = pat_atom RPAREN
@@ -221,7 +219,6 @@ expr:
     { IfT (b, e1) }
   | IF b = expr THEN e1 = expr ELSE e2 = expr
     { IfTE (b, e1, e2) }
-/* Matt says: "What's REQ?" */
   | REQ e1 = expr IN e2 = expr %prec IN_PREC
     { Req (e1, e2) }
   | e1 = expr SEMI e2 = expr
@@ -378,7 +375,6 @@ atom_list:
   | e1 = atom_expr e2 = atom_list
     { e1 :: e2 }
 
-/* Matt says: The LHS of a match should be a _pattern_, not an expression */
 branches:
   | PIPE p = pat_atom RRARROW e = expr END
     { [(p,e)] }

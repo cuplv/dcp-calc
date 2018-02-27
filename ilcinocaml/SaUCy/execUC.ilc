@@ -1,0 +1,35 @@
+(* SID :: (string, string) *)
+(* Crupt :: [pid] *)
+let execUC = lam e, p, f, a .
+  nu z2p, p2z,
+     z2f, f2z,
+     z2a, a2z,
+     p2f, f2p,
+     p2a, a2p,
+     a2f, f2a,
+     z2exec . (
+       (* e chooses sid, corrupted parties *)
+       (* partyMap :: [(pid, chan)] ref *)
+       let partyMap := [] ;
+       let newParty = lam pid .
+         nu f2pp, z2pp .
+           (* TODO: Implement record types *)
+           partyMap := (pid, [("f2p", f2pp), ("z2p", z2pp)]) :: partyMap ;
+       in
+       let getParty = lam pid .
+         if (not (mem b partyMap)) then newParty pid ;
+         lookup pid partyMap
+       in (  let (pid, m) = rd z2p in
+               if (mem pid crupt) then wr (pid, m) -> p2a
+               (* Yeah, need record types *)
+               else wr m -> (getParty pid).z2p
+         .|. let (pid, m) = rd f2p in
+               if (mem pid crupt) then wr (pid, m) -> p2a
+               else wr m -> (getParty pid).f2p
+         .|. let (pid, m) <- a2p
+               if (mem pid crupt) then (pid, m) -> p2f
+         .|. let (pid, m) <- a2fp
+               if (mem pid crupt) then (pid, m) -> p2z
+       )
+     )
+in 0

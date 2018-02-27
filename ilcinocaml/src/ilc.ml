@@ -59,7 +59,8 @@ let parse_file parser filename =
       results
     with
     | Support.Error err -> close_in fh ; raise (Support.Error err)
-    | _ -> Support.syntax_error ~loc:(Support.location_of_lex lex) "general confusion"
+    | _ -> Support.syntax_error
+             ~loc:(Support.location_of_lex lex) "general confusion"
 
   with
     Sys_error msg -> Support.fatal_error "%s" msg

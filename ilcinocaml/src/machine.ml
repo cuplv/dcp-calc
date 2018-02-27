@@ -45,7 +45,7 @@ and instr =
   | ICond of frame
   | IReq
   | ICall
-  | INu of name list
+  | INu of name
   | IPopEnv
   | IThunk of frame
   | IForce
@@ -125,12 +125,12 @@ let rec string_of_instr = function
   | ICond _ -> "ICond"
   | IReq -> "IReq"
   | ICall -> "ICall" 
-  | INu _ -> "INu" (* TODO: Print *)
+  | INu c -> "INu(" ^ c ^ ")"
   | IPopEnv -> "IPopEnv"
   | IThunk e -> "IThunk" ^ List.fold_left (fun acc x -> acc ^ "," ^ string_of_instr x) "" e
   | IForce -> "IForce"
   | ILet p -> sprintf "ILet(%s)" (str_of_pattern p)
-  | IUnscope xs -> sprintf "IUnscope(%s)" "" (* TODO: Print *)
+  | IUnscope xs -> sprintf "IUnscope(%s)" (string_of_list (fun x -> x) xs)
   | IWr (v, x) -> sprintf "IWr(%s,%s)" (string_of_mvalue v) x
   | IRdBind (x1, x2) -> sprintf "IRdBind(%s,%s)" x1 x2 
   | IRd x -> sprintf "IRd(%s)" x
@@ -433,6 +433,10 @@ let unscope_vars env xs =
   let unscope_var acc x = List.remove_assoc x acc in
   List.fold_left unscope_var env xs
 
+let chan_counter = ref 0
+
+let new_chan c = incr chan_counter; MChan (c ^ (string_of_int !chan_counter))
+                        
 let exec instr frms stck envs = 
   match instr with
   | IAdd -> (frms, add stck, envs)
@@ -490,12 +494,10 @@ let exec instr frms stck envs =
          let new_env = unscope_vars env xs in
          (frms, stck, new_env :: env_tail)
       | [] -> error "no environment to unscope")
-  | INu xs ->
+  | INu c ->
      (match envs with
       | env :: env_tail ->
-         let new_mapping =
-           List.fold_left (fun acc x -> (x, MChan x) :: acc) [] (List.rev xs) in
-         (frms, stck, (new_mapping @ env) :: env_tail)
+         (frms, stck, ((c, new_chan c) :: env) :: env_tail)
       | [] -> error "no environment for variable")
   | IBranch (f1, f2) ->
      let (b, stck') = pop_bool stck in

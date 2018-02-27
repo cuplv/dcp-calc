@@ -11,6 +11,11 @@
     match x with
     | x -> Lam (x, acc)
 
+  let curry_nus x acc =
+    match x with
+    | Name x -> Nu (x, acc)
+    | _ -> raise Parsing_error
+
   let curry acc e = App(acc, e)
 
   let desugar_let acc map =
@@ -341,8 +346,7 @@ comm_expr:
   | RD c = IMPNAME
     { Rd c }*/
   | NU xs = arg_list DOT e = expr %prec NU_PREC
-    { let names = List.map get_names xs in
-      Nu (names, e) }
+    { List.fold_right curry_nus xs e }  
 
 proc_expr:
   | e1 = expr PAR e2 = expr

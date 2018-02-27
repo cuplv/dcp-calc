@@ -41,7 +41,7 @@ let get_vars p =
     | _ :: rest -> aux acc rest
     | [] -> acc
   in
-  aux [] p
+  aux [] [p]
 
 
 let rec compile = function
@@ -79,7 +79,7 @@ let rec compile = function
   | Neq (e1, e2) -> (compile e1) @ (compile e2) @ [INeq]
   
   (* Let *)
-  | Let (x, e1, e2) -> (compile e1) @ [ILet x] @ (compile e2) @ [IUnscope (get_vars [x])]
+  | Let (x, e1, e2) -> (compile e1) @ [ILet x] @ (compile e2) @ [IUnscope (get_vars x)]
   | LetRec (x, e1, e2) ->
       [IThunk (force_thunks x (compile e1))] @
       [ILet (PatName x)] @ (force_thunks x (compile e2))
@@ -111,7 +111,7 @@ let rec compile = function
   | RdBind (x1, x2) -> [IRdBind (x1, x2)]*)
   | Wr (e1, e2) -> (compile e1) @ (compile e2) @ [IWr (MHole, "")]
   | Rd x -> (compile x) @ [IRd ""]
-  | Nu (xs, e) -> [INu xs] @ (compile e) @ [IUnscope xs]
+  | Nu (xs, e) -> [INu xs] @ (compile e) @ [IUnscope [xs]]
   | ParComp (e1, e2) ->
       let pid = !pid_counter in
       pid_counter := pid + 2; [IStartP pid] @

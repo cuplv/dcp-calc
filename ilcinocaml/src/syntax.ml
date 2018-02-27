@@ -73,9 +73,9 @@ type expr =
   | App of expr * expr
   
   (* Pi *)
-  | Wr of expr * name
-  | Rd of name
-  | RdBind of name * name
+  | Wr of expr * expr
+  | Rd of expr
+  | RdBind of name * expr
   | Nu of name list * expr
   | ParComp of expr * expr
   | ParLeft of expr * expr
@@ -193,9 +193,9 @@ let string_of_expr e =
     | App (e1, e2) -> "App(" ^ to_str e1 ^ "," ^ to_str e2 ^ ")"
 
     (* Pi *)
-    | Wr (e, x) -> "Wr(" ^ to_str e ^ "," ^ name_to_str x ^ ")"
-    | Rd x -> "Rd(" ^ name_to_str x ^ ")"
-    | RdBind (x1, x2) -> "RdBind(" ^ name_to_str x1 ^ "," ^ name_to_str x2 ^ ")"
+    | Wr (e, x) -> "Wr(" ^ to_str e ^ "," ^ to_str x ^ ")"
+    | Rd x -> "Rd(" ^ to_str x ^ ")"
+    | RdBind (x1, x2) -> "RdBind(" ^ name_to_str x1 ^ "," ^ to_str x2 ^ ")"
     | Nu (x, e) -> "Nu(" ^ str_of_list name_to_str x ^ "," ^ to_str e ^ ")"
     | ParComp (e1, e2) -> "ParComp(" ^ to_str e1 ^ "," ^ to_str e2 ^ ")"
     | ParLeft (e1, e2) -> "ParLeft(" ^ to_str e1 ^ "," ^ to_str e2 ^ ")"

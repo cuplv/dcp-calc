@@ -257,6 +257,8 @@ atom_expr:
     { Rand }
   | LPAREN e = expr RPAREN
     { e }
+  | l = atom_expr DOT key = atom_expr 
+    { Lookup (key, l) }    
     
 arith_expr:
   | e1 = expr PLUS e2 = expr
@@ -311,6 +313,7 @@ app_expr:
     { Concat (e1, e2) }
   | LOOKUP e1 = atom_expr e2 = atom_expr
     { Lookup (e1, e2) }
+
   | LENGTH e = expr
     { Length e }
   | MEM e1 = atom_expr e2 = atom_expr
@@ -323,18 +326,20 @@ app_expr:
     { Rev e }
 
 comm_expr:
-  | WR e = expr RARROW c = NAME
+  | WR e = expr RARROW c = atom_expr
     { Wr (e, c) }
-  | WR e = expr RARROW c = IMPNAME
-    { Wr (e, c) }
-  | RD x = NAME LARROW c = NAME
+/*  | WR e = expr RARROW c = atom_expr
+    { Wr (e, c) }*/
+  | RD x = NAME LARROW c = atom_expr
     { RdBind (x, c) }
-  | RD x = NAME LARROW c = IMPNAME
-    { RdBind (x, c) }
-  | RD c = NAME
+/*  | RD x = NAME LARROW c = IMPNAME
+    { RdBind (x, c) }*/
+  | RD c = atom_expr
+    { Rd c }
+/*  | RD c = NAME
     { Rd c }
   | RD c = IMPNAME
-    { Rd c }
+    { Rd c }*/
   | NU xs = arg_list DOT e = expr %prec NU_PREC
     { let names = List.map get_names xs in
       Nu (names, e) }

@@ -106,9 +106,9 @@ let rec compile = function
   | App (e1, e2) -> (compile e1) @ (compile e2) @ [ICall]
   
   (* Pi *)
-  | Wr (e, x) -> (compile e) @ [IWr (MHole, x)]
+(*  | Wr (e, x) -> (compile e) @ [IWr (MHole, x)]
   | Rd x -> [IRd x]
-  | RdBind (x1, x2) -> [IRdBind (x1, x2)]
+  | RdBind (x1, x2) -> [IRdBind (x1, x2)]*)
   | Nu (xs, e) -> [INu xs] @ (compile e) @ [IUnscope xs]
   | ParComp (e1, e2) ->
       let pid = !pid_counter in
@@ -144,4 +144,5 @@ let rec compile = function
   | Union (e1, e2) -> (compile e1) @ (compile e2) @[IUnion]
   | Print e -> (compile e) @ [IPrint]
   | Rev e -> (compile e) @ [IRev]
+  | _ -> raise Compilation_error
 and compile_list es = List.fold_left (fun acc e -> acc @ (compile e)) [] es

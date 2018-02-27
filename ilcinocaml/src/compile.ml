@@ -109,6 +109,8 @@ let rec compile = function
 (*  | Wr (e, x) -> (compile e) @ [IWr (MHole, x)]
   | Rd x -> [IRd x]
   | RdBind (x1, x2) -> [IRdBind (x1, x2)]*)
+  | Wr (e1, e2) -> (compile e1) @ (compile e2) @ [IWr (MHole, "")]
+  | Rd x -> (compile x) @ [IRd ""]
   | Nu (xs, e) -> [INu xs] @ (compile e) @ [IUnscope xs]
   | ParComp (e1, e2) ->
       let pid = !pid_counter in

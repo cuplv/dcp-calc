@@ -563,39 +563,27 @@ let exec instr frms stck envs =
       | _ -> error "Pattern matching failed")
   | _ -> error ("illegal instruction")
 
-let chan_alloc_check c envs =
-  match envs with
-  | envs_hd :: envs_tl when List.mem_assoc c envs_hd -> (c, envs)
-  | envs_hd :: envs_tl when String.get c 0 == '?' ->
-       (match imp_lookup c envs with
-        | MChan c' -> (c', ((c', MChan c') :: envs_hd) :: envs_tl)
-        | _ -> error ("channel not allocated: " ^ c))
-  | [] -> error "no environment"
-  | _ -> error ("channel not allocated: " ^ c)
-
 (* Execute instructions *)
 let run p = 
   let rec loop = function
     | (pid, ([], [], e)) as s -> s
     | (pid, ([], [v], e)) as s-> s
-    | (pid, ((IRdBind (x1, x2) :: is) :: frms, stck, envs)) ->
-       let (c, new_envs) = chan_alloc_check x2 envs in
-       (pid, ((IRdBind (x1, c) :: is) :: frms, stck, new_envs))
-    | (pid, ((IChoice (pid', cid,  (IRdBind (x1, x2))) :: is) :: frms, stck, envs)) ->
-       let (c, new_envs) = chan_alloc_check x2 envs in
-       (pid, ((IChoice (pid', cid, (IRdBind (x1, c))) :: is) :: frms, stck, new_envs))       
-    | (pid, ((IRd x :: is) :: frms, stck, envs)) ->
-       let (c, new_envs) = chan_alloc_check x envs in
-       (pid, ((IRd c :: is) :: frms, stck, new_envs))
-    | (pid, ((IChoice (pid', cid, (IRd x)) :: is) :: frms, stck, envs)) ->
-       let (c, new_envs) = chan_alloc_check x envs in
-       (pid, ((IChoice (pid', cid, (IRd c)) :: is) :: frms, stck, new_envs))
-    | (pid, ((IWr (MHole, x) :: is) :: frms, v :: stck, envs)) ->
-       let (c, new_envs) = chan_alloc_check x envs in
-       (pid, ((IWr (v, c) :: is) :: frms, stck, new_envs))              
-    | (pid, ((IWr (v, x) :: is) :: frms, stck, envs)) ->
-       let (c, new_envs) = chan_alloc_check x envs in
-       (pid, ((IWr (v, c) :: is) :: frms, stck, new_envs))              
+    | (pid, ((IRdBind (x1, x2) :: is) :: frms, stck, envs)) as s -> s
+    | (pid, ((IChoice (pid', cid,  (IRdBind (x1, x2))) :: is) :: frms, stck,
+             envs)) as s -> s
+    | (pid, ((IRd "" :: is) :: frms, stck, envs)) ->
+       (match stck with
+        | MChan c :: stck' ->
+           (pid, ((IRd c :: is) :: frms, stck', envs))
+        | _ -> error "rd lol")
+    | (pid, ((IRd x :: is) :: frms, stck, envs)) as s -> s
+    | (pid, ((IChoice (pid', cid, (IRd x)) :: is) :: frms, stck, envs)) as s -> s
+    | (pid, ((IWr (MHole, "") :: is) :: frms, stck, envs)) ->
+       (match stck with
+        | MChan c :: v :: stck' ->
+           (pid, ((IWr (v, c) :: is) :: frms, stck', envs))
+        | _ -> error "wr lol")
+    | (pid, ((IWr (v, x) :: is) :: frms, stck, envs)) as s -> s
     | (pid, ([ISpawn] :: frms, stck, envs)) as s -> s
     | (pid, ((IHole n :: is) :: frms, stck, envs)) as s -> s
     | (pid, ((IBlock i :: is) :: frms, stck, envs)) as s -> s

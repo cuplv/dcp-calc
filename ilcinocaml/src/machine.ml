@@ -129,7 +129,7 @@ let rec string_of_instr = function
   | IPopEnv -> "IPopEnv"
   | IThunk e -> "IThunk" ^ List.fold_left (fun acc x -> acc ^ "," ^ string_of_instr x) "" e
   | IForce -> "IForce"
-  | ILet p -> sprintf "ILet(%s)" (str_of_pattern p)
+  | ILet p -> sprintf "ILet(%s)" ""
   | IUnscope xs -> sprintf "IUnscope(%s)" (string_of_list (fun x -> x) xs)
   | IWr (v, x) -> sprintf "IWr(%s,%s)" (string_of_mvalue v) x
   | IRdBind (x1, x2) -> sprintf "IRdBind(%s,%s)" x1 x2 
@@ -552,7 +552,7 @@ let exec instr frms stck envs =
   | IPrint -> (frms, print stck, envs)
   | IRev -> (frms, rev stck, envs)
   | IStartM -> (frms, stck, envs)
-  | IEndM -> error ("reached IEndM")
+  | IEndM -> error "reached IEndM: Pattern matching failed"
   | IMatchCond (p, new_frm) ->
      (match (frms, envs) with
       | (frm :: frm_tail, env :: env_tail) ->

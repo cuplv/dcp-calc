@@ -1,6 +1,8 @@
 (* -------------------------------------------------------------------------- *)
 (* Abstract syntax tree *)
 
+open Format
+   
 type name = string
 
 (* Types *)
@@ -106,119 +108,109 @@ type process =
 (* -------------------------------------------------------------------------- *)
 (* Printing *)
 
-let name_to_str = function
-  | x -> "Name(" ^ x ^ ")"
-let impname_to_str = function
-  | x -> "ImpName(" ^ x ^ ")"
+let rec pr_expr ppf = function
+  | Name s -> fprintf ppf "%s(%s)" "Name" s
+  | ImpName s -> fprintf ppf "%s(%s)" "ImpName" s
+  | Tag s -> fprintf ppf "%s(%s)" "Tag" s
+  | Int n -> fprintf ppf "%s(%d)" "Int" n
+  | Bool b -> fprintf ppf "%s(%b)" "Bool" b
+  | String s -> fprintf ppf "%s(\"%s\")" "String" s
+  | List es -> fprintf ppf "@[<2>%s(%a)@]" "List" pr_list es
+  | Set es -> fprintf ppf "@[<2>%s(%a)@]" "Set" pr_list es
+  | Tuple es -> fprintf ppf "@[<2>%s(%a)@]" "Tuple" pr_list es
+  | Wildcard -> fprintf ppf "Wildcard"
+  | Unit -> fprintf ppf "Unit"
+  | Plus (e1, e2) -> pr_binop ppf "Plus" e1 e2
+  | Minus (e1, e2) -> pr_binop ppf "Minus" e1 e2
+  | Times (e1, e2) -> pr_binop ppf "Times" e1 e2
+  | Divide (e1, e2) -> pr_binop ppf "Divide" e1 e2
+  | Mod (e1, e2) -> pr_binop ppf "Mod" e1 e2
+  | Or (e1, e2) -> pr_binop ppf "Or" e1 e2
+  | And (e1, e2) -> pr_binop ppf "And" e1 e2
+  | Not e -> fprintf ppf "@[<2>%s(%a)@]" "Not" pr_expr e
+  | Lt (e1, e2) -> pr_binop ppf "Lt" e1 e2
+  | Gt (e1, e2) -> pr_binop ppf "Gt" e1 e2
+  | Leq (e1, e2) -> pr_binop ppf "Leq" e1 e2
+  | Geq (e1, e2) -> pr_binop ppf "Geq" e1 e2
+  | Eq (e1, e2) -> pr_binop ppf "Eq" e1 e2
+  | Neq (e1, e2) -> pr_binop ppf "Neq" e1 e2
+  | Let (p, e1, e2) ->
+     fprintf ppf "@[<v>@[<v 2>%s(@,%a,@,%a,@,%a@]@,)@]" "Let"
+       pr_pat p pr_expr e1 pr_expr e2
+  | LetRec (s, e1, e2) ->
+     fprintf ppf "@[<v>@[<v 2>%s(@,%s,@,%a,@,%a@]@,)@]" "LetRec"
+       s pr_expr e1 pr_expr e2
+  | Assign (p, e1) ->
+     fprintf ppf "@[<v>@[<v 2>%s(@,%a,@,%a@]@,)@]" "Assign"
+       pr_pat p pr_expr e1
+  | Match (e, bs) ->
+     fprintf ppf "@[<v>@[<v 2>%s(@,%a@,%a@]@,)@]" "Match"
+       pr_expr e pr_list_bs bs
+  | IfTE (e1, e2, e3) ->
+     fprintf ppf "@[<v>@[<v 2>%s(@,%a,@,%a,@,%a@]@,)@]" "IfTE"
+       pr_expr e1 pr_expr e2 pr_expr e3
+  | IfT (e1, e2) ->
+     fprintf ppf "@[<v>@[<v 2>%s(@,%a,@,%a@]@,)@]" "IfT"
+       pr_expr e1 pr_expr e2 
+  | Req (e1, e2) -> pr_binop ppf "Req" e1 e2
+  | Lam (e1, e2) -> pr_binop ppf "Lam" e1 e2
+  | App (e1, e2) -> pr_binop ppf "App" e1 e2
+  | Wr (e1, e2) -> pr_binop ppf "Wr" e1 e2
+  | Rd e -> fprintf ppf "@[<2>%s(%a)@]" "Rd" pr_expr e
+  | RdBind (s, e) -> fprintf ppf "@[<v>@[<v 2>%s(@,%s,@,%a@]@,)@]" "RdBind"
+       s pr_expr e
+  | Nu (s, e) -> fprintf ppf "@[<v>@[<v 2>%s(@,%s,@,%a@]@,)@]" "Nu"
+       s pr_expr e
+  | ParComp (e1, e2) -> pr_binop ppf "ParComp" e1 e2
+  | ParLeft (e1, e2) -> pr_binop ppf "ParLeft" e1 e2
+  | Choice (e1, e2) -> pr_binop ppf "Choice" e1 e2
+  | Seq (e1, e2) -> pr_binop ppf "Seq" e1 e2
+  | Thunk e -> fprintf ppf "@[<2>%s(%a)@]" "Thunk" pr_expr e
+  | Force e -> fprintf ppf "@[<2>%s(%a)@]" "Force" pr_expr e
+  | Fst e -> fprintf ppf "@[<2>%s(%a)@]" "Fst" pr_expr e
+  | Snd e -> fprintf ppf "@[<2>%s(%a)@]" "Snd" pr_expr e
+  | Rand -> fprintf ppf "Rand()"
+  | Show e -> fprintf ppf "@[<2>%s(%a)@]" "Show" pr_expr e
+  | Cons (e1, e2) -> pr_binop ppf "Cons" e1 e2
+  | Concat (e1, e2) -> pr_binop ppf "Concat" e1 e2
+  | Lookup (e1, e2) -> pr_binop ppf "Lookup" e1 e2
+  | Length e -> fprintf ppf "@[<2>%s(%a)@]" "Length" pr_expr e
+  | Mem (e1, e2) -> pr_binop ppf "Mem" e1 e2
+  | Union (e1, e2) -> pr_binop ppf "Union" e1 e2
+  | Print e -> fprintf ppf "@[<2>%s(%a)@]" "Print" pr_expr e
+  | Rev e -> fprintf ppf "@[<2>%s(%a)@]" "Rev" pr_expr e
+and pr_list ppf = function
+  | [x] -> fprintf ppf "%a" pr_expr x
+  | x::xs -> fprintf ppf "%a,@ %a" pr_expr x pr_list xs
+  | _ -> fprintf ppf ""
+and pr_listp ppf = function
+  | [x] -> fprintf ppf "%a" pr_pat x
+  | x::xs -> fprintf ppf "%a,@ %a" pr_pat x pr_listp xs
+  | _ -> fprintf ppf ""
+and pr_list_bs ppf = function
+  | [x] -> fprintf ppf "%a" pr_b x
+  | x::xs -> fprintf ppf "%a,@ %a" pr_b x pr_list_bs xs
+  | _ -> fprintf ppf ""
+and pr_b ppf = function
+  | (p, e) ->
+     fprintf ppf "@[<v>@[<v 2>%s(@,%a,@,%a@]@,)@]" "Branch"
+       pr_pat p pr_expr e
+and pr_binop ppf op lhs rhs =
+  fprintf ppf "@[<v>@[<v 2>%s(@,%a,@,%a@]@,)@]" op
+    pr_expr lhs pr_expr rhs
+and pr_pat ppf = function
+  | PatName s -> fprintf ppf "%s(%s)" "PName" s
+  | PatImpName s -> fprintf ppf "%s(%s)" "PImpName" s
+  | PatTag s -> fprintf ppf "%s(%s)" "PTag" s
+  | PatInt s -> fprintf ppf "%s(%d)" "PInt" s
+  | PatBool b -> fprintf ppf "%s(%b)" "PBool" b
+  | PatString s -> fprintf ppf "%s(\"%s\")" "PImpName" s
+  | PatList ps -> fprintf ppf "@[<2>%s(%a)@]" "PList" pr_listp ps
+  | PatTuple ps -> fprintf ppf "@[<2>%s(%a)@]" "PTuple" pr_listp ps
+  | PatWildcard -> fprintf ppf "PWildcard"
+  | PatUnit -> fprintf ppf "PUnit"
+  | PatCons (hd, tl) -> 
+     fprintf ppf "@[<v>@[<v 2>%s(@,%a,@,%a@]@,)@]" "PCons"
+       pr_pat hd pr_pat tl
 
-let str_of_list f es = 
-  let rec to_str acc = function
-    | [] -> acc
-    | [e] -> acc ^ (f e)
-    | e :: es -> to_str (acc ^ (f e) ^ ",") es
-  in
-  to_str "" es
-
-let str_of_pattern p =
-  let rec to_str = function
-    | PatName x -> "PatName(" ^ x ^ ")"
-    | PatImpName x -> "PatImpName(" ^ x ^ ")"
-    | PatTag s -> "PatTag(" ^ s ^ ")"
-    | PatInt n -> "PatInt(" ^ (string_of_int n) ^ ")"
-    | PatBool b -> "PatBool(" ^ (string_of_bool b) ^ ")"
-    | PatString s -> "PatString(" ^ s ^ ")"
-    | PatList l -> "PatList(" ^ str_of_list to_str l ^ ")"
-    | PatUnit -> "PatUnit"
-    | PatWildcard -> "PatWildcard"
-    | PatTuple ps -> "PatTuple(" ^ str_of_list to_str ps ^ ")"
-    | PatCons (hd, tl)-> "PatCons(" ^ to_str hd ^ "," ^ to_str tl
-                         ^ ")"
-  in to_str p
-
-let string_of_expr e =
-  let rec to_str e = 
-    match e with
-    (* Identifier, constants, and values *)
-    | Name x -> name_to_str x
-    | ImpName x -> impname_to_str x
-    | Tag t -> "Tag(" ^ t ^ ")"
-    | Int n -> "Int(" ^ string_of_int n ^ ")"
-    | Bool b -> "Bool(" ^ string_of_bool b ^ ")"
-    | String s -> "String(" ^ s ^ ")"
-    | List es -> "List(" ^ str_of_list to_str es ^ ")"
-    | Set es -> "Set(" ^ str_of_list to_str es ^ ")"
-    | Tuple es -> "Tuple(" ^ str_of_list to_str es ^ ")"
-    | Wildcard -> "Wildcard"
-    | Unit -> "Unit"
-
-    (* Arithmetic operators *)
-    | Plus (e1, e2) -> "Plus(" ^ to_str e1 ^ "," ^ to_str e2 ^ ")"
-    | Minus (e1, e2) -> "Minus(" ^ to_str e1 ^ "," ^ to_str e2 ^ ")"
-    | Times (e1, e2) -> "Times(" ^ to_str e1 ^ "," ^ to_str e2 ^ ")"
-    | Divide (e1, e2) -> "Divide(" ^ to_str e1 ^ "," ^ to_str e2 ^ ")"
-    | Mod (e1, e2) -> "Mod(" ^ to_str e1 ^ "," ^ to_str e2 ^ ")"
-
-    (* Logical operators *)
-    | Or (e1, e2) -> "Or(" ^ to_str e1 ^ "," ^ to_str e2 ^ ")"
-    | And (e1, e2) -> "And(" ^ to_str e1 ^ "," ^ to_str e2 ^ ")"
-    | Not e1 -> "Not(" ^ to_str e1 ^ ")"
-
-    (* Relations *)
-    | Lt (e1, e2) -> "Lt(" ^ to_str e1 ^ "," ^ to_str e2 ^ ")"
-    | Gt (e1, e2) -> "Gt(" ^ to_str e1 ^ "," ^ to_str e2 ^ ")"
-    | Leq (e1, e2) -> "Leq(" ^ to_str e1 ^ "," ^ to_str e2 ^ ")"
-    | Geq (e1, e2) -> "Geq(" ^ to_str e1 ^ "," ^ to_str e2 ^ ")"
-    | Eq (e1, e2) -> "Eq(" ^ to_str e1 ^ "," ^ to_str e2 ^ ")"
-    | Neq (e1, e2) -> "Neq(" ^ to_str e1 ^ "," ^ to_str e2 ^ ")"
-
-    (* Let *)
-    | Let (x, e1, e2) -> "Let(" ^  str_of_pattern x ^ "," ^ 
-      to_str e1 ^ "," ^ to_str e2 ^ ")"
-    | LetRec (x, e1, e2) -> "LetRec(" ^ name_to_str x ^ "," ^ 
-      to_str e1 ^ "," ^ to_str e2 ^ ")"
-    | Assign (x, e1) -> "Assign(" ^ str_of_pattern x ^ "," ^ 
-      to_str e1 ^ ")"
-    | Match (e, es) ->
-       "Match(" ^ to_str e ^ "," ^ str_of_list str_of_match_pair es ^ ")"
-                      
-    (* Conditionals *)
-    | IfTE (e1, e2, e3) -> "IfTE(" ^ to_str e1 ^ "," ^ 
-      to_str e2 ^ "," ^ to_str e3 ^ ")"
-    | IfT (e1, e2) -> "IfT(" ^ to_str e1 ^ "," ^ 
-      to_str e2 ^ ")"
-    | Req (e1, e2) -> "Req(" ^ to_str e1 ^ "," ^ to_str e2 ^ ")"
-
-    (* Lambda *)
-    | Lam (e1, e2) -> "Lam(" ^ to_str e1 ^ "," ^ to_str e2 ^ ")"
-    | App (e1, e2) -> "App(" ^ to_str e1 ^ "," ^ to_str e2 ^ ")"
-
-    (* Pi *)
-    | Wr (e, x) -> "Wr(" ^ to_str e ^ "," ^ to_str x ^ ")"
-    | Rd x -> "Rd(" ^ to_str x ^ ")"
-    | RdBind (x1, x2) -> "RdBind(" ^ name_to_str x1 ^ "," ^ to_str x2 ^ ")"
-    | Nu (x, e) -> "Nu(" ^ name_to_str x ^ "," ^ to_str e ^ ")"
-    | ParComp (e1, e2) -> "ParComp(" ^ to_str e1 ^ "," ^ to_str e2 ^ ")"
-    | ParLeft (e1, e2) -> "ParLeft(" ^ to_str e1 ^ "," ^ to_str e2 ^ ")"
-    | Choice (e1, e2) -> "Choice(" ^ to_str e1 ^ "," ^ to_str e2 ^ ")"
-    | Seq (e1, e2) -> "Seq(" ^ to_str e1 ^ "," ^ to_str e2 ^ ")"
-
-    (* Laziness *)
-    | Thunk e1 -> "Thunk(" ^ to_str e1 ^ ")"
-    | Force e1 -> "Force(" ^ to_str e1 ^ ")"
-    
-    (* Built-in functions *) 
-    | Fst e -> "Fst(" ^ to_str e ^ ")"
-    | Snd e -> "Snd(" ^ to_str e ^ ")"
-    | Rand -> "Rand()"
-    | Show e -> "Show(" ^ to_str e ^ ")"
-    | Cons (e1, e2) -> "Cons(" ^ to_str e1 ^ "," ^ to_str e2 ^ ")"
-    | Concat (e1, e2) -> "Concat(" ^ to_str e1 ^ "," ^ to_str e2 ^ ")"
-    | Lookup (e1, e2) -> "Lookup(" ^ to_str e1 ^ "," ^ to_str e2 ^ ")"
-    | Length e -> "Length(" ^ to_str e ^ ")"
-    | Mem (e1, e2) -> "Mem(" ^ to_str e1 ^ "," ^ to_str e2 ^ ")"
-    | Union (e1, e2) -> "Union(" ^ to_str e1 ^ "," ^ to_str e2 ^ ")"
-    | Print e -> "Print(" ^ to_str e ^ ")"
-    | Rev e -> "Rev(" ^ to_str e ^ ")"
-  and str_of_match_pair = function
-    | (e1, e2) -> "Alt(" ^ str_of_pattern e1 ^ "," ^ to_str e2 ^ ")"
-  in to_str e
+let print_ast = pr_expr std_formatter           

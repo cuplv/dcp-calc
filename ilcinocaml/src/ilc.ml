@@ -93,11 +93,10 @@ let printr_verbose = function
   | _ -> raise (Runtime_error "illegal final state")
 
 let print_ast = function
-  | ps -> let f acc x =
-            (match x with
-             | Syntax.Process p ->
-                acc ^ Syntax.string_of_expr p ^ "\n") in
-          print_string (List.fold_left f "" ps)
+  | ps ->
+     let f = function
+       | Syntax.Process p -> Syntax.print_ast p; Format.print_newline () in
+     List.iter f ps
 
 let print_ir = function
   | ps -> let f acc x =

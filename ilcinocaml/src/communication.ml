@@ -13,7 +13,6 @@ let imp_lookup x = function
 
 let is_blocked = function
   | (_, ((IWr _ :: _) :: _, _, _)) -> true
-  | (_, ((IRdBind _ :: _) :: _, _, _)) -> true
   | (_, ((IRd _ :: _) :: _, _, _)) -> true
   | (_, ((IChoice _ :: _) :: _, _, _)) -> true
   | _ -> false
@@ -23,17 +22,13 @@ let is_writing = function
   | _ -> false
 
 let is_reading = function
-  | (_, IRdBind _) -> true
   | (_, IRd _) -> true
   | (_, IChoice _) -> true
   | _ -> false
 
 let get_comm_info = function
   | (pid, ((IWr (v, x) :: _) :: _, _, _)) -> (pid, IWr (v,x))
-  | (pid, ((IRdBind (x1, x2) :: _) :: _, _, _)) -> (pid, IRdBind (x1,x2))
   | (pid, ((IRd x :: _) :: _, _, envs)) -> (pid, IRd x)
-  | (pid, ((IChoice(pid', cid, (IRdBind (x1, x2))) :: _) :: _, _, _)) ->
-      (pid, IChoice(pid', cid, IRdBind (x1,x2)))
   | (pid, ((IChoice(pid', cid, (IRd x)) :: _) :: _, _, _)) -> (pid, IChoice(pid', cid, IRd x))
   | _ -> error "Process not reading or writing"
 
@@ -43,8 +38,6 @@ let combinations l1 l2 =
   List.rev res
 
 let can_comm = function
-  | ((_, IWr (_, c)), (_, IRdBind (_, c'))) when c=c' -> true
-  | ((_, IWr (_, c)), (_, (IChoice (_, _, IRdBind (_, c'))))) when c=c' -> true
   | ((_, IWr (_, c)), (_, IRd c')) when c=c' -> true
   | ((_, IWr (_, c)), (_, (IChoice (_, _, IRd c')))) when c=c' -> true
   | _ -> false
@@ -52,22 +45,6 @@ let can_comm = function
 (* TODO: Generalize reads! *)
 (* TODO: equality for closures *)
 let update_state comm = function
-  (* Rd w/ bind *)
-  | (pid, ((IRdBind (x1,x2) :: is) :: frms, stck, env :: envs)) as s->
-     (match comm with
-      | ((pid1, IWr (v, x)), (pid2, IRdBind (x1', x2')))
-           when (pid=pid2 && x1=x1' && x2=x2') ->
-         [(pid, (is :: frms, stck, ((x1,v) :: env) :: envs))]
-      | _ -> [s])
-  | (pid, ((IChoice (cpid, cid, (IRdBind (x1,x2))) :: is) :: frms, stck, env :: envs)) ->
-     (match comm with
-      | ((pid1, IWr (v, x)), (pid2, IChoice(cpid', cid', IRdBind (x1', x2'))))
-           when (pid=pid2 && x1=x1' && x2=x2' && cpid=cpid' && cid=cid') ->
-         [(pid, (is :: frms, stck, ((x1,v) :: env) :: envs))]
-      | ((pid1, IWr (v, x)), (pid2, IChoice(cpid', cid', IRdBind (x1', x2')))) ->
-         [(pid, ((IBlock(IRdBind (x1', x2')) :: is) :: frms, stck, env :: envs))]
-      | _ -> [(pid, ((IRdBind (x1,x2) :: is) :: frms, stck, env :: envs))])
-  (* Rd w/o bind *)
   | (pid, ((IRd x1 :: is) :: frms, stck, envs)) as s ->
      (match comm with
       | ((pid1, IWr (v, x)), (pid2, IRd x1'))

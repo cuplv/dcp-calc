@@ -83,7 +83,8 @@ let rec compile = function
   | LetRec (x, e1, e2) ->
       [IThunk (force_thunks x (compile e1))] @
       [ILet (PatName x)] @ (force_thunks x (compile e2))
-  | Assign(x, e) -> (compile e) @ [ILet x]
+  | Assign(x, e) -> (compile e) @ [IAssign x]
+  | Deref e -> (compile e) @ [IDeref]
   | Match (e, es) ->
      let f acc = function
        | (p, expr) -> [IMatchCond (p, compile expr)] @ acc in
@@ -106,9 +107,6 @@ let rec compile = function
   | App (e1, e2) -> (compile e1) @ (compile e2) @ [ICall]
   
   (* Pi *)
-(*  | Wr (e, x) -> (compile e) @ [IWr (MHole, x)]
-  | Rd x -> [IRd x]
-  | RdBind (x1, x2) -> [IRdBind (x1, x2)]*)
   | Wr (e1, e2) -> (compile e1) @ (compile e2) @ [IWr (MHole, "")]
   | Rd x -> (compile x) @ [IRd ""]
   | Nu (xs, e) -> [INu xs] @ (compile e) @ [IUnscope [xs]]
@@ -146,5 +144,4 @@ let rec compile = function
   | Union (e1, e2) -> (compile e1) @ (compile e2) @[IUnion]
   | Print e -> (compile e) @ [IPrint]
   | Rev e -> (compile e) @ [IRev]
-  | _ -> raise Compilation_error
 and compile_list es = List.fold_left (fun acc e -> acc @ (compile e)) [] es

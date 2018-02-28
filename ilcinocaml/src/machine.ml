@@ -18,8 +18,10 @@ type mvalue =
   | MThunk of frame  
   | MClosure of name * frame * environ
   | MHole
+  | MLoc of int
 and instr =
   | IVar of name
+  | IDeref
   | IImpVar of name
   | ITag of string
   | IUnit
@@ -50,13 +52,13 @@ and instr =
   | IThunk of frame
   | IForce
   | ILet of pattern
+  | IAssign of pattern
   | IUnscope of name list
   | IStartP of int (* TODO: Fix process spawning *)
   | IEndP of int
   | IChoice of int * int * instr
   | IBlock of instr
   | IWr of mvalue * name
-  | IRdBind of name * name
   | IRd of name
   | ISpawn
   | IHole of int
@@ -85,6 +87,8 @@ and frame = instr list
 and environ = (name * mvalue) list
 and stack = mvalue list
 
+let address = ref 0
+let store = ref []
 (* -------------------------------------------------------------------------- *)
 (* Printing *)
 
@@ -98,6 +102,7 @@ let string_of_list f l =
 
 let rec string_of_instr = function 
   | IVar x -> sprintf "IVar(%s)" x
+  | IDeref -> "IDeref"
   | IImpVar x -> sprintf "IImpVar(%s)" x
   | ITag x -> sprintf "ITag(%s)" x
   | IUnit -> "IUnit"
@@ -130,9 +135,9 @@ let rec string_of_instr = function
   | IThunk e -> "IThunk" ^ List.fold_left (fun acc x -> acc ^ "," ^ string_of_instr x) "" e
   | IForce -> "IForce"
   | ILet p -> sprintf "ILet(%s)" ""
+  | IAssign p -> sprintf "IAssign()"
   | IUnscope xs -> sprintf "IUnscope(%s)" (string_of_list (fun x -> x) xs)
   | IWr (v, x) -> sprintf "IWr(%s,%s)" (string_of_mvalue v) x
-  | IRdBind (x1, x2) -> sprintf "IRdBind(%s,%s)" x1 x2 
   | IRd x -> sprintf "IRd(%s)" x
   | IStartP n -> sprintf "IStartP(%d)" n
   | IEndP n -> sprintf "IEndP(%d)" n
@@ -177,6 +182,7 @@ and string_of_mvalue = function
   | MTuple l -> "(" ^ string_of_list string_of_mvalue l ^ ")"
   | MTag s -> s
   | MChan x -> x
+  | MLoc n -> string_of_int n
 
 let rec string_of_stack = function
   | [] -> ""
@@ -338,6 +344,10 @@ let assoc_lookup = function
     (find xs) :: s
   | _ -> error "no assoc list"
 
+let deref = function
+  | MLoc n :: s -> (List.assoc n !store) :: s
+  | _ -> error "No address"
+
 let length = function
   | (MString x) :: s -> MInt (String.length x) :: s
   | (MList xs) :: s -> MInt(List.length xs) :: s
@@ -433,6 +443,15 @@ let unscope_vars env xs =
   let unscope_var acc x = List.remove_assoc x acc in
   List.fold_left unscope_var env xs
 
+let map2store mapping = 
+  let rec aux acc = function
+    | (x, m) :: rest ->
+       incr address;
+       store := (!address, m) :: !store ;
+       aux ((x, MLoc !address) :: acc) rest
+    | [] -> List.rev acc
+  in aux [] mapping
+
 let chan_counter = ref 0
 
 let new_chan c = incr chan_counter; MChan (c ^ (string_of_int !chan_counter))
@@ -454,6 +473,7 @@ let exec instr frms stck envs =
   | IEq -> (frms, eq stck, envs)
   | INeq -> (frms, neq stck, envs)
   | IVar x -> (frms, (lookup x envs) :: stck, envs)
+  | IDeref -> (frms, deref stck, envs)
   | IImpVar x -> (frms, (imp_lookup x envs) :: stck, envs)
   | ITag x -> (frms, (MTag x) :: stck, envs)
   | IUnit -> (frms, MUnit :: stck, envs)
@@ -486,6 +506,15 @@ let exec instr frms stck envs =
          let (v, stck') = pop stck in
          (try let new_mapping = pattern_match [x] [v] in
               (frms, stck', (new_mapping @ env) :: env_tail) with
+          | Pattern_match_fail -> error "pattern match failed")
+      | [] -> error "no environment for variable")
+  | IAssign x ->
+     (match envs with
+      | env :: env_tail ->
+         let (v, stck') = pop stck in
+         (try let mapping = pattern_match [x] [v] in
+              let mapping' = map2store mapping in
+              (frms, stck', (mapping' @ env) :: env_tail) with
           | Pattern_match_fail -> error "pattern match failed")
       | [] -> error "no environment for variable")
   | IUnscope xs ->
@@ -570,9 +599,6 @@ let run p =
   let rec loop = function
     | (pid, ([], [], e)) as s -> s
     | (pid, ([], [v], e)) as s-> s
-    | (pid, ((IRdBind (x1, x2) :: is) :: frms, stck, envs)) as s -> s
-    | (pid, ((IChoice (pid', cid,  (IRdBind (x1, x2))) :: is) :: frms, stck,
-             envs)) as s -> s
     | (pid, ((IRd "" :: is) :: frms, stck, envs)) ->
        (match stck with
         | MChan c :: stck' ->

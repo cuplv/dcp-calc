@@ -63,6 +63,7 @@ type expr =
   | Let of pattern * expr * expr
   | LetRec of name * expr * expr
   | Assign of pattern * expr
+  | Deref of expr
   | Match of expr * (pattern * expr) list
             
   (* Conditionals *)
@@ -77,7 +78,6 @@ type expr =
   (* Pi *)
   | Wr of expr * expr
   | Rd of expr
-  | RdBind of name * expr
   | Nu of name * expr
   | ParComp of expr * expr
   | ParLeft of expr * expr
@@ -143,6 +143,7 @@ let rec pr_expr ppf = function
   | Assign (p, e1) ->
      fprintf ppf "@[<v>@[<v 2>%s(@,%a,@,%a@]@,)@]" "Assign"
        pr_pat p pr_expr e1
+  | Deref e -> fprintf ppf "%s(%a)" "Deref" pr_expr e
   | Match (e, bs) ->
      fprintf ppf "@[<v>@[<v 2>%s(@,%a@,%a@]@,)@]" "Match"
        pr_expr e pr_list_bs bs
@@ -157,8 +158,6 @@ let rec pr_expr ppf = function
   | App (e1, e2) -> pr_binop ppf "App" e1 e2
   | Wr (e1, e2) -> pr_binop ppf "Wr" e1 e2
   | Rd e -> fprintf ppf "@[<2>%s(%a)@]" "Rd" pr_expr e
-  | RdBind (s, e) -> fprintf ppf "@[<v>@[<v 2>%s(@,%s,@,%a@]@,)@]" "RdBind"
-       s pr_expr e
   | Nu (s, e) -> fprintf ppf "@[<v>@[<v 2>%s(@,%s,@,%a@]@,)@]" "Nu"
        s pr_expr e
   | ParComp (e1, e2) -> pr_binop ppf "ParComp" e1 e2

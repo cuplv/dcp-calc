@@ -54,7 +54,8 @@
 /* Operators */
 %token EQUAL
 %token ASSIGN
-%token LARROW
+%token AT
+/*%token LARROW*/
 %token RARROW
 %token PAR
 %token PARL
@@ -263,7 +264,9 @@ atom_expr:
   | LPAREN e = expr RPAREN
     { e }
   | l = atom_expr DOT key = atom_expr 
-    { Lookup (key, l) }    
+    { Lookup (key, l) }
+  | AT x = NAME
+    { Deref (Name x) }
     
 arith_expr:
   | e1 = expr PLUS e2 = expr
@@ -333,18 +336,8 @@ app_expr:
 comm_expr:
   | WR e = expr RARROW c = atom_expr
     { Wr (e, c) }
-/*  | WR e = expr RARROW c = atom_expr
-    { Wr (e, c) }*/
-  | RD x = NAME LARROW c = atom_expr
-    { RdBind (x, c) }
-/*  | RD x = NAME LARROW c = IMPNAME
-    { RdBind (x, c) }*/
   | RD c = atom_expr
     { Rd c }
-/*  | RD c = NAME
-    { Rd c }
-  | RD c = IMPNAME
-    { Rd c }*/
   | NU xs = arg_list DOT e = expr %prec NU_PREC
     { List.fold_right curry_nus xs e }  
 

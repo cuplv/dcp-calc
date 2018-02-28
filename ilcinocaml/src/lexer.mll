@@ -66,8 +66,9 @@ rule token = parse
   (* Operators *)
   | "="                       { EQUAL }
   | ":="		      { ASSIGN }
+  | "@"                       { AT }
   | "->"                      { RARROW }
-  | "<-"                      { LARROW }
+(*  | "<-"                      { LARROW }*)
   | "|"                       { PIPE }
   | ".|."                     { PAR }
   | ".|"                      { PARL }

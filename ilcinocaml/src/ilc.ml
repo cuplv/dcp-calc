@@ -79,7 +79,7 @@ let read_toplevel parser () =
 exception Runtime_error of string
 
 let printr = function
-  | (_, ([], [v], _)) ->
+  | (_, ([], v::rest, _)) when not (v=Machine.MInt 0 || v=Machine.MUnit) ->
      Printf.printf "%s\n" (Machine.string_of_mvalue v)
   | _ -> ()
 

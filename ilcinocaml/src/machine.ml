@@ -55,6 +55,7 @@ and instr =
   | ILet of pattern
   | IAssign of pattern
   | IUnscope of name list
+  | IFork of frame
   | IStartP of int (* TODO: Fix process spawning *)
   | IEndP of int
   | IChoice of int * int * instr
@@ -141,6 +142,7 @@ let rec string_of_instr = function
   | IUnscope xs -> sprintf "IUnscope(%s)" (string_of_list (fun x -> x) xs)
   | IWr (v, x) -> sprintf "IWr(%s,%s)" (string_of_mvalue v) x
   | IRd x -> sprintf "IRd(%s)" x
+  | IFork f -> sprintf "IFork(\n%s)"  (string_of_frame f)
   | IStartP n -> sprintf "IStartP(%d)" n
   | IEndP n -> sprintf "IEndP(%d)" n
   | IChoice (p, c, i) -> sprintf "IChoice(%d,%d,%s)" p c (string_of_instr i)
@@ -609,7 +611,8 @@ let exec instr frms stck envs =
 let run p = 
   let rec loop = function
     | (pid, ([], [], e)) as s -> s
-    | (pid, ([], [v], e)) as s-> s
+    (*    | (pid, ([], [v], e)) as s-> s*)
+    | (pid, ([], v, e)) as s-> s
     | (pid, ((IRd "" :: is) :: frms, stck, envs)) ->
        (match stck with
         | MChan c :: stck' ->
@@ -624,12 +627,13 @@ let run p =
         | _ -> error "wr lol")
     | (pid, ((IWr (v, x) :: is) :: frms, stck, envs)) as s -> s
     | (pid, ([ISpawn] :: frms, stck, envs)) as s -> s
+    | (pid, ((IFork f :: is) :: frms, stck, envs)) as s -> s                                                  
     | (pid, ((IHole n :: is) :: frms, stck, envs)) as s -> s
     | (pid, ((IBlock i :: is) :: frms, stck, envs)) as s -> s
     | (pid, ((i :: is) :: frms, stck, envs)) ->
        loop (pid, (exec i (is :: frms) stck envs))
     | (pid, ([] :: frms, stck, envs)) -> loop (pid, (frms, stck, envs))
-    | _ -> error ("illegal end of program: " ^ (string_of_process p))
+                                              (*| _ -> error ("illegal end of program: " ^ (string_of_process p)*)
   in
   loop p
 
@@ -654,6 +658,14 @@ let spawn_all ps =
        spawn (original_p :: old_ps)
              (new_p2 :: new_p1 :: new_ps)
              rest_ps
+    | (pid, ((IFork frm :: rest_frm) :: rest_frms, stck, envs)) :: rest_ps ->
+       let pid' = !pid_counter in
+       let original_p = (pid, (rest_frm :: rest_frms, stck, envs)) in
+       let new_p = (pid', ([frm], [], envs)) in
+       incr pid_counter;
+       spawn (old_ps)
+         (new_p :: new_ps)
+         (original_p :: rest_ps)
     | p :: rest_ps -> spawn (p :: old_ps) new_ps rest_ps
   in
   spawn [] [] ps

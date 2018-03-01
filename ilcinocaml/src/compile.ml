@@ -125,7 +125,9 @@ let rec compile = function
       let pid = !pid_counter in
       pid_counter := pid + 2; [IStartP pid] @
       convert_to_choice pid 0 (compile e1) @ [IEndP pid; IStartP (succ pid)] @
-      convert_to_choice pid 1 (compile e2) @ [IEndP (succ pid); IHole (succ pid)]
+      convert_to_choice pid 1 (compile e2) @ [IEndP (succ pid); IHole (succ
+                                                                         pid)]
+  | Fork e -> [IFork (compile e)]
   | Seq (e1, e2) -> (compile e1) @ (compile e2)
   
   (* Laziness *)

@@ -83,6 +83,7 @@ type expr =
   | Nu of name * expr
   | ParComp of expr * expr
   | ParLeft of expr * expr
+  | Fork of expr
   | Choice of expr * expr
   | Seq of expr * expr
   
@@ -165,6 +166,7 @@ let rec pr_expr ppf = function
        s pr_expr e
   | ParComp (e1, e2) -> pr_binop ppf "ParComp" e1 e2
   | ParLeft (e1, e2) -> pr_binop ppf "ParLeft" e1 e2
+  | Fork e -> fprintf ppf "@[<2>%s(%a)@]" "Fork" pr_expr e
   | Choice (e1, e2) -> pr_binop ppf "Choice" e1 e2
   | Seq (e1, e2) -> pr_binop ppf "Seq" e1 e2
   | Thunk e -> fprintf ppf "@[<2>%s(%a)@]" "Thunk" pr_expr e

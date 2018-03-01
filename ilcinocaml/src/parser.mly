@@ -59,6 +59,7 @@
 %token RARROW
 %token PAR
 %token PARL
+%token FORK
 %token CHOICE
 %token PIPE
 
@@ -353,6 +354,8 @@ proc_expr:
     { ParLeft (e1, e2) }
   | e1 = expr CHOICE e2 = expr
     { Choice (e1, e2) }
+  | FORK e = atom_expr
+    { Fork e }
 
 expr_list:
   | e = expr

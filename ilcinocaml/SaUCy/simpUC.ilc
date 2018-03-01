@@ -1,37 +1,25 @@
 let execUC = lam e, p, f, a .
-  nu z2p, p2z,
-     z2f, f2z,
-     z2a, a2z,
-     p2f, f2p,
+  nu p2f, f2p,
      p2a, a2p,
-     a2f, f2a,
-     z2exec . (
-       let partyMap := [] ;
-       let newParty = lam pid .
-         nu f2pp, z2pp .
-           let partyMap := (pid, [("f2p", f2pp), ("z2p", z2pp)]) :: partyMap ;
-           letrec loop1 =
-             let m = rd pp2f in wr (pid, m) -> f2p ; loop1 in
-           letrec loop2 =
-             let m = rd pp2z in wr (pid, m) -> z2p ; loop2 in
-           (loop1 .|. loop2) in
+     a2f, f2a, . (
+       let corrupt = {} in
+       a sid .|.
+       f sid .|.
+       let partyMap = ref [] in
+       let newParty = (lam pid .
+         nu f2pp .
+           let partyMap := (pid, [("f2p", f2pp)]) :: @partyMap ;
+           letrec fwdf2p =
+             let m = rd pp2f in wr (pid, m) -> f2p ; fwdf2p in
+           () .|. fwdf2p) in
        let getParty = lam pid .
-         if (not (mem b partyMap)) then newParty pid ;
+         (* polymorphic mem *)
+         if (not (mem pid partyMap)) then newParty pid ;
          partyMap.pid in
-       letrec loop1 =
-         let (pid, m) = rd z2p in
-           if (mem pid corrupt) then wr (pid, m) -> p2a
-           else wr m -> (getParty pid).z2p ; loop1 in
-       letrec loop2 = 
+       letrec fwdf2p = 
          let (pid, m) = rd f2p in
            if (mem pid corrupt) then wr (pid, m) -> p2a
-           else wr m -> (getParty pid).f2p ; loop2 in
-       letrec loop3 =
-         let (pid, m) = rd a2p in
-           if (mem pid corrupt) then wr (pid, m) -> p2f ; loop3 in
-       letrec loop4 =
-         let (pid, m) = rd a2fp in
-           if (mem pid corrupt) then wr (pid, m) -> p2z ; loop4 in
-       ( loop1 .|. loop2 .|. loop3 .|. loop4 )
+           else wr m -> (getParty pid)."f2p" ; fwdf2p in
+       fwdf2p
      )
 in 0

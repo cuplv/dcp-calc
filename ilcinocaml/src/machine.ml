@@ -360,13 +360,15 @@ let length = function
   | _ -> error "no string to get length"
 
 let mem_assoc x = function
-  | MTuple [x'; y] when x=x' -> true
+  | MTuple [k; v] when x=k -> true
   | _ -> false
 
 let mem = function
   | (MSet xs) :: x :: s -> MBool (List.mem x xs) :: s
-  | (MList xs) :: x :: s -> MBool (List.exists (mem_assoc x) xs) :: s
-  | _ -> error "no set"
+  | (MList ((MTuple [k;v]::xs) as assoc_lst)) :: x :: s ->
+     MBool (List.exists (mem_assoc x) assoc_lst) :: s
+  | (MList xs) :: x :: s -> MBool (List.mem x xs) :: s
+  | s -> error ("no set " ^ (string_of_stack s))
 
 let union = function
   | (MSet xs) :: (MSet ys) :: s ->

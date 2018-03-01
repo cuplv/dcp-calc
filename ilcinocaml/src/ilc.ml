@@ -79,10 +79,12 @@ let read_toplevel parser () =
 exception Runtime_error of string
 
 let printr = function
-  | (_, ([], v::rest, _)) when not (v=Machine.MInt 0 || v=Machine.MUnit) ->
-     Printf.printf "%s\n" (Machine.string_of_mvalue v)
+  | (_, ([], v::rest, _)) ->
+     if (v=Machine.MInt 0 || v=Machine.MUnit) then () else
+       Printf.printf "%s\n" (Machine.string_of_mvalue v)
   | _ -> ()
 
+(* TODO: Fix later *)       
 let printr_verbose = function
   | (pid, ([], [v], _)) ->
      Printf.printf "%s%d:\n%s\n" "process" pid (Machine.string_of_mvalue v)

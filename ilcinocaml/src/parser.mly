@@ -94,6 +94,7 @@
 %token MEM
 %token UNION
 %token PRINT
+%token REF
 %token REV
 
 /* Types */
@@ -165,6 +166,8 @@ pat_list:
 pat_atom:
   | x = NAME
     { PatName x }
+  | AT x = NAME
+    { PatDeref x }
   | x = IMPNAME
     { PatImpName x }
   | USCORE
@@ -215,6 +218,8 @@ expr:
     { LetRec (x, e1, e2) }
   | LET p = pat_atom ASSIGN e = expr %prec ASSIGN_PREC
     { Assign (p, e) }
+  | REF e = atom_expr
+    { Ref e }
 /*  | LET x = expr COLON t = ty ASSIGN e = expr %prec ASSIGN_PREC
     { Assign (x, e) }*/
   | MATCH e1 = expr WITH p = pat_atom IN e3 = expr %prec IN_PREC

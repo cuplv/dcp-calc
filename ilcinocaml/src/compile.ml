@@ -83,7 +83,8 @@ let rec compile = function
   | LetRec (x, e1, e2) ->
       [IThunk (force_thunks x (compile e1))] @
       [ILet (PatName x)] @ (force_thunks x (compile e2))
-  | Assign(x, e) -> (compile e) @ [IAssign x]
+  | Assign (x, e) -> (compile e) @ [IAssign x]
+  | Ref e -> (compile e) @ [IRef]
   | Deref e -> (compile e) @ [IDeref]
   | Match (e, es) ->
      let f acc = function

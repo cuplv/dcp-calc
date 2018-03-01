@@ -59,6 +59,7 @@ rule token = parse
   | "end"		      { END }
   | "()"		      { UNIT }
   | "print"		      { PRINT }
+  | "ref"                     { REF }
 (*  | "int"                     { TYINT }
   | "bool"                    { TYBOOL }
   | "string"                  { TYSTRING }*)

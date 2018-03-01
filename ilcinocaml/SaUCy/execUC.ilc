@@ -16,7 +16,7 @@ let execUC = lam e, p, f, a .
        let newParty = lam pid .
          nu f2pp, z2pp .
            (* Change "f2p" and "z2p" to tags? *)
-           let partyMap := (pid, [("f2p", f2pp), ("z2p", z2pp)]) :: partyMap ;
+           let partyMap := (pid, [("f2p", f2pp), ("z2p", z2pp)]) :: @partyMap ;
            letrec loop1 =
              let m = rd pp2f in wr (pid, m) -> f2p ; loop1 in
            letrec loop2 =

@@ -15,6 +15,7 @@ type ty =
 type pattern =
   | PatName of name
   | PatImpName of name
+  | PatDeref of name
   | PatTag of string
   | PatInt of int
   | PatBool of bool
@@ -63,6 +64,7 @@ type expr =
   | Let of pattern * expr * expr
   | LetRec of name * expr * expr
   | Assign of pattern * expr
+  | Ref of expr
   | Deref of expr
   | Match of expr * (pattern * expr) list
             
@@ -143,6 +145,7 @@ let rec pr_expr ppf = function
   | Assign (p, e1) ->
      fprintf ppf "@[<v>@[<v 2>%s(@,%a,@,%a@]@,)@]" "Assign"
        pr_pat p pr_expr e1
+  | Ref e -> fprintf ppf "%s(%a)" "Ref" pr_expr e
   | Deref e -> fprintf ppf "%s(%a)" "Deref" pr_expr e
   | Match (e, bs) ->
      fprintf ppf "@[<v>@[<v 2>%s(@,%a@,%a@]@,)@]" "Match"
@@ -199,6 +202,7 @@ and pr_binop ppf op lhs rhs =
     pr_expr lhs pr_expr rhs
 and pr_pat ppf = function
   | PatName s -> fprintf ppf "%s(%s)" "PName" s
+  | PatDeref s -> fprintf ppf "%s(%s)" "PDeref" s
   | PatImpName s -> fprintf ppf "%s(%s)" "PImpName" s
   | PatTag s -> fprintf ppf "%s(%s)" "PTag" s
   | PatInt s -> fprintf ppf "%s(%d)" "PInt" s

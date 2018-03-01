@@ -22,6 +22,7 @@ type mvalue =
 and instr =
   | IVar of name
   | IDeref
+  | IRef
   | IImpVar of name
   | ITag of string
   | IUnit
@@ -103,6 +104,7 @@ let string_of_list f l =
 let rec string_of_instr = function 
   | IVar x -> sprintf "IVar(%s)" x
   | IDeref -> "IDeref"
+  | IRef -> "IRef"
   | IImpVar x -> sprintf "IImpVar(%s)" x
   | ITag x -> sprintf "ITag(%s)" x
   | IUnit -> "IUnit"
@@ -443,14 +445,15 @@ let unscope_vars env xs =
   let unscope_var acc x = List.remove_assoc x acc in
   List.fold_left unscope_var env xs
 
-let map2store mapping = 
-  let rec aux acc = function
-    | (x, m) :: rest ->
-       incr address;
-       store := (!address, m) :: !store ;
-       aux ((x, MLoc !address) :: acc) rest
-    | [] -> List.rev acc
-  in aux [] mapping
+let update_store env mapping = 
+  let f = function
+    | (x, m) ->
+       let address =
+         (match List.assoc x env with
+          | MLoc n -> n
+          | _ -> error "No address") in
+       store := (address, m) :: !store in
+  List.iter f mapping
 
 let chan_counter = ref 0
 
@@ -474,6 +477,14 @@ let exec instr frms stck envs =
   | INeq -> (frms, neq stck, envs)
   | IVar x -> (frms, (lookup x envs) :: stck, envs)
   | IDeref -> (frms, deref stck, envs)
+  | IRef ->
+     (match envs with
+      | env :: env_tail ->
+         let (v, stck') = pop stck in
+         let new_stck = MLoc !address :: stck' in
+         store := (!address, v) :: !store;
+         (frms, new_stck, envs)
+      | [] -> error "no environment")
   | IImpVar x -> (frms, (imp_lookup x envs) :: stck, envs)
   | ITag x -> (frms, (MTag x) :: stck, envs)
   | IUnit -> (frms, MUnit :: stck, envs)
@@ -513,8 +524,8 @@ let exec instr frms stck envs =
       | env :: env_tail ->
          let (v, stck') = pop stck in
          (try let mapping = pattern_match [x] [v] in
-              let mapping' = map2store mapping in
-              (frms, stck', (mapping' @ env) :: env_tail) with
+              update_store env mapping;
+              (frms, stck', envs) with
           | Pattern_match_fail -> error "pattern match failed")
       | [] -> error "no environment for variable")
   | IUnscope xs ->

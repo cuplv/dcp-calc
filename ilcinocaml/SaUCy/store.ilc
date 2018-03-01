@@ -1,4 +1,4 @@
 nu c .
-  let store := [] ;
-  (let store := 1 :: store ; wr 1 -> c
-  .|. let _ = rd c in store)
+  let store = ref [] in 
+  (let store := 1 :: @store ; wr 1 -> c
+  .|. let _ = rd c in @store)

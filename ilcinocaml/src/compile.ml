@@ -47,7 +47,7 @@ let get_vars p =
 let rec compile = function
   (* Identifier, constants, values *)
   | Name x ->  [IVar x]
-  | ImpName x ->  [IImpVar x]
+  | ImpName x -> [IImpVar x]
   | Tag x ->  [ITag x]
   | Int n -> [IInt n]
   | Bool b -> [IBool b]

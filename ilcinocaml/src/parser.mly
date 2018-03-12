@@ -21,6 +21,7 @@
   let desugar_let acc map =
     match map with
     | (pattern, expr) -> Let(pattern, expr, acc)
+
 %}
 
 /* Identifier and constants */

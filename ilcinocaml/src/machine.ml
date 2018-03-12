@@ -231,7 +231,9 @@ let lookup x = function
   | _ -> error "no environment to look up"
 
 let imp_lookup x = function
-  | _ ::env:: _ -> (try List.assoc x env with Not_found -> error ("unknown " ^ x))
+  | _ ::env:: _ ->
+     let name = String.sub x 1 ((String.length x)-1) in
+     (try List.assoc name env with Not_found -> error ("unknown " ^ name))
   | _ -> error ("no environment to look up implicit arg" ^ x)
 
 let pop = function
@@ -316,7 +318,7 @@ let neq = function
 
 let cons = function
   | (MList x) :: y :: s -> MList (y::x) :: s
-  | _ -> error "no list to cons"
+  | s -> error ("no list to cons" ^ (string_of_stack s))
 
 let concat = function
   | (MString x) :: (MString y) :: s -> MString (y ^ x) :: s
@@ -487,6 +489,7 @@ let exec instr frms stck envs =
          let (v, stck') = pop stck in
          let new_stck = MLoc !address :: stck' in
          store := (!address, v) :: !store;
+         incr address;
          (frms, new_stck, envs)
       | [] -> error "no environment")
   | IImpVar x -> (frms, (imp_lookup x envs) :: stck, envs)
@@ -619,14 +622,14 @@ let run p =
        (match stck with
         | MChan c :: stck' ->
            (pid, ((IRd c :: is) :: frms, stck', envs))
-        | _ -> error "rd lol")
+        | _ -> error "rd")
     | (pid, ((IRd x :: is) :: frms, stck, envs)) as s -> s
     | (pid, ((IChoice (pid', cid, (IRd x)) :: is) :: frms, stck, envs)) as s -> s
     | (pid, ((IWr (MHole, "") :: is) :: frms, stck, envs)) ->
        (match stck with
         | MChan c :: v :: stck' ->
            (pid, ((IWr (v, c) :: is) :: frms, stck', envs))
-        | _ -> error "wr lol")
+        | _ -> error "wr")
     | (pid, ((IWr (v, x) :: is) :: frms, stck, envs)) as s -> s
     | (pid, ([ISpawn] :: frms, stck, envs)) as s -> s
     | (pid, ((IFork f :: is) :: frms, stck, envs)) as s -> s                                                  
@@ -635,7 +638,6 @@ let run p =
     | (pid, ((i :: is) :: frms, stck, envs)) ->
        loop (pid, (exec i (is :: frms) stck envs))
     | (pid, ([] :: frms, stck, envs)) -> loop (pid, (frms, stck, envs))
-                                              (*| _ -> error ("illegal end of program: " ^ (string_of_process p)*)
   in
   loop p
 

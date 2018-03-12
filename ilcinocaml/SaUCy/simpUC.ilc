@@ -22,8 +22,7 @@ let execUC = lam e, p, f, a .
              fwdf2p) ;
        |> (a sid) ;
        |> (f sid) ;
-       |> (getParty 0 ; ()) ;
-       print "fin"
+       |> (getParty 0 ; ())
   )
 in
 let A = lam sid . () in

@@ -130,7 +130,6 @@ rule token = parse
   | ['?']
     ['a'-'z' 'A'-'Z' '0'-'9' '_' '\'']*
                               { IMPNAME (Lexing.lexeme lexbuf) }
-  
   | ['\'']
     ['a'-'z' 'A'-'Z' '0'-'9' '_' '-' '\'']*
                               { TAG (Lexing.lexeme lexbuf) }

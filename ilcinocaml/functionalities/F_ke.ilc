@@ -11,5 +11,5 @@ let F_ke = lam () .
       wr ((A, B, k), P) -> ?f2p
 in
   nu f2p, p2f .
-  let ?f2p, ?p2f = f2p, p2f in
-    F_ke () .|. 0
+    |> (F_ke ()) ;
+    |> 0

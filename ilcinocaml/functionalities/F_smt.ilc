@@ -12,5 +12,5 @@ let F_smt = lam () .
       wr (('Sent, S, sid, m'), R) -> ?f2p
 in
   nu f2p, p2f, f2a, a2f .
-    let (?f2p, ?p2f, ?f2a, ?a2f) = (f2p, p2f, f2a, a2f) in
-      F_smt () .|. 0
+    |> (F_smt ()) ;
+    |> 0

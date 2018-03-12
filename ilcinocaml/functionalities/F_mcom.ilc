@@ -7,12 +7,12 @@ let F_com = lam () .
     req mem b {0,1} in
     wr (('Receipt, sid, cid, P_i, P_j), {P_j, "S"}) -> ?f2p ;
     let ('Open, sid, cid, P_i, P_j) = rd ?p2f in
-    wr (('Open, sid, cid, P_i, P_j, b), {P_j, "S"}) -> f2p
+    wr (('Open, sid, cid, P_i, P_j, b), {P_j, "S"}) -> ?f2p
 in 
   nu f2p, p2f .
-    let ?f2p, ?p2f = f2p, p2f in
-    F_com () .|. wr ('Commit, 0, 0, 1, 2, 0) -> p2f ;
-               let (('Receipt, sid, cid, P_i, P_j), _) = rd f2p in
-	       wr ('Open, sid, cid, P_i, P_j) -> p2f ;
-	       let (('Open, _, _, _, _, b), _) = rd f2p in
-	       b
+    |> (F_com ()) ;
+    |> (wr ('Commit, 0, 0, 1, 2, 0) -> p2f ;
+        let (('Receipt, sid, cid, P_i, P_j), _) = rd f2p in
+	wr ('Open, sid, cid, P_i, P_j) -> p2f ;
+	let (('Open, _, _, _, _, b), _) = rd f2p in
+	b)

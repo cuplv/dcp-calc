@@ -2,8 +2,6 @@ let execUC = lam e, p, f, a .
   nu p2f, f2p,
      p2a, a2p,
      a2f, f2a . (
-       let ?p2f, ?f2p, ?p2a, ?a2p, ?a2f, ?f2a =
-            p2f,  f2p,  p2a,  a2p,  a2f,  f2a in
        let sid = 999 in
        let corrupt = {} in
        let partyMap = ref [] in

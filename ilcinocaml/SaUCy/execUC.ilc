@@ -11,7 +11,7 @@ let partyWrapper = lam sid, p, crupt .
             let m = rd pp2z in
               wr (pid, m) -> ?p2z ;
               loop in loop) ;
-      |> (p pid pp2f pp2z)
+      |> (p pid)
   in
   let getParty = lam pid .
     if (not (mem pid @partyMap)) then newParty pid ;
@@ -20,45 +20,88 @@ let partyWrapper = lam sid, p, crupt .
   (* Route messages from env to honest parties *)
   |> (letrec fwd_z2p =
         let (pid, m) = rd ?z2p in
-          if (mem pid corrupt)
-          then wr (pid, m) -> p2a
+          if (mem pid crupt)
+          then wr (pid, m) -> ?p2a
           else wr m -> (getParty pid)."z2p" ;
           fwd_z2p in fwd_z2p) ;
   (* Route messages from func to honest parties *)
   |> (letrec fwd_f2p = 
        let (pid, m) = rd ?f2p in
-         if (mem pid corrupt)
-         then wr (pid, m) -> p2a
+         if (mem pid crupt)
+         then wr (pid, m) -> ?p2a
          else wr m -> (getParty pid)."f2p" ;
          fwdf2p in fwdf2p) ;
   (* Forward messages to corrupt parties to func *)
   |> (letrec fwd_2c2f =
-        let (pid, m) = rd a2p in
-          if (mem pid corrupt)
-          then wr (pid, m) -> p2f ;
+        let (pid, m) = rd ?a2p in
+          if (mem pid crupt)
+          then wr (pid, m) -> ?p2f ;
           fwd_2c2f in fwd_2c2f) ;
   |> (letrec fwd_2c2z =
-        let (pid, m) = rd a2p in
-          if (mem pid corrupt)
-          then wr (pid, m) -> p2z ;
+        let (pid, m) = rd ?a2p in
+          if (mem pid crupt)
+          then wr (pid, m) -> ?p2z ;
           fwd_2c2z in fwd_2c2z)
+in 
+let execUC = lam z, p, f, a .
+  nu z2p, p2z,
+     p2f, f2p,
+     f2a, a2f,
+     a2z, z2a,
+     a2p, p2a,
+     z2f, f2z,
+     z2exec, dump .
+     let (sid, crupt) = rd z2exec in
+     |> (f sid crupt) ;
+     |> (a sid crupt) ;
+     |> (partyWrapper sid p crupt)
+     (* Dump? *)
+in
+let idealProtocol = lam pid .
+  |> (letrec loop =
+        let m = rd ?z2p in
+          wr m -> ?p2f ;
+          loop in loop) ;
+  |> (letrec loop =
+        let m = rd ?f2p in
+          wr m -> ?p2z ;
+          loop in loop)
+in
+let dummyAdversary = lam sid, crupt .
+  |> (letrec loop =
+        match (rd ?z2a) with
+        | b        => wr b -> ?a2f
+        | (pid, m) => wr (pid, m) -> ?a2p
+        end ; loop in loop) ;
+  |> (letrec loop =
+        let m = rd ?f2a in
+          wr m -> ?a2z ;
+          loop in loop) ;
+  |> (letrec loop =
+        let m = rd ?p2a in
+          wr m -> ?a2z ;
+          loop in loop)
+in
+(* pass channel? *)
+let voidAdversary = lam sid, crupt .
+  |> (letrec loop =
+        let _ = rd ?z2a in
+        () ; loop in loop) ;
+  |> (letrec loop =
+        let _ = rd ?f2a in
+        () ; loop in loop) ;
+  |> (letrec loop =
+        let _ = rd ?p2a in
+        () ; loop in loop)
+in
+let dummyFunctionality = lam sid, crupt .
+  |> (letrec loop =
+        let (pid, m) = rd ?p2f in
+          wr (pid, m) -> ?f2p ;
+          loop in loop) ;
+  |> (letrec loop =
+        let m = rd ?a2f in
+          wr m -> ?f2p ;
+          loop in loop)    
 in 0
-(*let execUC = lam e, p, f, a .
-  nu p2f, f2p,
-     p2a, a2p,
-     a2f, f2a . (
-       let sid = 999 in
-       let corrupt = {} in )
-in
-let A = lam sid . () in
-let F = lam sid .
-  letrec loop =
-    let (pid, m) = rd ?p2f in
-      print (m ++ " from " ++ show pid) ;
-      wr (pid, "received") -> ?f2p ;
-      loop in loop
-in      
-let P = lam sid, chan. |> (wr (0, "foo") -> ?p2f ; print (rd chan)) ;
-                       |> (wr (1, "bar") -> ?p2f ; print (rd chan))
-in
-execUC () P F A*)
+(*execUC z p f a *)

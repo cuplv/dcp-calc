@@ -230,11 +230,10 @@ let lookup x = function
   | env::_ -> (try List.assoc x env with Not_found -> error ("unknown " ^ x))
   | _ -> error "no environment to look up"
 
-let imp_lookup x = function
-  | _ ::env:: _ ->
-     let name = String.sub x 1 ((String.length x)-1) in
-     (try List.assoc name env with Not_found -> error ("unknown " ^ name))
-  | _ -> error ("no environment to look up implicit arg" ^ x)
+let rec imp_lookup x = function
+  | env :: rest -> let name = String.sub x 1 ((String.length x)-1) in
+                   (try List.assoc name env with Not_found -> imp_lookup x rest)
+  | [] -> error ("unknown imp " ^ x)
 
 let pop = function
   | [] -> error "empty stack"
@@ -337,7 +336,7 @@ let rand = function
   | s -> MInt (Random.bits ()) :: s
 
 let show = function
-  | (MInt x) :: s -> MString (string_of_int x) :: s
+  | x :: s -> MString (string_of_mvalue x) :: s
   | _ -> error "no int to show"
 
 let assoc_lookup = function
@@ -410,6 +409,8 @@ let pattern_match p1 p2 =
     | (PatTag x :: rest1, MTag y :: rest2) when x=y ->
        compare mapping rest1 rest2
     | (PatWildcard :: rest1, _ :: rest2) ->
+       compare mapping rest1 rest2
+    | (PatUnit :: rest1, MUnit :: rest2) ->
        compare mapping rest1 rest2
     | (PatName x :: rest1, y :: rest2) ->
        compare ((x, y) :: mapping) rest1 rest2

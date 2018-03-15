@@ -2,7 +2,7 @@ let partyWrapper = lam sid, p, crupt .
   let partyMap = ref [] in
   let newParty = lam pid .
     nu pp2f, pp2z .
-      let partyMap := (pid, [("f2p", f2pid), ("z2p", z2pid)]) :: @partyMap ;
+      let partyMap := (pid, [("p2f", pp2f), ("p2z", pp2z)]) :: @partyMap ;
       |> (letrec loop =
             let m = rd pp2f in
               wr (pid, m) -> ?p2f ;
@@ -20,17 +20,18 @@ let partyWrapper = lam sid, p, crupt .
   (* Route messages from env to honest parties *)
   |> (letrec fwd_z2p =
         let (pid, m) = rd ?z2p in
+          print m ;
           if (mem pid crupt)
           then wr (pid, m) -> ?p2a
-          else wr m -> (getParty pid)."z2p" ;
+          else wr m -> (getParty pid)."p2z" ;
           fwd_z2p in fwd_z2p) ;
   (* Route messages from func to honest parties *)
   |> (letrec fwd_f2p = 
        let (pid, m) = rd ?f2p in
          if (mem pid crupt)
          then wr (pid, m) -> ?p2a
-         else wr m -> (getParty pid)."f2p" ;
-         fwdf2p in fwdf2p) ;
+         else wr m -> (getParty pid)."p2f" ;
+         fwd_f2p in fwd_f2p) ;
   (* Forward messages to corrupt parties to func *)
   |> (letrec fwd_2c2f =
         let (pid, m) = rd ?a2p in
@@ -42,7 +43,7 @@ let partyWrapper = lam sid, p, crupt .
           if (mem pid crupt)
           then wr (pid, m) -> ?p2z ;
           fwd_2c2z in fwd_2c2z)
-in 
+in
 let execUC = lam z, p, f, a .
   nu z2p, p2z,
      p2f, f2p,
@@ -50,12 +51,22 @@ let execUC = lam z, p, f, a .
      a2z, z2a,
      a2p, p2a,
      z2f, f2z,
-     z2exec, dump .
-     let (sid, crupt) = rd z2exec in
-     |> (f sid crupt) ;
-     |> (a sid crupt) ;
-     |> (partyWrapper sid p crupt)
-     (* Dump? *)
+     z2exec, dump,
+     pump, outp .
+     |> (let (sid, crupt) = rd z2exec in
+         print (show sid) ;
+         |> (f sid crupt) ;
+         |> (a sid crupt) ;
+         |> (partyWrapper sid p crupt)) ;
+     |> (letrec run =
+           wr () -> pump ;
+           let o = rd outp in
+             match o with
+             | () => force(run)
+             | a  => print a
+             end
+           in run) ;
+     z ()
 in
 let idealProtocol = lam pid .
   |> (letrec loop =
@@ -103,5 +114,25 @@ let dummyFunctionality = lam sid, crupt .
         let m = rd ?a2f in
           wr m -> ?f2p ;
           loop in loop)    
-in 0
-(*execUC z p f a *)
+in
+let testEnv = lam () .
+  wr (999, {0}) -> ?z2exec ;
+  |> (letrec loop =
+        let x = rd ?p2z in
+          print ("Z: p sent " ++ show x) ;
+          loop in loop) ;
+  |> (letrec loop =
+        let m = rd ?a2z in
+          print ("Z: a sent " ++ show m) ;
+          wr "environment output: 1" -> ?outp ;
+          loop in loop) ;
+  let () = rd ?pump in
+    print "pump" ;
+    if true then
+      wr (0, "This is Alice") -> ?z2p
+    else
+      wr (1, "This is Bob") -> ?z2p ;
+    let () = rd ?pump in
+      wr "ok" -> ?z2a
+in
+execUC testEnv idealProtocol dummyFunctionality dummyAdversary

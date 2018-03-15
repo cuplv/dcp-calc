@@ -9,9 +9,12 @@
 \input{defs}
 \usepackage{enumitem}
 
-\title{SaUCy: Taming Complexity in Universally Composable Security}
+\newcommand{\mc}[1]{\mathcal{{#1}}}
+\newcommand{\parheader}[1]{\noindent\emph{\textbf{{#1}.}}}
+
+\title{SaUCy: Super Amazing Universal ComposabilitY}
 \author{Kevin Liao}
-\institute{University of Illinois at Urbana-Champaign}
+\institute{}
 
 \begin{document}
 
@@ -23,7 +26,91 @@ This is a report for class.
 
 \section{Introduction}
 
+Universal Composability (UC) is a general-purpose framework for analyzing
+cryptographic protocols. Protocols proven to be UC-secure have strong security
+guarantees---they maintain their security even when concurrently composed with
+arbitrarily many, adversarially controlled protocol instances. That is, a
+UC-secure protocol is secure in \emph{any context}, which enables building and
+analyzing large cryptographic protocols in a modular fashion.
+
+However, UC proofs tend to be complex and exist only as ``pen-and-paper''
+proofs, making many of them essentially unverifiable. The goal of this work is
+to place the UC framework on a proper analytic foundation by developing
+computer-aided tools and techniques for elaborating proofs of security.\smallskip
+
+\parheader{Contributions} The main contributions of this paper are the
+following:
+
+\begin{enumerate}
+\item ILC
+\end{enumerate}
+
+\parheader{Organization} In Section \ldots
+
 \section{Background}
+
+Demonstrating that a protocol ``does its job securely'' is an essential component in
+cryptographic protocol design. One main challenge in formulating the security of
+cryptographic protocols is capturing threats coming from the execution
+environment. Another challenge is coming up with security definitions that allow
+building and analyzing large cryptographic protocols from simpler building
+blocks while preserving security. Addressing both of these challenges is the focus of
+the Universal Composability framework.
+
+Previous definitions of security, which considered only standalone execution or
+sequential execution of protocols, have been shown to be insufficient in many
+contexts where protocols are deployed within more general environments. Extended
+security definitions which directly represent a given environment were also
+insufficient, often complex and limited in scope.
+
+In Universal Composability, protocols are analyzed \emph{in vitro}, that is, in
+isolation as a single protocol instance, which simplifies the
+analysis. Security \emph{in vivo}, that is, in realistic settings where the
+protocol may run concurrently with other protocols, is guaranteed by making sure
+security is preserved under a general composition operation on protocols.
+
+The high-level approach for determining whether a protocol is secure for some
+cryptographic task goes back to~\cite{goldreich1987play}. First envision
+an \emph{ideal protocol} $\phi$ that is secure by construction for carrying out the cryptographic task. In the ideal protocol, parties hand their
+inputs to a trusted party, called an \emph{ideal functionality} $\mc{F}$, who locally
+computes and hands to each party their corresponding output. We can think of
+this ideal protocol as a formal specification of the security
+requirements of the task. Then, we say that a \emph{real world} protocol $\pi$
+is secure if it \emph{realizes} (emulates) $\phi$. Specifically, for any
+real world adversary $\mc{A}$, there exists an ideal process adversary $\mc{S}$
+(called a simulator), such that the output of running $\pi$ with $\mc{A}$ is
+indistinguishable from the output of running $\phi$ with $\mc{S}$.
+
+This security suffices for achieving standalone security, in
+which a single protocol instance runs in isolation, but may be
+composed \emph{sequentially} (but not concurrently) with other protocol
+instances. To generalize secure composition to the concurrent setting, the UC
+framework adds a new algorithmic entity to the setup described above, called
+the \emph{environment}. Intuitively, the environment represents everything
+external to the current protocol execution. Additionally, the UC framework has a
+different notion of emulation. Namely, the environment $\mc{E}$ can interact
+freely with the adversary $\mc{A}$ throughout the protocol execution. Thus, the
+environment ``interactively distinguishes'' between whether it is interacting
+with the real-world setup with $\pi$ and $\mc{A}$ or the ideal-world setup with
+$\phi$ and $\mc{S}$. We say that $\pi$ UC-realizes $\phi$ if for all
+environments $\mc{E}$ and for all adversaries $\mc{A}$, there exists a simulator
+$\mc{S}$ such that $\mc{E}$ cannot tell with greater than negligible probability
+whether it is interacting with $\pi$ and $\mc{A}$ or $\phi$ and $\mc{S}$.
+
+\begin{definition}[Protocol Emulation]
+Let $\pi$ and $\phi$ be protocols. We say that $\pi$ UC-emulates $\phi$ if for
+any PPT adversary $\mc{A}$ there exists a PPT adversary $\mc{S}$ such that for
+any balanced PPT environment $\mc{E}$ we have:
+\begin{equation*}
+\textsc{EXEC}_{\phi, \mc{S}, \mc{E}} \approx \textsc{EXEC}_{\pi, \mc{A}, \mc{E}}.
+\end{equation*}
+\end{definition}
+
+\begin{theorem}[Universal composition: General statement]
+Let $\rho$, $\pi$, $\phi$ be PPT protocols such that $\pi$ UC-emulates $\phi$
+and both $\pi$ and $\phi$ are subroutine respecting. Then protocol
+$\rho^{\phi \rightarrow \pi}$ UC-emulates protocol $\rho$.
+\end{theorem}
 
 \section{SaUCy Execution}
 
@@ -34,6 +121,11 @@ This is a report for class.
 \section{Related Work}
 
 \section{Conclusion}
+
+\bibliographystyle{plain}
+\bibliography{saucy-report}
+
+\appendix
 
 \begin{figure}[htbp]
   \centering

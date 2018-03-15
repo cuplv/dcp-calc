@@ -2,7 +2,7 @@ let partyWrapper = lam sid, p, crupt .
   let partyMap = ref [] in
   let newParty = lam pid .
     nu pp2f, pp2z .
-      let partyMap := (pid, [("p2f", pp2f), ("p2z", pp2z)]) :: @partyMap ;
+      let partyMap := (pid, [("f2p", pp2f), ("z2p", pp2z)]) :: @partyMap ;
       |> (letrec loop =
             let m = rd pp2f in
               wr (pid, m) -> ?p2f ;
@@ -20,17 +20,16 @@ let partyWrapper = lam sid, p, crupt .
   (* Route messages from env to honest parties *)
   |> (letrec fwd_z2p =
         let (pid, m) = rd ?z2p in
-          print m ;
           if (mem pid crupt)
           then wr (pid, m) -> ?p2a
-          else wr m -> (getParty pid)."p2z" ;
+          else wr m -> (getParty pid)."z2p" ;
           fwd_z2p in fwd_z2p) ;
   (* Route messages from func to honest parties *)
   |> (letrec fwd_f2p = 
        let (pid, m) = rd ?f2p in
          if (mem pid crupt)
          then wr (pid, m) -> ?p2a
-         else wr m -> (getParty pid)."p2f" ;
+         else wr m -> (getParty pid)."f2p" ;
          fwd_f2p in fwd_f2p) ;
   (* Forward messages to corrupt parties to func *)
   |> (letrec fwd_2c2f =
@@ -58,6 +57,7 @@ let execUC = lam z, p, f, a .
          |> (f sid crupt) ;
          |> (a sid crupt) ;
          |> (partyWrapper sid p crupt)) ;
+     (* Run until output *)
      |> (letrec run =
            wr () -> pump ;
            let o = rd outp in
@@ -112,14 +112,16 @@ let dummyFunctionality = lam sid, crupt .
           loop in loop) ;
   |> (letrec loop =
         let m = rd ?a2f in
-          wr m -> ?f2p ;
+          wr m -> ?f2a ;
           loop in loop)    
 in
 let testEnv = lam () .
-  wr (999, {0}) -> ?z2exec ;
+  wr (999, {}) -> ?z2exec ;
   |> (letrec loop =
         let x = rd ?p2z in
           print ("Z: p sent " ++ show x) ;
+          (* ?pass *)
+          wr () -> ?outp ;
           loop in loop) ;
   |> (letrec loop =
         let m = rd ?a2z in

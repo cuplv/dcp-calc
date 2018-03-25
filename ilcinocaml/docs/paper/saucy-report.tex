@@ -26,23 +26,43 @@ This is a report for class.
 
 \section{Introduction}
 
-Universal Composability (UC) is a general-purpose framework for analyzing
-cryptographic protocols. Protocols proven to be UC-secure have strong security
-guarantees---they maintain their security even when concurrently composed with
-arbitrarily many, adversarially controlled protocol instances. That is, a
-UC-secure protocol is secure in \emph{any context}, which enables building and
-analyzing large cryptographic protocols in a modular fashion.
+Proving that a protocol is secure is an essential component in cryptographic
+protocol design. To do so, we must rigorously define what security means, and
+then demonstrate that the protocol lives up to the definition. Initial security
+definitions for cryptographic tasks consider only a standalone execution of the
+protocol. While this simplifies analyses, these definitions are insufficient
+when analyzing the protocol in more complex contexts. Extended security
+definitions have been formulated to remedy these drawbacks, but are often
+complex and ad hoc.
 
-However, UC proofs tend to be complex and exist only as ``pen-and-paper''
-proofs, making many of them essentially unverifiable. The goal of this work is
-to place the UC framework on a proper analytic foundation by developing
-computer-aided tools and techniques for elaborating proofs of security.\smallskip
+The Universal Composability (UC) framework by
+Canetti~\cite{canetti2001universally} is a general framework for reasoning about
+the security of practically any cryptographic protocol in a unified and
+systematic way. The idea is to formulate a security definition and analyze the
+protocol as in the standalone model, but to additionally show that the protocol
+composes securely with other arbitrary protocols, i.e.,\ the protocol is secure
+in \emph{any context}. The benefit of composability is that complex, UC-secure
+protocols can then be modularly constructed from smaller UC-secure ``building
+blocks''.
 
-\parheader{Contributions} The main contributions of this paper are the
+While universally composable security is a powerful guarantee, elaborating UC
+proofs is highly nontrivial. They are notoriously complex and exist primarily as
+``pen-and-paper'' proofs, which makes many of them essentially
+unverifiable. Thus, the goal of this work is to place the UC framework on a
+proper analytic foundation by developing computer-aided tools and techniques for
+elaborating UC proofs.\smallskip
+
+\parheader{Contributions} The main contributions of this work are the
 following:
-
 \begin{enumerate}
-\item ILC
+\item We design and implement a programming language called the Interactive
+Lambda Calculus (ILC for short) for constructing algorithmic entities within the
+UC execution model.
+\item We implement the UC execution model in ILC along with a ``library'' of
+example algorithmic entities (ideal functionalities).
+\item We build a compiler for translating ILC programs into
+EasyCrypt~\cite{barthe2011computer} modules, which allows us to construct
+cryptographic proofs using EasyCrypt's interactive theorem proving facilities.
 \end{enumerate}
 
 \parheader{Organization} In Section \ldots

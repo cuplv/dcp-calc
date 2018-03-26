@@ -21,14 +21,14 @@
 \maketitle
 
 \begin{abstract}
-This is a report for class.
+\ldots
 \end{abstract}
 
 \section{Introduction}
 
 Proving that a protocol is secure is an essential component in cryptographic
 protocol design. To do so, we must rigorously define what security means, and
-then demonstrate that the protocol lives up to the definition. Initial security
+then demonstrate that the protocol lives up to the definition. First-cut security
 definitions for cryptographic tasks consider only a standalone execution of the
 protocol. While this simplifies analyses, these definitions are insufficient
 when analyzing the protocol in more complex contexts. Extended security
@@ -36,21 +36,21 @@ definitions have been formulated to remedy these drawbacks, but are often
 complex and ad hoc.
 
 The Universal Composability (UC) framework by
-Canetti~\cite{canetti2001universally} is a general framework for reasoning about
-the security of practically any cryptographic protocol in a unified and
-systematic way. The idea is to formulate a security definition and analyze the
-protocol as in the standalone model, but to additionally show that the protocol
-composes securely with other arbitrary protocols, i.e.,\ the protocol is secure
-in \emph{any context}. The benefit of composability is that complex, UC-secure
-protocols can then be modularly constructed from smaller UC-secure ``building
-blocks''.
+Canetti~\cite{canetti2001universally} takes an alternative approach---it is a
+general framework for reasoning about the security of practically any
+cryptographic protocol in a unified and systematic way. The idea is to formulate
+a security definition and analyze the protocol as in the standalone model, but
+to additionally show that the protocol composes securely with arbitrary other
+protocols, i.e.,\ the protocol is secure in \emph{any context}. The benefit of
+composability is that complex, UC-secure protocols can then be modularly
+constructed from smaller UC-secure ``building blocks''.
 
 While universally composable security is a powerful guarantee, elaborating UC
 proofs is highly nontrivial. They are notoriously complex and exist primarily as
 ``pen-and-paper'' proofs, which makes many of them essentially
 unverifiable. Thus, the goal of this work is to place the UC framework on a
 proper analytic foundation by developing computer-aided tools and techniques for
-elaborating UC proofs.\smallskip
+reasoning in the UC framework.\smallskip
 
 \parheader{Contributions} The main contributions of this work are the
 following:
@@ -69,61 +69,89 @@ cryptographic proofs using EasyCrypt's interactive theorem proving facilities.
 
 \section{Background}\label{sec:background}
 
-In the Universal Composability framework, the security of a protocol is analyzed \emph{in vitro}
-as a standalone protocol for simplicity, but security \emph{in vivo}, that is, in realistic
-settings where the protocol can run concurrently with arbitrarily many (even adversarially
-controlled) protocols, is guaranteed by showing that security is preserved under a
-general composition operation on protocols.
+In the Universal Composability framework, the security of a protocol is
+analyzed \emph{in vitro} as a standalone protocol for simplicity, but
+security \emph{in vivo}, that is, in realistic settings where the protocol can
+run concurrently with arbitrarily many (even adversarially controlled)
+protocols, is guaranteed by showing that security is preserved under a general
+composition operation on protocols.
 
 Demonstrating that a protocol meets its security definition in the standalone
 model goes back to the real/ideal paradigm introduced
 in~\cite{goldreich1987play}. First, envision an \emph{ideal protocol} $\phi$
-that is secure by definition for carrying out a cryptographic task. In the ideal
-protocol, parties hand their inputs to an incorruptible trusted party, called
-an \emph{ideal functionality} $\mc{F}$. The ideal functionality then performs
-the task locally and hands to each party their prescribed output. We can think
-of the ideal protocol as a formal specification for the security requirements of
-the task.
+(running with parties $\phi_1, \ldots, \phi_n$) that is secure by definition for
+carrying out a cryptographic task. In the ideal protocol, each party hands their
+input to an incorruptible trusted party, called an \emph{ideal functionality}
+$\mc{F}$. The ideal functionality then performs the task locally and hands to
+each party their prescribed output. We can think of the ideal protocol as a
+formal specification for the security requirements of the task.
 
 Of course, in the real world, such a trusted party does not exist! Since a real
-world protocol $\pi$ cannot rely on the ideal functionality to carry out the
-task securely, we would like to show that $\pi$ emulates the ideal protocol
-$\phi$, which does rely on the ideal functionality. Informally, we show this by
-proving that whatever ``damage'' any adversary $\mc{A}$ can do to break $\pi$,
-there exists an adversary $\mc{S}$ (known as a simulator) that can do the same
-``damage'' to break $\phi$. However, since $\phi$ is secure by definition, the
-``damage'' done by $\mc{A}$ does not break the security of $\pi$. We will formalize
-this idea shortly.
+world protocol $\pi$ (running with parties $\pi_1, \ldots, \pi_n$) cannot rely
+on the ideal functionality to carry out the task securely, we would like to show
+that $\pi$ \emph{emulates} the ideal protocol $\phi$, which does rely on the
+ideal functionality. Informally, we show this by proving that whatever
+``damage'' any adversary $\mc{A}$ can do to break $\pi$, there exists an
+adversary $\mc{S}$ (known as a simulated adversary, or simulator) that can do
+the same ``damage'' to break $\phi$. However, since $\phi$ is secure by
+definition, the ``damage'' done by $\mc{A}$ does not break the security of
+$\pi$. We will begin to formalize this idea shortly.
 
-The setup above is sufficient for proving security in the standalone model,
-which allows for secure sequential composition. However, to generalize
-composition to the concurrent setting, the UC framework includes an additional
-entity known as the environment $\mc{Z}$. Intuitively, $\mc{Z}$ represents
-everything external to the protocol, and it can interact freely with the
-adversary throughout the protocol execution. This allows the environment to
-observe what ``damage'' an adversary can do to break the protocol (either in the
-real world or the ideal world). If we show that $\mc{Z}$ cannot tell whether it
-is interacting with the real world setup or the ideal world setup, then we
-reason that $\pi$ UC-emulates $\phi$ and is thus secure.
+The above setup is sufficient for proving security in the standalone model,
+which allows for secure \emph{sequential} composition. However, to generalize
+composition to the \emph{concurrent} setting, the UC framework includes an
+additional entity known as the environment $\mc{Z}$. Intuitively, the
+environment represents everything external to the protocol in consideration---it
+can hand inputs to protocol parties and interact freely with the adversary throughout the
+protocol execution. Essentially, the environment acts as an outside observer,
+and its job is to determine whether it is interacting with the real world setup
+or the ideal world setup by examining what ``damage'' an adversary can do to
+break the protocol. Similar to the security definition described in the
+standalone model, if no $\mc{Z}$ can distinguish between the real world setup
+(with $\pi$ and $\mc{A}$) and the ideal world setup (with $\phi$ and $\mc{S}$),
+then we say that $\pi$ \emph{UC-emulates} $\phi$ and is
+thus \emph{UC-secure}. Figure~\ref{fig:uc-experiment} shows the real world and
+ideal world setups in the UC experiment.
 
-We say that $\pi$ UC-realizes $\phi$ if for all
-environments $\mc{E}$ and for all adversaries $\mc{A}$, there exists a simulator
-$\mc{S}$ such that $\mc{E}$ cannot tell with greater than negligible probability
-whether it is interacting with $\pi$ and $\mc{A}$ or $\phi$ and $\mc{S}$.
+\begin{figure}[!htb]
+\centering
+\begin{minipage}{.5\textwidth}
+  \centering
+  \includegraphics[width=0.8\textwidth]{real-setup}
+\end{minipage}%
+\begin{minipage}{.5\textwidth}
+  \centering
+  \includegraphics[width=0.8\textwidth]{ideal-setup}
+\end{minipage}
+\caption{Real world setup (left) and ideal world setup (right) in the UC experiment.}
+\label{fig:uc-experiment}
+\end{figure}
 
-\begin{definition}[Protocol Emulation]
+Having described the two setups in the UC experiment, we define the random
+variable $\textsc{EXEC}_{\pi, \mc{A}, \mc{Z}}$ to be the output of $\mc{Z}$ in
+the real world execution and the random variable
+$\textsc{EXEC}_{\phi, \mc{S}, \mc{Z}}$ to be the output of $\mc{Z}$ in the ideal
+world execution. Additionally, let $k$ be a security parameter.
+
+\begin{definition}[UC Protocol Emulation]
 Let $\pi$ and $\phi$ be protocols. We say that $\pi$ UC-emulates $\phi$ if for
-any PPT adversary $\mc{A}$ there exists a PPT adversary $\mc{S}$ such that for
-any balanced PPT environment $\mc{E}$ we have:
+any adversary $\mc{A}$ there exists an
+adversary $\mc{S}$ such that for any environment $\mc{Z}$, we have:
 \begin{equation*}
-\textsc{EXEC}_{\phi, \mc{S}, \mc{E}} \approx \textsc{EXEC}_{\pi, \mc{A}, \mc{E}}.
+\textsc{EXEC}_{\phi, \mc{S}, \mc{E}} \approx \textsc{EXEC}_{\pi, \mc{A}, \mc{E}},
 \end{equation*}
+\noindent i.e.,\ the statistical difference between
+$\textsc{EXEC}_{\pi, \mc{A}, \mc{Z}}$ and $\textsc{EXEC}_{\phi, \mc{S}, \mc{Z}}$
+is negligible in $k$.
 \end{definition}
 
-\begin{theorem}[Universal composition: General statement]
-Let $\rho$, $\pi$, $\phi$ be PPT protocols such that $\pi$ UC-emulates $\phi$
-and both $\pi$ and $\phi$ are subroutine respecting. Then protocol
-$\rho^{\phi \rightarrow \pi}$ UC-emulates protocol $\rho$.
+A more formal definition can be found in the full UC
+paper~\cite{canetti2001universally}. An informal statement for guaranteeing that
+a UC-secure protocol composes securely with arbitrary other protocols is the following:
+
+\begin{theorem}[Universal Composition]
+Let $\rho$, $\pi$, $\phi$ be protocols such that $\pi$ UC-emulates $\phi$. Then
+protocol $\rho^{\phi \rightarrow \pi}$ UC-emulates protocol $\rho$.
 \end{theorem}
 
 \section{SaUCy Execution}

@@ -50,7 +50,7 @@ proofs is highly nontrivial. They are notoriously complex and exist primarily as
 ``pen-and-paper'' proofs, which makes many of them essentially
 unverifiable. Thus, the goal of this work is to place the UC framework on a
 proper analytic foundation by developing computer-aided tools and techniques for
-reasoning in the UC framework.\smallskip
+reasoning about UC security.\smallskip
 
 \parheader{Contributions} The main contributions of this work are the
 following:
@@ -117,11 +117,11 @@ ideal world setups in the UC experiment.
 \centering
 \begin{minipage}{.5\textwidth}
   \centering
-  \includegraphics[width=0.8\textwidth]{real-setup}
+  \includegraphics[width=\textwidth]{real-setup}
 \end{minipage}%
 \begin{minipage}{.5\textwidth}
   \centering
-  \includegraphics[width=0.8\textwidth]{ideal-setup}
+  \includegraphics[width=\textwidth]{ideal-setup}
 \end{minipage}
 \caption{Real world setup (left) and ideal world setup (right) in the UC experiment.}
 \label{fig:uc-experiment}
@@ -154,11 +154,52 @@ Let $\rho$, $\pi$, $\phi$ be protocols such that $\pi$ UC-emulates $\phi$. Then
 protocol $\rho^{\phi \rightarrow \pi}$ UC-emulates protocol $\rho$.
 \end{theorem}
 
+\section{Proposed Work}
+
+The goal of this work is to place the UC framework on a proper analytic
+foundation by developing computer-aided tools and techniques for reasoning about
+UC security. To achieve this goal, we first design and implement a programming
+language called the Interactive Lambda Calculus (ILC for short) for constructing
+algorithmic entities within the UC execution model. ILC is a functional
+language, in the ML family of languages, with additional pi-calculus-like
+constructs for modeling communication. Since processes in the UC framework are
+modeled as interactive Turing machines, which are Turing machines that can write
+on each other's tapes, we would like for ILC to be able to naturally express
+these dialogues.
+
+Perhaps most importantly, ILC's type system will enforce that any well-typed ILC
+program will result in a valid execution with respect to the UC model of
+execution. For example, in the UC execution model, only one process can be
+active at a time---when a process $P_1$ writes to process $P_2$, $P_1$ passes its
+activation to $P_2$. The precise semantics of the UC execution model, not the
+mention the many variants of the UC framework (guc, juc, Symbolic UC, RSIM,
+GNUC, etc.), can be difficult to keep track of. Thus, we leave it to a static
+type checker to ensure that any program written in ILC will not violate the UC
+execution model.
+
+Since ILC is built with the UC execution model in mind, the next step is to
+actually build the UC execution model in ILC. Pseudocode for the UC execution
+model is in Figure~\ref{fig:execuc}. In addition, we will build a ``library'' of
+algorithmic entities commonly seen in UC. We will start with common ideal
+functionalities such as $\mathcal{F}_{\textsc{SMT}}$ (for secure message
+transmission), $\mathcal{F}_{\textsc{AUTH}}$ (for authentication), and move onto
+more complex functionalities for zero knowledge protocols and secure multiparty
+computation protocols.
+
+Finally, we will build a compiler for translating ILC programs into
+EasyCrypt~\cite{barthe2011computer} modules. EasyCrypt is an automated tool for
+elaborating cryptography proofs from sketches. Although the common reasoning
+patterns for carrying out simulation-based proofs is not yet well supported in
+EasyCrypt, we believe this will be a significant first step in mechanizing
+simulation-based and UC proofs.
+
 \section{SaUCy Execution}
 
 \input{defn_execuc}
 
 \section{ILC Language Definition}
+
+\section{Functionalities in ILC}
 
 \section{Related Work}
 

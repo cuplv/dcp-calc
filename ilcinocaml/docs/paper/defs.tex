@@ -11,8 +11,62 @@
 \let\endproof\relax
 \usepackage{amsmath,amsthm,amssymb}
 %\usepackage{thmtools,thm-restate}
+\usepackage{framed}
+\usepackage[framemethod=TikZ]{mdframed}
+\usepackage[most]{tcolorbox}
+\usepackage{listings}
+\usepackage{upquote}
 
 \graphicspath{{./figures/}}
+
+\newcommand{\Func}{\mathcal{F}}
+
+\newtcolorbox{func}[1][]{title={\textbf{Functionality}~$\Func_{\textsc{#1}}$},enhanced,%drop shadow={black!50!white},
+  coltitle=black,
+  top=0.2in,
+  attach boxed title to top left=
+  {xshift=0.5cm,yshift=-\tcboxedtitleheight/2},
+  boxed title style={size=small,colback=blue!20},colback=white}
+
+\newtcolorbox{ilc}[1][]{title={\textbf{ILC}~$\Func_{\textsc{#1}}$},enhanced,%drop shadow={black!50!white},
+  coltitle=black,
+  top=0.1in,
+  attach boxed title to top left=
+  {xshift=0.5cm,yshift=-\tcboxedtitleheight/2},
+  boxed title style={size=small,colback=red!25},colback=white}
+
+\definecolor{mygreen}{rgb}{0.0, 0.5, 0.0}
+
+\lstdefinestyle{ilc}
+{
+    numbers=left,
+    stepnumber=1,
+    captionpos=b,
+    basicstyle = {\ttfamily},
+    commentstyle = {\itshape\color{orange}},
+    columns=fullflexible,
+    %morecomment=[s]{/*}{*/},
+    stringstyle= {\color{purple}},
+    keywordstyle = {\color{mygreen}},
+    keywords={},
+    keywordsprefix= {'},
+    alsoletter= {' -},
+    upquote = true,
+    keywordstyle = [2]{\color{blue}},
+    morekeywords = [2]{let, in, letrec, lam, req},
+    keywordstyle = [3]{\color{red}},
+    morekeywords = [3]{rand, mem},
+    keywordstyle = [4]{\color{magenta}},
+    morekeywords = [4]{nu, wr, rd},
+    literate = {|>}{{\textcolor{magenta}{$\mid\triangleright\ $}}}1 {->}{{\textcolor{magenta}{$\rightarrow\ $}}}1 {\&}{{\textcolor{red}{\texttt{\&}}}}1,
+    %frame=single,
+    xleftmargin=0.5cm,
+    mathescape=true,
+    showstringspaces=false
+    numbersep=5pt,                   % how far the line-numbers are from the code
+    numberstyle=\tiny, % the style that is used for the line-numbers
+}
+
 
 % Marvosym
 \let\MathRightArrow\Rightarrow % save original definition of \Rightarrow

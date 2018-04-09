@@ -1,0 +1,6 @@
+let fact = lam x .
+             match x with
+             | 0 => 1
+             | n => n * fact (n-1)
+             end 
+in fact 3

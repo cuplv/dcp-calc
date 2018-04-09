@@ -5,11 +5,11 @@ let F_zk = lam A, R, S .
       wr (('Verified, A, x, R x w), B) -> ?f2p
 in
   nu f2p, p2f .
-    let A = 10 in
+    let A = 666 in
     let R = lam x, w . true in
-    let S = 1 in
+    let S = 999 in
       |> (F_zk A R S) ;
-      |> (wr ('Prove, 1, 1, 11) -> p2f ;
+      |> (wr ('Prove, 0, 0, 0) -> p2f ;
           let _ = rd f2p in
           wr 'ok -> p2f ;
           let (('Verified, _, _, r), _) = rd f2p

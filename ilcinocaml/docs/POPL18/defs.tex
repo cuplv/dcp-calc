@@ -1,0 +1,37 @@
+\usepackage{color}
+\usepackage{listings}
+\usepackage{soul}
+\usepackage[most]{tcolorbox}
+
+\graphicspath{{./figures/}}
+
+\newcommand{\Func}{\mathcal{F}}
+\newcommand{\todo}[1]{\emph{\hl{TODO:} {#1}}}
+
+\newtcolorbox{func}[1][]{title={\textbf{Functionality}~$\Func_{\textsc{#1}}$},enhanced,%drop shadow={black!50!white},
+  coltitle=black,
+  top=0.1in,
+  attach boxed title to top left=
+  {xshift=0.5cm,yshift=-\tcboxedtitleheight/2},
+  boxed title style={size=small,colback=white},colback=white}
+
+\newtcolorbox{ilc}[1][]{title={\textbf{ILC}~$\Func_{\textsc{#1}}$},enhanced,%drop shadow={black!50!white},
+  coltitle=black,
+  top=0.1in,
+  attach boxed title to top left=
+  {xshift=0.5cm,yshift=-\tcboxedtitleheight/2},
+  boxed title style={size=small,colback=white},colback=white}
+
+\definecolor{mygreen}{rgb}{0.0, 0.5, 0.0}
+
+\lstdefinestyle{ilc}
+{
+    captionpos=b,
+    basicstyle = {\sffamily},
+    %commentstyle = {\itshape\color{orange}},
+    %morecomment=[s]{/*}{*/},
+    columns=fullflexible,
+    literate = {|>}{{$\mid\triangleright\ $}}1 {->}{{$\rightarrow\ $}}1,
+    mathescape=true,
+    showstringspaces=false
+}

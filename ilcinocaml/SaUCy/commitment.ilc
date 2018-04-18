@@ -1,0 +1,88 @@
+let F_com = lam () .
+  let ('Commit, sid, P_i, P_j, b) = rd ?p2f in
+    req mem b {0,1} in
+    (* Need to split up writes or leak? *)
+    wr (('Receipt, sid, P_i, P_j), {P_j, "S"}) -> ?f2p ;
+    (* Ignore subsequent 'Commit messages *)
+    let ('Open, sid, P_i, P_j) = rd ?p2f in
+    wr (('Open, sid, P_i, P_j, b), {P_j, "S"}) -> ?f2p
+in
+let envComBenign = lam () .
+    (*let sid = ("sidTestCommit", show ("Alice", "Bob", ("","")))
+      writeChan z2exec $ SttCrupt_SidCrupt sid empty*)
+    rd ?pump ;
+    (* TODO: getBit *)
+    let b = getBit () in
+      |> (let (pid, x) = rd ?p2z in
+            print "" ;
+            match (pid, x) with
+            (* ComF2P_Open *)
+            | ("Bob", b') => wr (b, b') -> ?outp
+            | _           => ()
+            end);
+      |> (rd ?a2z) ;
+      wr ("Alice", Commit b) -> ?z2p ;
+      rd ?pump ;
+      (* writeChan z2a $ SttCruptZ2A_A2F $ OptionalA2F_Deliver 0 *)
+      wr () -> ?z2a ;
+      rd ?pump ;
+      (* writeChan z2p ("Alice", ComP2F_Open) *)
+      wr ("Alice", 'Open) -> ?z2p ;
+      rd ?pump ;
+      (* writeChan z2a $ SttCruptZ2A_A2F $ OptionalA2F_Deliver 0 *)
+      wr () -> ?z2a ;
+      ()
+in
+let envComZ1 = lam () .
+  (* let sid = ("sidTestCommitZ1", show ("Alice", "Bob", ("","")))
+            
+      -- In Z1, Alice is corrupted
+      writeChan z2exec $ SttCrupt_SidCrupt sid (Map.fromList [("Alice",())])*)
+  wr {} -> ?z2exec ;
+  rd ?pump ;
+  |> (let (rd, m) = rd ?p2z in
+        print "" ;
+        match (pid, x) with
+        (* Commit *)
+        | ("Bob, b') => wr 'Commit -> ?outp
+        | _          => ()
+        end);
+  |> (let a = rd ?f2z in wr a -> ?z2f);
+  |> (match (rd ?a2z) with
+      | ("Bob", m) => print "" ; wr m -> ?bob2alice
+      | _          => ()
+      end);
+  |> (let m = rd ?alice2bob in
+        print "" ;
+        wr ("Alice", m) -> ?z2a);
+  rd ?pump ;
+  (* writeChan z2a $ SttCruptZ2A_A2F $ OptionalA2F_Deliver 0 *)
+  wr 0 -> ?z2a ;
+  rd ?pump ;
+  (* writeChan z2a $ SttCruptZ2A_A2F $ OptionalA2F_Deliver 0 *)
+  wr 0 -> ?z2a ;
+  ()
+in
+let envComZ2 = lam option, s, p .
+  (*let sid = ("sidTestCommitZ2", show ("Alice", "Bob", ("","")))
+    writeChan z2exec $ SttCrupt_SidCrupt sid (Map.fromList [("Bob",())])*)
+  nu alice2bob, bob2alice, alert .
+    rd ?pump ;
+    let b = getBit () in
+      |> (let (pid, x) = rd ?p2z in print "") ;
+      |> (let m = rd ?a2z in
+          print "" ;
+          (* SttCruptA2Z_P2A (pid, AuthF2P_Msg m)*)
+          wr m -> alice2bob) ;
+    if option then
+      nu dbg .
+        |> (execUC (envComZ1 alice2bob bob2alice) (idealProtocol) (fComDbg) s) ;
+        |> (let b' = rd dbg in wr (b,b') -> ?outp)
+    else
+      |> (execUC envComZ1 alice2bob bob2alice) (p) (runOptLeak fAuth)
+          dummyAdversary ;
+          write (b,b) -> ?outp) ;
+    wr ("Alice", Commit b) -> ?z2p ;
+    rd ?pump ;
+    wr 0 -> ?z2a ;
+    ()

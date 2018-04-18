@@ -1,0 +1,6 @@
+let compose = lam rho, p, pid .
+  nu r2p, p2r .
+    |> (rho pid) ;
+    |> (p pid)
+in
+1

@@ -100,6 +100,7 @@ rule token = parse
   | "fst"                     { FST }
   | "snd"                     { SND }
   | "rand"                    { RAND }
+  | "getBit"                  { GETBIT }
   | "show"                    { SHOW }
   | "::"                      { CONS }
   | "++"                      { CONCAT }

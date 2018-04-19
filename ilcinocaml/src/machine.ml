@@ -75,6 +75,7 @@ and instr =
   | IFst
   | ISnd
   | IRand
+  | IGetBit
   | IShow
   | ILookup
   | ILength
@@ -160,6 +161,7 @@ let rec string_of_instr = function
   | IFst -> "IFst"
   | ISnd -> "ISnd"
   | IRand -> "IRand"
+  | IGetBit -> "IGetBit"
   | IShow -> "IShow"
   | ILookup -> "ILookup"
   | ILength -> "ILength"
@@ -334,6 +336,9 @@ let do_snd = function
 
 let rand = function
   | s -> MInt (Random.bits ()) :: s
+       
+let get_bit = function
+  | s -> MInt (if Random.bool () then 1 else 0) :: s
 
 let show = function
   | x :: s -> MString (string_of_mvalue x) :: s
@@ -592,6 +597,7 @@ let exec instr frms stck envs =
   | IFst -> (frms, do_fst stck, envs)
   | ISnd -> (frms, do_snd stck, envs)
   | IRand -> (frms, rand stck, envs)
+  | IGetBit -> (frms, get_bit stck, envs)
   | IShow -> (frms, show stck, envs)
   | ILookup -> (frms, assoc_lookup stck, envs)
   | ILength -> (frms, length stck, envs)

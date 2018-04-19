@@ -88,6 +88,7 @@
 %token FST
 %token SND
 %token RAND
+%token GETBIT
 %token SHOW
 %token CONS
 %token CONCAT
@@ -268,6 +269,8 @@ atom_expr:
     { Tuple (e1::e2) }
   | RAND UNIT
     { Rand }
+  | GETBIT UNIT
+    { GetBit }
   | LPAREN e = expr RPAREN
     { e }
   | l = atom_expr DOT key = atom_expr 

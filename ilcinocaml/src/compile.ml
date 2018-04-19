@@ -138,6 +138,7 @@ let rec compile = function
   | Fst e -> (compile e) @ [IFst]
   | Snd e -> (compile e) @ [ISnd]
   | Rand -> [IRand]
+  | GetBit -> [IGetBit]
   | Show e -> (compile e) @ [IShow]
   | Cons (e1, e2) -> (compile e1) @ (compile e2) @ [ICons]
   | Concat (e1, e2) -> (compile e1) @ (compile e2) @ [IConcat]

@@ -177,9 +177,40 @@ UC paper~\cite{canetti2001universally}. \todo{Lots!}
 
 \section{ILC}\label{sec:ilc}
 
+\begin{definition}[Protocol Emulation]
+Let $\pi$ and $\phi$ be probabilistic polynomial time (p.p.t) protocols. We say
+that $\pi$ UC-emulates $\phi$ if for any p.p.t. adversary $\mc{A}$ there exists a
+p.p.t. ideal-process adversary $\mc{S}$ such that for any balanced PPT environment
+$\mc{Z}$ we have:
+\begin{equation*}
+\textsc{Exec}_{\phi, \mc{S}, \mc{Z}} \approx \textsc{Exec}_{\pi, \mc{A}, \mc{Z}}.
+\end{equation*}
+\end{definition}
+
+\begin{definition}[Code-Based Protocol Emulation]
+Let $\mc{L}_{\pi}$ and $\mc{L}_{\phi}$ be p.p.t. program terms. We say that
+$\mc{L}_{\pi}$ UC-emulates $\mc{L}_{\phi}$ if for any p.p.t. adversary term
+$\mc{L}_{\mc{A}}$ there exists a p.p.t. ideal-process term $\mc{L}_{\mc{S}}$
+such that for any balanced p.p.t. environment term $\mc{L}_{\mc{Z}}$ we have:
+\begin{equation*}
+\textsc{Eval}_{\mc{L}_{\phi}, \mc{L}_{\mc{S}}, \mc{L}_{\mc{Z}}} \approx_{\epsilon} \textsc{Eval}_{\mc{L}_{\pi}, \mc{L}_{\mc{A}}, \mc{L}_{\mc{Z}}}.
+\end{equation*}
+\end{definition}
+
+How to define $\approx_{\epsilon}$ relation? Observational equivalence is a
+stronger notion than computational
+equivalance~\cite{comon2008computational}. However, they also show that
+indistinguishability (based on games) is soundly abstracted by trace
+equivalence.
+
 \section{Metatheory}\label{sec:metatheory}
 
 \section{Implementation}\label{sec:implementation}
+
+\begin{enumerate}
+\item Bidirectional type checker
+\item Replication
+\end{enumerate}
 
 \section{Experiments}\label{sec:experiments}
 
@@ -205,7 +236,8 @@ Impossibility of UC commitments using standard assumptions~\cite{canetti2001comm
 EasyCrypt~\cite{barthe2011computer}, CertiCrypt~\cite{barthe2009formal},
 CryptoVerif~\cite{blanchet2007cryptoverif},
 ProVerif~\cite{blanchet2005proverif}, RF*~\cite{barthe2014probabilistic},
-Cryptol~\cite{lewis2003cryptol}
+Cryptol~\cite{lewis2003cryptol}, code-based game-playing
+proofs~\cite{bellare2006security}
 \section{Conclusion}
 
 %% Acknowledgments

@@ -95,6 +95,7 @@ type expr =
   | Fst of expr
   | Snd of expr
   | Rand
+  | GetBit
   | Show of expr
   | Cons of expr * expr
   | Concat of expr * expr
@@ -174,6 +175,7 @@ let rec pr_expr ppf = function
   | Fst e -> fprintf ppf "@[<2>%s(%a)@]" "Fst" pr_expr e
   | Snd e -> fprintf ppf "@[<2>%s(%a)@]" "Snd" pr_expr e
   | Rand -> fprintf ppf "Rand()"
+  | GetBit -> fprintf ppf "GetBit()"
   | Show e -> fprintf ppf "@[<2>%s(%a)@]" "Show" pr_expr e
   | Cons (e1, e2) -> pr_binop ppf "Cons" e1 e2
   | Concat (e1, e2) -> pr_binop ppf "Concat" e1 e2

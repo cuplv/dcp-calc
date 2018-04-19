@@ -1,4 +1,6 @@
+(* Protocol composition theorem *)
 let compose = lam rho, p, pid .
+  (* Allocate reverse channels? *)
   nu r2p, p2r .
     |> (rho pid) ;
     |> (p pid)

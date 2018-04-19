@@ -1,13 +1,14 @@
-let dummy = lam dS, a, crupt . 
+(* Dummy lemma *)
+let dummy_lemma = lam dS, a, crupt . 
   nu a2pfS .
-    (* What are these channels? wrapwrite? type check?*)
+    (* What are these channels? wrapwrite? type check? *)
     wr a2pfS -> a2fs ;
     wr a2pfS -> a2ps ;
   nu p2faS, p2aS, f2aS .
+    (* This one needs to fork forever *)
     |> (match (rd pf2aS) with
-        (* F2A, P2A? *)
-        | m => wr m -> f2aS
-        | m => wr m -> p2aS
+        | ('SttCruptA2Z_F2A, m) => wr m -> f2aS
+        | ('SttCruptA2Z_P2A, m) => wr m -> p2aS
         end) ;
     |> (a crupt) ;
     |> (dS crupt)

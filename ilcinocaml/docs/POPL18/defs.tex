@@ -3,9 +3,11 @@
 \usepackage{amsmath}
 \usepackage{amssymb}
 \usepackage{amsthm}
+\usepackage{boxedminipage}
 \usepackage{braket}
 \usepackage{color}
 \usepackage{comment}
+\usepackage{enumitem}
 \usepackage{joshuadunfield}
 \usepackage{listings}
 \usepackage{mathpartir}
@@ -317,7 +319,7 @@
 
 \newcommand{\tn}{\textnormal}
 \newcommand{\codeb}[1]{\textsf{#1}}
-\newcommand{\hash}{\ensuremath{{\cal H}}}
+\newcommand{\hash}{\ensuremath{{\mathcal H}}}
 \newcommand{\adv}{\ensuremath{{\mathcal A}}\xspace}
 \newcommand{\Adv}{\adv}
 \newcommand{\A}{\adv}
@@ -331,11 +333,11 @@
 \newcommand{\negl}{\textnormal{negl}}
 \newcommand{\execUC}[4]{\mtt{execUC}({#1},{#2},{#3},{#4})}
 \newcommand{\chan}[1]{{\underline{\smash{\msf{#1}}}}}
-\newcommand{\functionality}[1]{\ensuremath{{\cal F}_{\textnormal{\msf{{#1}}}}}}
+\newcommand{\functionality}[1]{\ensuremath{{\mathcal F}_{\textnormal{\msf{{#1}}}}}}
 \newcommand{\F}{\functionality}
-%\newcommand{\G}[1]{{\cal G}_{\textnormal{\tiny {\uppercase{#1}}}}}
-\newcommand{\GG}[1]{{\overline {\cal G}}_{\textnormal{\tiny {\uppercase{#1}}}}}
-%\renewcommand{\C}[1]{{\cal C}_{\textnormal{\tiny {\uppercase{#1}}}}}
+%\newcommand{\G}[1]{{\mathcal G}_{\textnormal{\tiny {\uppercase{#1}}}}}
+\newcommand{\GG}[1]{{\overline {\mathcal G}}_{\textnormal{\tiny {\uppercase{#1}}}}}
+\renewcommand{\C}[1]{{\mathcal C}_{\textnormal{\tiny {\uppercase{#1}}}}}
 \renewcommand{\P}{\ensuremath{\mathcal P}}
 \newcommand{\Ps}{\ensuremath{\{\mathcal{P}_i\}_{i \in [N]}}}
 \renewcommand{\S}{\ensuremath{\mathcal S}}

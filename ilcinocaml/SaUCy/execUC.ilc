@@ -1,8 +1,10 @@
 let partyWrapper = lam sid, p, crupt .
+  (* Maps pids to assoc list of channels *)
   let partyMap = ref [] in
   let newParty = lam pid .
     nu pp2f, pp2z .
       let partyMap := (pid, [("f2p", pp2f), ("z2p", pp2z)]) :: @partyMap ;
+      (* Turn these into replications? *)
       |> (letrec loop =
             let m = rd pp2f in
               wr (pid, m) -> ?p2f ;
@@ -32,16 +34,17 @@ let partyWrapper = lam sid, p, crupt .
          else wr m -> (getParty pid)."f2p" ;
          fwd_f2p in fwd_f2p) ;
   (* Forward messages to corrupt parties to func *)
-  |> (letrec fwd_2c2f =
+  |> (letrec a2p2f =
         let (pid, m) = rd ?a2p in
           if (mem pid crupt)
           then wr (pid, m) -> ?p2f ;
-          fwd_2c2f in fwd_2c2f) ;
-  |> (letrec fwd_2c2z =
+          a2p2f in a2p2f) ;
+  (* Forward messages to corrupt parties to env *)
+  |> (letrec a2p2z =
         let (pid, m) = rd ?a2p in
           if (mem pid crupt)
           then wr (pid, m) -> ?p2z ;
-          fwd_2c2z in fwd_2c2z)
+          a2p2z in a2p2z)
 in
 let execUC = lam z, p, f, a .
   nu z2p, p2z,
@@ -62,6 +65,7 @@ let execUC = lam z, p, f, a .
            wr () -> pump ;
            let o = rd outp in
              match o with
+             (* TODO: Bug fix *)
              | () => force(run)
              | a  => print a
              end
@@ -128,13 +132,13 @@ let testEnv = lam () .
           print ("Z: a sent " ++ show m) ;
           wr "environment output: 1" -> ?outp ;
           loop in loop) ;
-  let () = rd ?pump in
-    print "pump" ;
-    if true then
-      wr (0, "This is Alice") -> ?z2p
-    else
-      wr (1, "This is Bob") -> ?z2p ;
-    let () = rd ?pump in
-      wr "ok" -> ?z2a
+  rd ?pump ;
+  print "pump" ;
+  if true then
+    wr (0, "This is Alice") -> ?z2p
+  else
+    wr (1, "This is Bob") -> ?z2p ;
+  rd ?pump ;
+  wr "ok" -> ?z2a
 in
 execUC testEnv idealProtocol dummyFunctionality dummyAdversary

@@ -1,12 +1,15 @@
-let F_com = lam () .
+(* Commitment functionality *)
+let F_com = lam S .
   let ('Commit, sid, P_i, P_j, b) = rd ?p2f in
     req mem b {0,1} in
-    (* Need to split up writes or leak? *)
-    wr (('Receipt, sid, P_i, P_j), {P_j, "S"}) -> ?f2p ;
+    (* Need to split up writes? *)
+    wr (('Receipt, sid, P_i, P_j), {P_j, S}) -> ?f2p ;
     (* Ignore subsequent 'Commit messages *)
     let ('Open, sid, P_i, P_j) = rd ?p2f in
-    wr (('Open, sid, P_i, P_j, b), {P_j, "S"}) -> ?f2p
+    wr (('Open, sid, P_i, P_j, b), {P_j, S}) -> ?f2p
 in
+
+(* No corruptions? *)
 let envComBenign = lam () .
     (*let sid = ("sidTestCommit", show ("Alice", "Bob", ("","")))
       writeChan z2exec $ SttCrupt_SidCrupt sid empty*)
@@ -33,6 +36,9 @@ let envComBenign = lam () .
       wr () -> ?z2a ;
       ()
 in
+
+(* Committer is corrupted? *)
+(* Initial set up: assume exists S such that exec(phi, s, z) ~ exec(pi, a, z) *)
 let envComZ1 = lam () .
   (* let sid = ("sidTestCommitZ1", show ("Alice", "Bob", ("","")))
             
@@ -63,6 +69,9 @@ let envComZ1 = lam () .
   wr 0 -> ?z2a ;
   ()
 in
+
+(* Receiver is corrupt? *)
+(* Second setup: Assume s, env runs virtual s for contradiction *)
 let envComZ2 = lam option, s, p .
   (*let sid = ("sidTestCommitZ2", show ("Alice", "Bob", ("","")))
     writeChan z2exec $ SttCrupt_SidCrupt sid (Map.fromList [("Bob",())])*)

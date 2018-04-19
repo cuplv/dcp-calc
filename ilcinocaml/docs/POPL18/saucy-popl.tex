@@ -193,7 +193,7 @@ $\mc{L}_{\pi}$ UC-emulates $\mc{L}_{\phi}$ if for any p.p.t. adversary term
 $\mc{L}_{\mc{A}}$ there exists a p.p.t. ideal-process term $\mc{L}_{\mc{S}}$
 such that for any balanced p.p.t. environment term $\mc{L}_{\mc{Z}}$ we have:
 \begin{equation*}
-\textsc{Eval}_{\mc{L}_{\phi}, \mc{L}_{\mc{S}}, \mc{L}_{\mc{Z}}} \approx_{\epsilon} \textsc{Eval}_{\mc{L}_{\pi}, \mc{L}_{\mc{A}}, \mc{L}_{\mc{Z}}}.
+\textsc{Trace}_{\mc{L}_{\phi}, \mc{L}_{\mc{S}}, \mc{L}_{\mc{Z}}} \approx_{\epsilon} \textsc{Trace}_{\mc{L}_{\pi}, \mc{L}_{\mc{A}}, \mc{L}_{\mc{Z}}}.
 \end{equation*}
 \end{definition}
 
@@ -205,6 +205,11 @@ equivalence.
 
 \section{Metatheory}\label{sec:metatheory}
 
+\begin{enumerate}
+\item Type soundness
+\item Confluence
+\end{enumerate}
+
 \section{Implementation}\label{sec:implementation}
 
 \begin{enumerate}
@@ -214,7 +219,13 @@ equivalence.
 
 \section{Experiments}\label{sec:experiments}
 
-Impossibility of UC commitments using standard assumptions~\cite{canetti2001commitments}.
+\input{execuc}
+
+\begin{enumerate}
+\item Impossibility of UC commitments using standard
+assumptions~\cite{canetti2001commitments}.
+\item UC commitments construction using CRS
+\end{enumerate}
 
 \begin{func}[COM]
     $\Func_{\textsc{COM}}$ proceeds as follows, running with parties $P_1, \ldots, P_n$ and an adversary $S$.
@@ -237,8 +248,10 @@ EasyCrypt~\cite{barthe2011computer}, CertiCrypt~\cite{barthe2009formal},
 CryptoVerif~\cite{blanchet2007cryptoverif},
 ProVerif~\cite{blanchet2005proverif}, RF*~\cite{barthe2014probabilistic},
 Cryptol~\cite{lewis2003cryptol}, code-based game-playing
-proofs~\cite{bellare2006security}
+proofs~\cite{bellare2006security}, symbolic UC~\cite{bohl2016symbolic}
 \section{Conclusion}
+
+\section{Future Work}
 
 %% Acknowledgments
 \begin{acks}                            %% acks environment is optional

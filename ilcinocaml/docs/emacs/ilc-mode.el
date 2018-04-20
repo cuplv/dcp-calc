@@ -10,27 +10,29 @@
 
 (defconst ilc-font-lock-keywords-1
   (list
-   '("\\<\\(in\\|l\\(?:am\\|et\\(?:rec\\)?\\)\\|match\\|ref\\|with\\)\\>" . font-lock-variable-name-face))
+   ; (regexp-opt '("let" "in" "letrec" "lam" "ref") t)
+   '("\\<\\(in\\|l\\(?:am\\|et\\(?:rec\\)?\\)\\|ref\\)\\>"
+  . font-lock-variable-name-face))
   "Minimal highlighting expressions for ILC mode.")
 
 (defconst ilc-font-lock-keywords-2
   (append ilc-font-lock-keywords-1
           (list
-           ; (regexp-opt '("nu" "rd" "wr" "->" "|>") t)
-           '("\\<\\(->\\|nu\\|rd\\|wr\\||>\\)\\>" . font-lock-keyword-face)))
-  "Additional Keywords to highlight in ILC mode.")
+           ; (regexp-opt '("if" "then" "else" "match" "with") t)
+           '("\\<\\(else\\|if\\|match\\|then\\|with\\)\\>" . font-lock-keyword-face)))
+  
+  "Balls-out highlighting in ILC mode.")
 
 (defconst ilc-font-lock-keywords-3
   (append ilc-font-lock-keywords-2
           (list
-         ; These are some possible built-in values for ILC attributes
-             ; "ROLE" "ORGANISATIONAL_UNIT" "STRING" "REFERENCE" "AND"
-             ; "XOR" "WORKFLOW" "SYNCHR" "NO" "APPLICATIONS" "BOOLEAN"
-                             ; "INTEGER" "HUMAN" "UNDER_REVISION" "OR"
-           '("\\<\\(A\\(ND\\|PPLICATIONS\\)\\|BOOLEAN\\|HUMAN\\|INTEGER\\|NO\\|OR\\(GANISATIONAL_UNIT\\)?\\|R\\(EFERENCE\\|OLE\\)\\|S\\(TRING\\|YNCHR\\)\\|UNDER_REVISION\\|WORKFLOW\\|XOR\\)\\>" . font-lock-constant-face)))
+           ; (regexp-opt '("nu" "rd" "wr" "->" "|>") t)
+           '("\\<\\(->\\|nu\\|rd\\|wr\\||>\\)\\>" . font-lock-constant-face)
+           '("\\<\\(true\\|false\\)\\>" . font-lock-builtin-face)))
   "Balls-out highlighting in ILC mode.")
 
-(defvar ilc-font-lock-keywords ilc-font-lock-keywords-2
+
+(defvar ilc-font-lock-keywords ilc-font-lock-keywords-3
   "Default highlighting expressions for ILC mode.")
 
 ;;(defun ilc-indent-line ()
@@ -86,6 +88,21 @@
         (modify-syntax-entry ?\) ". 4" synTable)
         (modify-syntax-entry ?* ". 23" synTable)
         synTable))
+
+(defun my-pretty-lambda ()
+  "make some word or string show as pretty Unicode symbols"
+  (setq prettify-symbols-alist
+        '(
+          ("lam" . 955 ) ; λ
+          ("nu" . 957 ) ;
+          ("->" . 8594 ) ;
+          ("|>" . 10704 ) ;
+          ("!=" . 8800 ) ;
+          (":=" . 8788 ) ;
+          )))
+
+(add-hook 'ilc-mode-hook 'my-pretty-lambda)
+(global-prettify-symbols-mode 1)
 
 ;;(define-derived-mode ilc-mode prog-mode "ilc"
 ;;  "ilc-mode is a major mode for editing language ilc."

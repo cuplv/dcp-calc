@@ -171,9 +171,71 @@ Text of abstract \ldots.
 
 \section{Introduction}
 
-UC paper~\cite{canetti2001universally}. \todo{Lots!}
+Proving that a cryptographic protocol carries out a given task securely is an
+essential component in cryptography. Traditionally, such a protocol is analyzed
+in the \emph{standalone} setting, in which a single execution takes place in
+isolation. In reality, however, the protocol may be running concurrently with
+arbitrary other protocols, and indeed, security guarantees in the standalone
+setting do not always translate into security guarantees in the concurrent
+setting. In order to provide meaningful security guarantees in the concurrent
+setting, the Universal Composability (UC) framework by
+Canetti~\cite{canetti2001universally} allows the security properties of a
+protocol to be defined in such a way that security is maintained under general
+concurrent composition with arbitrary other protocols. In other words, a
+UC-secure protocol maintains its security when dropped into \emph{any context}.
+Importantly, this allows for complex cryptographic protocols to be designed and
+analyzed in a modular fashion from simpler building blocks.
+
+\todo{Problem with UC proofs.}
 
 \section{Overview}\label{sec:overview}
+
+In order to prove that a cryptographic protocol carries out a given task
+securely, we first formalize the protocol, henceforth referred to as the real
+protocol, and its execution in the presence of an adversary and in a given
+computational environment. We then formalize an ideal protocol that is secure by
+definition for carrying out the task. In the ideal protocol, parties do not
+communicate with each other, rather, they rely on an incorruptible trusted party
+called the \emph{ideal functionality} to meet the requirements of the task at
+hand. Finally, to show that the real protocol carries out the task securely, we
+show that running it ``emulates'' running the ideal protocol for that task, in
+the sense that an outside observer called the \emph{environment}, which
+interacts with both the real and ideal protocols, cannot distinguish them apart.
+
+As in~\cite{goldwasser1989knowledge}, a protocol is represented as a system of
+interactive Turing machines (ITMs), in which each ITM represents the program to
+be run within each party. Each ITM has an input and output tapes to model inputs
+received from and outputs given to other ITMs. Additionally, each ITM has a
+communication tape to model messages sent to and received from the network.
+
+Let $\pi$ denote the real protocol followed by a set of parties, and let $\mc{A}$
+denote an adversary that aims to break the security of $\pi$. If $\mc{A}$ is
+a \emph{passive} (or \emph{semi-honest}) adversary, then it can listen to all
+communications between the parties, and can observe the internal state of
+corrupted parties. If $\mc{A}$ is an \emph{active} (or \emph{malicious})
+adversary, then it can additionally take full control of parties and alter
+messages en route arbitrarily. The adversary communicates with the environment
+$\mc{Z}$ to provide details of what it observes, and also to receive
+instructions on how to proceed. Note that parties cannot directly communicate
+with each other, rather, all communication passes through $\mc{A}$. If the
+network is synchronous, then $\mc{A}$ is not allowed to interfere with network
+traffic. If the network if asynchronous, $\mc{A}$ is allowed to delay and
+reorder messages arbitrarily.
+
+Let $\phi$ denote the ideal protocol followed by a set of parties relying on the
+ideal functionality $\mc{F}$, and let $\mc{S}$ denote an ideal adversary, also
+known as a \emph{simulator}, that aims to break the security of $\phi$. Here, the
+parties are \emph{dummy parties}, since they hand received inputs directly to
+$\mc{F}$ for processing, and output whatever is directly returned by
+$\mc{F}$. Clearly, since the dummy parties do nothing, and $\mc{F}$ is secure by
+definition, it makes sense to define $\phi$ as secure.
+
+The goal of the environment $\mc{Z}$ is to distinguish between the real protocol
+and the ideal protocol. Since in the real protocol, $\mc{Z}$ interacts with the
+adversary $\mc{A}$, in the ideal protocol, $\mc{Z}$ interacts with the simulator
+$\mc{S}$. The job of $\mc{S}$ is to pretend to be $\mc{A}$ with the aid of
+$\mc{F}$. The amount of help $\mc{F}$ is able to provide is specified in
+$\mc{F}$ itself.
 
 \section{ILC}\label{sec:ilc}
 

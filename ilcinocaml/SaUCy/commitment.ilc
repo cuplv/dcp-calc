@@ -50,9 +50,9 @@ let envComZ1 = lam () .
         print "" ;
         match (pid, x) with
         (* Commit *)
-        | ("Bob, b') => wr 'Commit -> ?outp
+        | ("Bob", b') => wr 'Commit -> ?outp
         | _          => ()
-        end);
+        end) ;
   |> (let a = rd ?f2z in wr a -> ?z2f);
   |> (match (rd ?a2z) with
       | ("Bob", m) => print "" ; wr m -> ?bob2alice

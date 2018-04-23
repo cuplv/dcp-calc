@@ -187,21 +187,52 @@ $\mc{Z}$ we have:
 \end{equation*}
 \end{definition}
 
-\begin{definition}[Code-Based Protocol Emulation]
-Let $\mc{L}_{\pi}$ and $\mc{L}_{\phi}$ be p.p.t. program terms. We say that
-$\mc{L}_{\pi}$ UC-emulates $\mc{L}_{\phi}$ if for any p.p.t. adversary term
-$\mc{L}_{\mc{A}}$ there exists a p.p.t. ideal-process term $\mc{L}_{\mc{S}}$
-such that for any balanced p.p.t. environment term $\mc{L}_{\mc{Z}}$ we have:
+\begin{definition}[Protocol Emulation w.r.t. the Dummy Adversary]
+Let $\pi$ and $\phi$ be probabilistic polynomial time (p.p.t) protocols. We say
+that $\pi$ UC-emulates $\phi$ if for the dummy adversary $\mc{D}$ there exists a
+p.p.t. ideal-process adversary $\mc{S}$ such that for any balanced PPT environment
+$\mc{Z}$ we have:
 \begin{equation*}
-\textsc{Trace}_{\mc{L}_{\phi}, \mc{L}_{\mc{S}}, \mc{L}_{\mc{Z}}} \approx_{\epsilon} \textsc{Trace}_{\mc{L}_{\pi}, \mc{L}_{\mc{A}}, \mc{L}_{\mc{Z}}}.
+\textsc{Exec}_{\phi, \mc{S}, \mc{Z}} \approx \textsc{Exec}_{\pi, \mc{D}, \mc{Z}}.
 \end{equation*}
 \end{definition}
 
-How to define $\approx_{\epsilon}$ relation? Observational equivalence is a
-stronger notion than computational
-equivalance~\cite{comon2008computational}. However, they also show that
-indistinguishability (based on games) is soundly abstracted by trace
-equivalence.
+Let $\Sigma$ be the set $\{ 0, 1\}$, and let $\Sigma^{\infty}$ be the set of infinite
+bitstrings. The meaning of an ILC term $\tau$ is given by the denotation
+$[\![\tau]\!]\sigma$, which returns, for an infinite bitstring $\sigma \in \Sigma^{\infty}$, a value $v$
+of type $0$ or type $1$. The denotation $[\![\tau]\!]$, then, returns a Bernoulli
+distribution $\beta$ over all infinite strings. Let $\Delta(\beta_1, \beta_2)$ denote the
+statistical difference between two Bernoulli distributions $\beta_1$ and $\beta_2$.
+
+\begin{definition}[$\epsilon$-indistinguishability of ILC Terms]
+Let $\tau_1{:}{\sf Bit}$ and $\tau_2{:}{\sf Bit}$ be ILC terms, which are closed
+except for an infinite bitstream free variable $\sigma{:}{\sf Inf}$. We say that
+$\tau_1$ and $\tau_2$ are $\epsilon$-indistinguishable if $\Delta([\![\tau_1]\!], [\![\tau_2]\!]) \leq \epsilon$.
+\end{definition}
+
+\begin{definition}
+Let $(\pi_1, \mc{F}_1)$ and $(\pi_2, \mc{F}_2)$ be two protocol-functionality
+pairs. We say that $(\pi_1, \mc{F}_1)$ UC-emulates $(\pi_2, \mc{F}_2)$ iff for all
+adversaries $\mc{A}$ there exists an ideal-process adversary $\mc{S}$ such that
+for any environment $\mc{Z}$ we have:
+\[\textsc{ExecUC}_{\mc{Z}, \mc{A}, \pi_1, \mc{F}_1} \approx_{\epsilon} \textsc{ExecUC}_{\mc{Z}, \mc{S}, \pi_2, \mc{F}_2},\]
+\noindent where $\textsc{ExecUC}_{\mc{Z}, \mc{A}, \pi_1, \mc{F}_1}{:}{\sf Bit}$ and
+$\textsc{ExecUC}_{\mc{Z}, \mc{S}, \pi_2, \mc{F}_2}{:}{\sf Bit}$.
+\end{definition}
+
+%\begin{definition}[Protocol Emulation in ILC]
+%Let $\tau_{\pi}$ and $\tau_{\phi}$ be p.p.t. ILC terms. We say that
+%$\tau_{\pi}$ UC-emulates $\tau_{\phi}$ if for any p.p.t. adversary 
+%$\tau_{\mc{A}}$ there exists a p.p.t. ideal-process adversary $\tau_{\mc{S}}$
+%such that for any balanced p.p.t. environment $\tau_{\mc{Z}}$ we have:
+%\begin{equation*}
+%\Delta([\![\tau_{\phi, \mc{S}, \mc{Z}}]\!], [\![\tau_{\pi, \mc{A}, \mc{Z}}]\!])) \leq \epsilon,
+%\end{equation*}
+%
+%\noindent where $\tau_{\phi, \mc{S}, \mc{Z}}$ and $\tau_{\pi, \mc{A}, \mc{Z}}$ are
+%converging computations.
+%\end{definition}
+
 
 \section{Metatheory}\label{sec:metatheory}
 

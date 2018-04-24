@@ -190,10 +190,18 @@ Since universally composable security is such a powerful guarantee, it is
 perhaps not surprising that elaborating such proofs can be quite involved, and
 thus, error-prone. However, as UC proofs are primarily ``pen-and-paper'' proofs,
 this makes verifying them an unwieldy task. In addition, the numerous variations
-of UC (e.g.,\ guc, juc, symbolic UC, RSIM, GNUC) make it hard to keep track of
-the precise semantics of security claims. In this paper, we design an implement
-a programming language for UC with a type system for enforcing that ``well-typed
-programs have valid executions in the UC execution model.''
+of UC (e.g., guc~\cite{canetti2007universally},
+juc~\cite{canetti2003universal}, symbolic UC~\cite{bohl2016symbolic},
+RSIM~\cite{backes2007reactive}, GNUC~\cite{hofheinz2015gnuc}) make it hard to
+keep track of the precise semantics of security claims. In this paper, we design
+and implement a specialized programming language called the Interactive Lambda
+Calculus (ILC) for building a concrete implementation of the UC framework, and
+for elaborating algorithmic entities (i.e., ideal functionalities and
+simulators) used in UC proofs. In particular, the type system of ILC enforces
+that well-typed programs are confluent, i.e., they either diverge or evaluate
+to a single unique value, which makes it easier to reason about
+the \emph{indistinguishability} of two programs in ILC.
+%pi calculus not confluent, pi calculus w/ session types too restrictive
 
 \section{Overview}\label{sec:overview}
 

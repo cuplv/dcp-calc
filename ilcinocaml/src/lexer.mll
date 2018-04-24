@@ -75,6 +75,7 @@ rule token = parse
   | ".|"                      { PARL }
   | "|>"                      { FORK }
   | "&"                       { CHOICE }
+  | "!"                       { REPL }
   
   (* Arithmetic operators *)
   | "+"                       { PLUS }

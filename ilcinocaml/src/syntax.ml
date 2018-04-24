@@ -81,6 +81,7 @@ type expr =
   | Wr of expr * expr
   | Rd of expr
   | Nu of name * expr
+  | Repl of expr
   | ParComp of expr * expr
   | ParLeft of expr * expr
   | Fork of expr
@@ -164,7 +165,8 @@ let rec pr_expr ppf = function
   | Wr (e1, e2) -> pr_binop ppf "Wr" e1 e2
   | Rd e -> fprintf ppf "@[<2>%s(%a)@]" "Rd" pr_expr e
   | Nu (s, e) -> fprintf ppf "@[<v>@[<v 2>%s(@,%s,@,%a@]@,)@]" "Nu"
-       s pr_expr e
+                   s pr_expr e
+  | Repl e -> fprintf ppf "%s(%a)" "Repl" pr_expr e
   | ParComp (e1, e2) -> pr_binop ppf "ParComp" e1 e2
   | ParLeft (e1, e2) -> pr_binop ppf "ParLeft" e1 e2
   | Fork e -> fprintf ppf "@[<2>%s(%a)@]" "Fork" pr_expr e

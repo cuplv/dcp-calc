@@ -63,6 +63,7 @@
 %token FORK
 %token CHOICE
 %token PIPE
+%token REPL
 
 /* Arithmetic operators */
 %token PLUS
@@ -349,7 +350,9 @@ comm_expr:
   | RD c = atom_expr
     { Rd c }
   | NU xs = arg_list DOT e = expr %prec NU_PREC
-    { List.fold_right curry_nus xs e }  
+    { List.fold_right curry_nus xs e }
+  | REPL e = atom_expr
+    { Repl e }
 
 proc_expr:
   | e1 = expr PAR e2 = expr

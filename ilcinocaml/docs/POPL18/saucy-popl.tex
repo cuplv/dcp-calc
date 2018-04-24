@@ -186,7 +186,14 @@ UC-secure protocol maintains its security when dropped into \emph{any context}.
 Importantly, this allows for complex cryptographic protocols to be designed and
 analyzed in a modular fashion from simpler building blocks.
 
-\todo{Problem with UC proofs.}
+Since universally composable security is such a powerful guarantee, it is
+perhaps not surprising that elaborating such proofs can be quite involved, and
+thus, error-prone. However, as UC proofs are primarily ``pen-and-paper'' proofs,
+this makes verifying them an unwieldy task. In addition, the numerous variations
+of UC (e.g.,\ guc, juc, symbolic UC, RSIM, GNUC) make it hard to keep track of
+the precise semantics of security claims. In this paper, we design an implement
+a programming language for UC with a type system for enforcing that ``well-typed
+programs have valid executions in the UC execution model.''
 
 \section{Overview}\label{sec:overview}
 
@@ -260,16 +267,19 @@ $\mc{Z}$ we have:
 \end{definition}
 
 Let $\Sigma$ be the set $\{ 0, 1\}$, and let $\Sigma^{\infty}$ be the set of infinite
-bitstrings. The meaning of an ILC term $\tau$ is given by the denotation
-$[\![\tau]\!]\sigma$, which returns, for an infinite bitstring $\sigma \in \Sigma^{\infty}$, a value $v$
-of type $0$ or type $1$. The denotation $[\![\tau]\!]$, then, returns a Bernoulli
-distribution $\beta$ over all infinite strings. Let $\Delta(\beta_1, \beta_2)$ denote the
-statistical difference between two Bernoulli distributions $\beta_1$ and $\beta_2$.
+bitstrings.  Let {\sf Bin} be the type of a binary digit, and let {\sf Fin} be
+the type of infinite bitstrings. The meaning of an ILC term $\tau$ is given by the
+denotation $[\![\tau]\!]\sigma$, which returns, for an infinite bitstring $\sigma \in \Sigma^{\infty}$, a
+value $v$ of type {\sf Bin}. The denotation $[\![\tau]\!]$, then, returns a binary
+distribution $d$ over the types of return values for all infinite
+bitstrings. Let $\Delta(d_1, d_2)$ denote the statistical distance between two
+distributions $d_1$ and $d_2$.
+\[ \Delta(d_1, d_2) \defeq max_{A}|d_1 A - d_2 A|\]
 
 \begin{definition}[$\epsilon$-indistinguishability of ILC Terms]
 Let $\tau_1{:}{\sf Bit}$ and $\tau_2{:}{\sf Bit}$ be ILC terms, which are closed
 except for an infinite bitstream free variable $\sigma{:}{\sf Inf}$. We say that
-$\tau_1$ and $\tau_2$ are $\epsilon$-indistinguishable if $\Delta([\![\tau_1]\!], [\![\tau_2]\!]) \leq \epsilon$.
+$\tau_1$ and $\tau_2$ are $\epsilon$-indistinguishable iff $\Delta([\![\tau_1]\!], [\![\tau_2]\!]) \leq \epsilon$.
 \end{definition}
 
 \begin{definition}
@@ -277,7 +287,8 @@ Let $(\pi_1, \mc{F}_1)$ and $(\pi_2, \mc{F}_2)$ be two protocol-functionality
 pairs. We say that $(\pi_1, \mc{F}_1)$ UC-emulates $(\pi_2, \mc{F}_2)$ iff for all
 adversaries $\mc{A}$ there exists an ideal-process adversary $\mc{S}$ such that
 for any environment $\mc{Z}$ we have:
-\[\textsc{ExecUC}_{\mc{Z}, \mc{A}, \pi_1, \mc{F}_1} \approx_{\epsilon} \textsc{ExecUC}_{\mc{Z}, \mc{S}, \pi_2, \mc{F}_2},\]
+\[\Delta(\textsc{ExecUC}_{\mc{Z}, \mc{A}, \pi_1, \mc{F}_1}, \textsc{ExecUC}_{\mc{Z}, \mc{S}, \pi_2, \mc{F}_2})
+\leq \epsilon,\]
 \noindent where $\textsc{ExecUC}_{\mc{Z}, \mc{A}, \pi_1, \mc{F}_1}{:}{\sf Bit}$ and
 $\textsc{ExecUC}_{\mc{Z}, \mc{S}, \pi_2, \mc{F}_2}{:}{\sf Bit}$.
 \end{definition}

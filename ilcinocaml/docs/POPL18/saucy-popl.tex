@@ -274,31 +274,62 @@ $\mc{Z}$ we have:
 \end{equation*}
 \end{definition}
 
-Let $\Sigma$ be the set $\{ 0, 1\}$, and let $\Sigma^{\infty}$ be the set of infinite
-bitstrings.  Let {\sf Bin} be the type of a binary digit, and let {\sf Fin} be
+\begin{comment}
+Let {\sf Bit} be the type of single bits (i.e., 0 or 1), and let {\sf Inf} be
 the type of infinite bitstrings. The meaning of an ILC term $\tau$ is given by the
-denotation $[\![\tau]\!]\sigma$, which returns, for an infinite bitstring $\sigma \in \Sigma^{\infty}$, a
-value $v$ of type {\sf Bin}. The denotation $[\![\tau]\!]$, then, returns a binary
+denotation $[\![\tau]\!]\sigma$, which returns, for an infinite bitstring $\sigma{:}{\sf Inf}$, a value
+$v{:}{\sf Bit}$. The denotation $[\![\tau]\!]$, then, returns a binary
 distribution $d$ over the types of return values for all infinite
 bitstrings. Let $\Delta(d_1, d_2)$ denote the statistical distance between two
 distributions $d_1$ and $d_2$.
-\[ \Delta(d_1, d_2) \defeq max_{A}|d_1 A - d_2 A|\]
+%\[ \Delta(d_1, d_2) \defeq max_{A}|d_1 A - d_2 A|\]
+
 
 \begin{definition}[$\epsilon$-indistinguishability of ILC Terms]
-Let $\tau_1{:}{\sf Bit}$ and $\tau_2{:}{\sf Bit}$ be ILC terms, which are closed
-except for an infinite bitstream free variable $\sigma{:}{\sf Inf}$. We say that
-$\tau_1$ and $\tau_2$ are $\epsilon$-indistinguishable iff $\Delta([\![\tau_1]\!], [\![\tau_2]\!]) \leq \epsilon$.
+Let $\tau_1$ and $\tau_2$ be ILC terms, which are closed except for an infinite
+bitstream free variable $\sigma{:}{\sf Inf}$. Additionally, for any such $\sigma$,
+$[\![t_1]\!]\sigma{:}{\sf Bit}$ and $[\![\tau_2]\!]\sigma{:}{\sf Bit}$. We say that $\tau_1$ and
+$\tau_2$ are $\epsilon$-indistinguishable iff $\Delta([\![\tau_1]\!], [\![\tau_2]\!]) \leq \epsilon$.
+\end{definition}
+\end{comment}
+
+\begin{definition}[Probability Distribution Ensemble]
+An \emph{ensemble} of probability distributions is a family of probability
+distributions $\{ X_n \}_{n \in \mathbb{N}}$ ($\{ X_n \}_n$ for short) with index
+set $\mathbb{N}$.  The ensembles considered in this work are binary probability
+distribution ensembles, which describe single bit outputs of computations, where
+$n \in \mathbb{N}$ represents the security parameter.
 \end{definition}
 
-\begin{definition}
+\begin{definition}[Indistinguishability]
+Let $\{X_n\}_n$ and $\{ Y_n \}_n$ be two binary probability distribution
+ensembles. We say that $\{ X_n \}_n$ and $\{ Y_n \}_n$ are indistinguishable
+(written $\{ X_n \}_n \approx \{ Y_n \}_n$) if for any $c \in \mathbb{N}$, there exists
+$k_0 \in \mathbb{N}$ such that for all $k > k_0$,
+\[ | \Pr[X_k = 1] - \Pr[Y_k = 1] | < k^{-c}. \]
+\end{definition}
+
+\begin{definition}[Bit Producing ILC Term]
+Let $\tau$ be an ILC term. We say that $\tau$ is bit producing if it is closed except
+for an infinite bitstream free variable $\sigma{:}{\sf Inf}$ and $\sigma{:}{\sf Inf} \vdash
+\tau{:}{\sf Bit}$.
+
+\end{definition}
+
+\begin{definition}[Indistinguishability of Bit Producing ILC Terms]
+Let $\tau_1$ and $\tau_2$ be bit producing ILC terms. We say that $\tau_1$ and $\tau_2$ are
+indistinguishable terms if the binary probability distribution ensembles
+$[\![\tau_1]\!]$ and $[\![\tau_2]\!]$ are indistinguishable.
+\end{definition}
+
+\begin{definition}[Protocol Emulation in ILC]
 Let $(\pi_1, \mc{F}_1)$ and $(\pi_2, \mc{F}_2)$ be two protocol-functionality
 pairs. We say that $(\pi_1, \mc{F}_1)$ UC-emulates $(\pi_2, \mc{F}_2)$ iff for all
-adversaries $\mc{A}$ there exists an ideal-process adversary $\mc{S}$ such that
-for any environment $\mc{Z}$ we have:
-\[\Delta(\textsc{ExecUC}_{\mc{Z}, \mc{A}, \pi_1, \mc{F}_1}, \textsc{ExecUC}_{\mc{Z}, \mc{S}, \pi_2, \mc{F}_2})
-\leq \epsilon,\]
-\noindent where $\textsc{ExecUC}_{\mc{Z}, \mc{A}, \pi_1, \mc{F}_1}{:}{\sf Bit}$ and
-$\textsc{ExecUC}_{\mc{Z}, \mc{S}, \pi_2, \mc{F}_2}{:}{\sf Bit}$.
+adversaries $\mc{A}$, there exists an ideal-process adversary $\mc{S}$ such that
+for any environment $\mc{Z}$,
+$\textsc{ExecUC}_{\mc{Z}, \mc{A}, \pi_1, \mc{F}_1}$ and
+$\textsc{ExecUC}_{\mc{Z}, \mc{S}, \pi_2, \mc{F}_2}$ are bit producing and
+indistinguishable terms.
 \end{definition}
 
 %\begin{definition}[Protocol Emulation in ILC]

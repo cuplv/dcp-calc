@@ -2,9 +2,8 @@ let F_crs = lam () .
   let (pid, sid) = rd ?p2f in
   let d = rand () in
     wr (pid, d) -> ?f2p ;
-    letrec loop =
-      (let (pid, sid) = rd ?p2f in
-        wr (pid, d) -> ?f2p ; loop) in loop
+    !(let (pid, sid) = rd ?p2f in
+        wr (pid, d) -> ?f2p)
 in	
 nu f2p, p2f .
   |> (F_crs ()) ;

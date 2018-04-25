@@ -31,7 +31,7 @@
 %token <int> INT
 %token <string> STRING 
 
-/* Reserved words */
+/* Keyword tokens */
 %token LET
 %token LETREC
 %token IN
@@ -50,63 +50,46 @@
 %token FORCE
 %token REQ
 %token END
-%token UNIT
+%token REF
+%token FST
+%token SND
+%token RAND
+%token GETBIT
+%token SHOW
+%token LOOKUP
+%token LENGTH
+%token MEM
+%token UNION
+%token REV
+%token PRINT
 
-/* Operators */
+/* Symbol tokens */
 %token EQUAL
 %token ASSIGN
 %token AT
-/*%token LARROW*/
 %token RARROW
+%token PIPE
 %token PAR
 %token PARL
 %token FORK
 %token CHOICE
-%token PIPE
 %token REPL
-
-/* Arithmetic operators */
 %token PLUS
 %token MINUS
 %token TIMES
 %token DIVIDE
 %token MOD
-
-/* Logical operators */
 %token OR
 %token AND
 %token NOT
-
-/* Relations */
 %token LT
 %token GT
 %token LEQ
 %token GEQ
 %token EQ
 %token NEQ
-
-/* Built-in functions */
-%token FST
-%token SND
-%token RAND
-%token GETBIT
-%token SHOW
 %token CONS
 %token CONCAT
-%token LOOKUP
-%token LENGTH
-%token MEM
-%token UNION
-%token PRINT
-%token REF
-%token REV
-
-/* Types */
-/*%token TYINT
-%token TYBOOL
-%token TYSTRING*/
-
-/* Punctuation */
 %token DOT
 %token LPAREN
 %token RPAREN
@@ -117,9 +100,14 @@
 %token COMMA
 %token SEMI
 %token USCORE
-/*%token COLON*/
+%token UNIT
 %token RRARROW
 %token EOF
+
+/* Types */
+/*%token TYINT
+%token TYBOOL
+%token TYSTRING*/
 
 /* Precedence and assoc */
 %nonassoc NU_PREC

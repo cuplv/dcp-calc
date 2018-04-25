@@ -1,3 +1,0 @@
-let multiplier = lam x, ?y . x * ?y in
-  let ?y = 2 in
-    multiplier 4

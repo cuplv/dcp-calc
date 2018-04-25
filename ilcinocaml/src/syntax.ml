@@ -27,7 +27,6 @@ type pattern =
   | PatCons of pattern * pattern
     
 type expr =
-  (* Identifier, constants, values *)
   | Name of name
   | ImpName of name
   | Tag of string
@@ -39,45 +38,31 @@ type expr =
   | Tuple of expr list
   | Wildcard
   | Unit
-  
-  (* Arithmetic operators *)
   | Plus of expr * expr
   | Minus of expr * expr
   | Times of expr * expr
   | Divide of expr * expr
   | Mod of expr * expr
-  
-  (* Logical operators *)
   | Or of expr * expr
   | And of expr * expr
   | Not of expr
-  
-  (* Relations *)
   | Lt of expr * expr
   | Gt of expr * expr
   | Leq of expr * expr
   | Geq of expr * expr
   | Eq of expr * expr
   | Neq of expr * expr
-  
-  (* Let *)
   | Let of pattern * expr * expr
   | LetRec of name * expr * expr
   | Assign of pattern * expr
   | Ref of expr
   | Deref of expr
   | Match of expr * (pattern * expr) list
-            
-  (* Conditionals *)
   | IfTE of expr * expr * expr
   | IfT of expr * expr
   | Req of expr * expr
-  
-  (* Lambda *)
   | Lam of expr * expr
   | App of expr * expr
-  
-  (* Pi *)
   | Wr of expr * expr
   | Rd of expr
   | Nu of name * expr
@@ -87,12 +72,8 @@ type expr =
   | Fork of expr
   | Choice of expr * expr
   | Seq of expr * expr
-  
-  (* Laziness *)
   | Thunk of expr
   | Force of expr
-  
-  (* Built-in functions *)
   | Fst of expr
   | Snd of expr
   | Rand

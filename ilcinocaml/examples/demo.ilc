@@ -1,8 +1,0 @@
-let foo = lam x .
-  nu c .
-    |> (wr (x, "hi") -> c) ;
-    |> (match (rd c) with
-        | (0, msg) => print "reject"
-        | (1, msg) => print msg
-        end)
-in foo 1

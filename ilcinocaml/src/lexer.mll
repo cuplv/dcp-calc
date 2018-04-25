@@ -38,7 +38,7 @@ rule token = parse
   (* Comments *)
   | "(*"                      { comment 1 lexbuf }
   
-  (* Reserved words *)
+  (* Keywords *)
   | "let"                     { LET }
   | "letrec"                  { LETREC }
   | "in"                      { IN }
@@ -57,61 +57,46 @@ rule token = parse
   | "force"                   { FORCE }
   | "req"                     { REQ }
   | "end"		      { END }
-  | "()"		      { UNIT }
-  | "print"		      { PRINT }
   | "ref"                     { REF }
-(*  | "int"                     { TYINT }
-  | "bool"                    { TYBOOL }
-  | "string"                  { TYSTRING }*)
+  | "fst"                     { FST }
+  | "snd"                     { SND }
+  | "rand"                    { RAND }
+  | "getBit"                  { GETBIT }
+  | "show"                    { SHOW }
+  | "lookup"                  { LOOKUP }
+  | "length"                  { LENGTH }
+  | "mem"                     { MEM }
+  | "union"                   { UNION }
+  | "rev"                     { REV }
+  | "print"		      { PRINT }
   
-  (* Operators *)
+  (* Symbols *)
   | "="                       { EQUAL }
   | ":="		      { ASSIGN }
   | "@"                       { AT }
   | "->"                      { RARROW }
-(*  | "<-"                      { LARROW }*)
   | "|"                       { PIPE }
   | ".|."                     { PAR }
   | ".|"                      { PARL }
   | "|>"                      { FORK }
   | "&"                       { CHOICE }
   | "!"                       { REPL }
-  
-  (* Arithmetic operators *)
   | "+"                       { PLUS }
   | "-"                       { MINUS }
   | "*"                       { TIMES }
   | "/"                       { DIVIDE }
   | "%"                       { MOD }
-  
-  (* Logical operators *)
   | "||"                      { OR }
   | "&&"                      { AND }
-  | "not"                     { NOT }
-  
-  (* Relations *)
+  | "~"                       { NOT }
   | "<"                       { LT }
   | ">"                       { GT }
   | "<="                      { LEQ }
   | ">="                      { GEQ }
   | "=="                      { EQ }
   | "<>"                      { NEQ }
-      
-  (* Built-in functions *)
-  | "fst"                     { FST }
-  | "snd"                     { SND }
-  | "rand"                    { RAND }
-  | "getBit"                  { GETBIT }
-  | "show"                    { SHOW }
   | "::"                      { CONS }
   | "++"                      { CONCAT }
-  | "lookup"                  { LOOKUP }
-  | "length"                  { LENGTH }
-  | "mem"                     { MEM }
-  | "union"                   { UNION }
-  | "rev"                     { REV }
-  
-  (* Punctuation *)
   | "."                       { DOT }
   | "("                       { LPAREN }
   | ")"                       { RPAREN }
@@ -122,10 +107,8 @@ rule token = parse
   | ","                       { COMMA }
   | ";"                       { SEMI }
   | "_"                       { USCORE }
-(*  | ":"                       { COLON }*)
+  | "()"                      { UNIT }
   | "=>"                      { RRARROW }
-  
-  (* Identifier and constants *)
   | ['a'-'z' 'A'-'Z']
     ['a'-'z' 'A'-'Z' '0'-'9' '_' '\'']*
                               { NAME (Lexing.lexeme lexbuf) }

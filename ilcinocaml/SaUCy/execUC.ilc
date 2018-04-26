@@ -12,7 +12,7 @@ let partyWrapper = lam sid, p, crupt .
       |> (p pid)
   in
   let getParty = lam pid .
-    if (~(mem pid @partyMap)) then newParty pid ;
+    if (~(mem pid @partyMap)) then newParty pid ; 
     @partyMap.pid
   in
   (* Route messages from env to honest parties *)
@@ -53,8 +53,7 @@ let execUC = lam z, p, f, a .
           wr () -> pump ;
           let o = rd outp in
             match o with
-            (* TODO: Bug fix *)
-            | () => force(run)
+            | () => run
             | a  => print a
             end
           in run) ;

@@ -19,6 +19,8 @@ let rec add_force x = function
      [IBranch (add_force_branch x f1, add_force_branch x f2)]
   | ICond f1 ->
      [ICond (add_force_branch x f1)]
+  | IMatchCond (p,f) ->
+     [IMatchCond (p, (add_force_branch x f))]
   | instr -> [instr]
 and add_force_branch x frm =
   let f acc instr = (add_force x instr) @ acc in

@@ -312,9 +312,13 @@ $k_0 \in \mathbb{N}$ such that for all $k > k_0$,
 \begin{definition}[Bit Producing ILC Term]
 Let $\tau$ be an ILC term. We say that $\tau$ is bit producing if it is closed except
 for an infinite bitstream free variable $\sigma{:}{\sf Inf}$ and $\sigma{:}{\sf Inf} \vdash
-\tau{:}{\sf Bit}$.
-
+\tau{:}{\sf Bit}$. 
 \end{definition}
+
+\noindent The denotation $[\![\tau]\!]\sigma$, in which a particular $\sigma$ is
+given, evaluates to a value of type {\sf Bit}, and the denotation $[\![\tau]\!]$,
+in which no $\sigma$ is specified, evaluates to a binary probability distribution
+ensemble over types or values?
 
 \begin{definition}[Indistinguishability of Bit Producing ILC Terms]
 Let $\tau_1$ and $\tau_2$ be bit producing ILC terms. We say that $\tau_1$ and $\tau_2$ are

@@ -332,18 +332,20 @@ $\textsc{ExecUC}_{\mc{Z}, \mc{S}, \pi_2, \mc{F}_2}$ are bit producing and
 indistinguishable terms.
 \end{definition}
 
-%\begin{definition}[Protocol Emulation in ILC]
-%Let $\tau_{\pi}$ and $\tau_{\phi}$ be p.p.t. ILC terms. We say that
-%$\tau_{\pi}$ UC-emulates $\tau_{\phi}$ if for any p.p.t. adversary 
-%$\tau_{\mc{A}}$ there exists a p.p.t. ideal-process adversary $\tau_{\mc{S}}$
-%such that for any balanced p.p.t. environment $\tau_{\mc{Z}}$ we have:
-%\begin{equation*}
-%\Delta([\![\tau_{\phi, \mc{S}, \mc{Z}}]\!], [\![\tau_{\pi, \mc{A}, \mc{Z}}]\!])) \leq \epsilon,
-%\end{equation*}
-%
-%\noindent where $\tau_{\phi, \mc{S}, \mc{Z}}$ and $\tau_{\pi, \mc{A}, \mc{Z}}$ are
-%converging computations.
-%\end{definition}
+\begin{definition}[Protocol Emulation in ILC]
+Let $\pi$ and $\phi$ be probabilistic polynomial time (p.p.t.) protocols. We say that
+$\pi$ UC-emulates $\phi$ if for any p.p.t. adversary 
+$\mc{A}$, there exists a p.p.t. ideal-process adversary $\mc{S}$
+such that for any balanced p.p.t. environment $\mc{Z}$,
+$\textsc{ExecUC}_{\phi, \mc{S}, \mc{Z}}$ and $\textsc{ExecUC}_{\pi, \mc{A}, \mc{Z}}$
+are indistinguishable bit producing terms.
+\end{definition}
+
+\begin{definition}[Balanced Environment]
+An environment $\mc{Z}$ is balanced if the overall length of inputs given by
+$\mc{Z}$ to the parties of the main instance $\pi$ is at most $k$ times the length
+of the input to the adversary.
+\end{definition}
 
 
 \section{Metatheory}\label{sec:metatheory}

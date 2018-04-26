@@ -1,6 +1,6 @@
 let partyWrapper = lam sid, p, crupt .
   (* Maps pids to assoc list of channels *)
-  let partyMap = ref [] in 
+  let partyMap = ref [] in
   let newParty = lam pid . 
     nu pp2f, pp2z . 
       let partyMap := (pid, [("f2p", pp2f), ("z2p", pp2z)]) :: @partyMap ;

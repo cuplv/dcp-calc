@@ -295,18 +295,19 @@ $\tau_2$ are $\epsilon$-indistinguishable iff $\Delta([\![\tau_1]\!], [\![\tau_2
 
 \begin{definition}[Probability Distribution Ensemble]
 An \emph{ensemble} of probability distributions is a family of probability
-distributions $\{ X_n \}_{n \in \mathbb{N}}$ ($\{ X_n \}_n$ for short) with index
-set $\mathbb{N}$.  The ensembles considered in this work are binary probability
+distributions $\{ X_{\lambda, z} \}_{\lambda \in \mathbb{N}, z \in {\{0,1\}}^{*}}$ with index
+set $\mathbb{N} \times \{0,1\}^{*}$.  The ensembles considered in this work are binary probability
 distribution ensembles, which describe single bit outputs of computations, where
-$n \in \mathbb{N}$ represents the security parameter.
+$\lambda \in \mathbb{N}$ represents the security parameter, and $z \in \{0,1\}^{*}$
+represents input.
 \end{definition}
 
 \begin{definition}[Indistinguishability]
-Let $\{X_n\}_n$ and $\{ Y_n \}_n$ be two binary probability distribution
-ensembles. We say that $\{ X_n \}_n$ and $\{ Y_n \}_n$ are indistinguishable
-(written $\{ X_n \}_n \approx \{ Y_n \}_n$) if for any $c \in \mathbb{N}$, there exists
-$k_0 \in \mathbb{N}$ such that for all $k > k_0$,
-\[ | \Pr[X_k = 1] - \Pr[Y_k = 1] | < k^{-c}. \]
+Let $X$ and $Y$ be two binary probability distribution
+ensembles. We say that $X$ and $Y$ are indistinguishable
+(written $X \approx Y$) if for any $c, d \in \mathbb{N}$, there exists
+$\lambda_0 \in \mathbb{N}$ such that for all $\lambda > \lambda_0$ and all $z \in \cup_{\lambda \leq \lambda^d}\{0,1\}^{\lambda}$,
+\[ | \Pr[X_{\lambda, z} = 1] - \Pr[Y_{\lambda, z} = 1] | < \lambda^{-c}. \]
 \end{definition}
 
 \begin{definition}[Bit Producing ILC Term]
@@ -340,6 +341,15 @@ indistinguishable terms.
 % ExecUC should have sigma and parameter as free variables
 % bit respecting adversaries and environments
 % first define constraints pi and F for divergence wrt A and Z
+\end{definition}
+
+\begin{definition}[Protocol Emulation in ILC]
+Let $\pi$ and $\phi$ be probabilistic polynomial time (p.p.t.) protocols. We say that
+$\pi$ UC-emulates $\phi$ if for any p.p.t. adversary 
+$\mc{A}$, there exists a p.p.t. ideal-process adversary $\mc{S}$
+such that for any balanced p.p.t. environment $\mc{Z}$,
+$\textsc{ExecUC}_{\phi, \mc{S}, \mc{Z}}$ and $\textsc{ExecUC}_{\pi, \mc{A}, \mc{Z}}$
+are indistinguishable bit producing terms.
 \end{definition}
 
 \begin{definition}[Protocol Emulation in ILC]

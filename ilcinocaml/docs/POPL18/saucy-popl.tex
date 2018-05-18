@@ -352,13 +352,15 @@ $\textsc{ExecUC}_{\phi, \mc{S}, \mc{Z}}$ and $\textsc{ExecUC}_{\pi, \mc{A}, \mc{
 are indistinguishable bit producing terms.
 \end{definition}
 
+We say that an adversary $\mc{A}$ is valid for a protocol $\pi$ if $\mc{A} \cup \pi$ 
+
 \begin{definition}[Protocol Emulation in ILC]
-Let $\pi$ and $\phi$ be probabilistic polynomial time (p.p.t.) protocols. We say that
-$\pi$ UC-emulates $\phi$ if for any p.p.t. adversary 
-$\mc{A}$, there exists a p.p.t. ideal-process adversary $\mc{S}$
-such that for any balanced p.p.t. environment $\mc{Z}$,
-$\textsc{ExecUC}_{\phi, \mc{S}, \mc{Z}}$ and $\textsc{ExecUC}_{\pi, \mc{A}, \mc{Z}}$
-are indistinguishable bit producing terms.
+Let $\pi$ and $\phi$ be protocols. We say that $\pi$ UC-emulates $\phi$ iff for all
+adversaries $\mc{A}$, there exists an ideal-process adversary $\mc{S}$ such that
+for any environment $\mc{Z}$,
+$\textsc{ExecUC}[\pi, \mc{A}, \mc{Z}, \lambda, \sigma]$ and
+$\textsc{ExecUC}[\phi, \mc{S}, \mc{Z}, \lambda, \sigma]$ are bit producing and
+indistinguishable terms.
 \end{definition}
 
 \begin{definition}[Balanced Environment]
@@ -366,7 +368,8 @@ An environment $\mc{Z}$ is balanced if the overall length of inputs given by
 $\mc{Z}$ to the parties of the main instance $\pi$ is at most $k$ times the length
 of the input to the adversary.
 \end{definition}
-% shelve this for now
+
+Environment should activate the adversary to allow sending of messages.
 
 \section{Metatheory}\label{sec:metatheory}
 

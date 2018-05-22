@@ -1,0 +1,104 @@
+\def\OPTIONConf{0}%
+\def\OPTIONArxiv{0}%
+%
+\documentclass{llncs}
+\input{defs}
+
+\title{SaUCy Reference: Reliable Broadcast}
+\author{}
+\institute{}
+
+\begin{document}
+
+\maketitle
+
+\section{Overview}
+
+Adaptively secure broadcast~\cite{garay2011adaptively}. Bracha~\cite{bracha1987asynchronous}.
+
+\section{Ideal Functionalities}
+
+\begin{boxdef}{Functionality}{$\Func{BC}$}
+  $\Func{BC}$ interacts with an adversary $\mc{S}$ and a set $\mc{P} = \{
+  P_1, \ldots, P_n \}$ of parties.
+  \begin{enumerate}
+    \item Upon receiving $({\sf Bcast}, sid, m)$ from $P_i$, send $({\sf Bcast},
+  sid, P_i, m)$ to all parties in $\mc{P}$ and to $\mc{S}$.
+  \end{enumerate}
+\end{boxdef}
+
+
+\begin{boxdef}{Functionality}{$\Func{RBC}$}
+  $\Func{RBC}$ interacts with an adversary $\mc{S}$ and a set $\mc{P} = \{
+  P_1, \ldots, P_n \}$ of parties.
+  \begin{enumerate}
+    \item Upon receiving $({\sf Bcast}, sid, m)$ from $P_i$, leak $({\sf Bcast},
+  sid, P_i, m)$ to $\mc{S}$.
+  
+    \item Upon receiving $m'$ from $\mc{S}$, do:
+    
+    \begin{itemize}
+      \item If $P_i$ is corrupted, send $({\sf Bcast}, sid, P_i, m')$ to all
+  parties in $\mc{P}$.
+  
+      \item If $P_i$ is not corrupted, send $({\sf Bcast}, sid, P_i, m)$ to all
+  parties in $\mc{P}$.
+    \end{itemize}
+  \end{enumerate}
+\end{boxdef}
+
+\begin{boxdef}{Functionality}{$\Func{ACAST}$}
+  $\Func{ACAST}$ interacts with an adversary $\mc{S}$ and a set $\mc{P} = \{
+  P_1, \ldots, P_n \}$ of parties.
+  \begin{enumerate}
+    \item Upon receiving $({\sf Bcast}, sid, m)$ from $P_i$, leak $({\sf Bcast},
+  sid, P_i, m)$ to $\mc{S}$.
+  
+    \item Upon receiving $m'$ from $\mc{S}$, do:
+    
+    \begin{itemize}
+      \item If $P_i$ is corrupted, send $({\sf Bcast}, sid, P_i, m')$ to all
+  parties in $\mc{P}$.
+  
+      \item If $P_i$ is not corrupted, send $({\sf Bcast}, sid, P_i, m)$ to all
+  parties in $\mc{P}$.
+    \end{itemize}
+  \end{enumerate}
+\end{boxdef}
+
+\section{Protocol Definition}
+
+\begin{boxdef}{Protocol}{$\Pi_{\sf Bracha}$}
+  $\Pi_{\sf Bracha}$ interacts with a set $\mc{P} = \{ P_1, \ldots, P_n \}$ of parties.
+  \begin{enumerate}
+    \item Upon receiving $({\sf Value}, v)$ from $P_i$, send $({\sf Initial},
+  v)$ to all parties in $\mc{P}$.
+  
+    \item Upon receiving an $({\sf Initial}, v)$ message or
+  $\ceil{\frac{n+f}{2}}$ $({\sf Echo}, v)$ messages or $\ceil{\frac{f+1}{2}}$
+  $({\sf Ready}, v)$ messages, send $({\sf Echo}, v)$ to all parties in
+  $\mc{P}$.
+
+    \item Upon receiving $\ceil{\frac{n+f}{2}}$ $({\sf Echo}, v)$ messages or
+  $\ceil{\frac{f+1}{2}}$ $({\sf Ready}, v)$ messages, send $({\sf Ready}, v)$ to
+  all parties in $\mc{P}$.
+
+    \item Upon receiving $\ceil{\frac{f+1}{2}}$ $({\sf Ready}, v)$ messages,
+    accept $v$.
+  \end{enumerate}
+\end{boxdef}
+
+\section{Protocol Emulation}
+
+\begin{boxdef}{Simulator}{$\mc{S}_{\sf BC}$}
+
+\end{boxdef}
+
+\begin{proof-sketch}
+Sketch simulation proof here.
+\end{proof-sketch}
+    
+\bibliographystyle{plain}
+\bibliography{reliable-broadcast}
+
+\end{document}

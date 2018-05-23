@@ -1,0 +1,142 @@
+\def\OPTIONConf{0}%
+\def\OPTIONArxiv{0}%
+%
+\documentclass{llncs}
+\input{defs}
+
+\title{SaUCy Reference: Reliable Broadcast}
+\author{}
+\institute{}
+
+\begin{document}
+
+\maketitle
+
+\section{Overview}
+
+Adaptively secure broadcast~\cite{garay2011adaptively}. Bracha~\cite{bracha1987asynchronous}.
+
+\section{Ideal Functionalities}
+
+\begin{comment}
+\begin{boxdef}{Functionality}{$\Func{BC}$}
+  $\Func{BC}$ interacts with an adversary $\mc{S}$ and a set $\mc{P} = \{
+  P_1, \ldots, P_n \}$ of parties.
+  \begin{enumerate}
+    \item Upon receiving $({\sf Bcast}, sid, m)$ from $P_i$, send $({\sf Bcast},
+  sid, P_i, m)$ to all parties in $\mc{P}$ and to $\mc{S}$.
+  \end{enumerate}
+\end{boxdef}
+
+
+\begin{boxdef}{Functionality}{$\Func{RBC}$}
+  $\Func{RBC}$ interacts with an adversary $\mc{S}$ and a set $\mc{P} = \{
+  P_1, \ldots, P_n \}$ of parties.
+  \begin{enumerate}
+    \item Upon receiving $({\sf Bcast}, sid, m)$ from $P_i$, leak $({\sf Bcast},
+  sid, P_i, m)$ to $\mc{S}$.
+  
+    \item Upon receiving $m'$ from $\mc{S}$, do:
+    
+    \begin{itemize}
+      \item If $P_i$ is corrupted, send $({\sf Bcast}, sid, P_i, m')$ to all
+  parties in $\mc{P}$.
+  
+      \item If $P_i$ is not corrupted, send $({\sf Bcast}, sid, P_i, m)$ to all
+  parties in $\mc{P}$.
+    \end{itemize}
+  \end{enumerate}
+\end{boxdef}
+\end{comment}
+
+\begin{boxdef}{Functionality}{$\Func{ACAST}$}
+  $\Func{ACAST}^t$ interacts with an adversary $\mc{S}$ and a set $\mc{P} = \{
+  P_1, \ldots, P_N \}$ of parties.
+  \begin{enumerate}
+    \item Upon receiving $({\sf Bcast}, sid, m)$ from $P_D$:
+    
+    \begin{itemize}
+      \item If $P_D$ is honest, then, for each $P_i$ in $\mc{P}$, send $({\sf
+      Bcast}, sid, P_i, m)$ eventually.
+      
+      \item If $P_D$ is corrupted, then possibly, for each $P_i$ in $\mc{P}$,
+      send $({\sf Bcast}, sid, P_i, m)$ eventually.
+      \end{itemize}
+  \end{enumerate}
+\end{boxdef}
+
+\begin{comment}
+\begin{boxdef}{Functionality}{$\Func{ACAST}(D, P_1, \ldots, P_N)$}
+  Assume $N > 3f$ for $f$ Byzantine failures.
+  \begin{enumerate}[leftmargin=0cm]
+    \item[] On send(x) from $D$:
+    \begin{itemize}
+      \item[] If $D$ is honest:
+      \begin{itemize}
+        \item[] For each $P_i$:
+        \begin{itemize}
+          \item[] Eventually send(x) to $P_i$.
+        \end{itemize}
+      \end{itemize}
+
+      \item[] If $D$ is corrupt:
+      \begin{itemize}
+      \item[] Possibly:
+        \begin{itemize}
+          \item[] For each $P_i$:
+          \begin{itemize}
+            \item[] Eventually send(x) to $P_i$.
+          \end{itemize}
+        \end{itemize}
+      \end{itemize}
+    \end{itemize}
+  \end{enumerate}
+\end{boxdef}
+\end{comment}
+
+\begin{boxdef}{ILC}{$\Func{ACAST}$}
+\lstinputlisting[style=ilc]{listings/F_acast.ilc}
+\end{boxdef}
+
+\section{Protocol Definition}
+
+\begin{boxdef}{Protocol}{$\Pi_{\sf Bracha}$}
+  $\Pi_{\sf Bracha}$ interacts with a set $\mc{P} = \{ P_1, \ldots, P_n \}$ of
+  parties and can tolerate up to $f$ failures.
+  \begin{enumerate}
+    \item Upon receiving $({\sf Value}, v)$ from $P_i$, send $({\sf Initial},
+  v)$ to all parties in $\mc{P}$.
+  
+    \item Upon receiving an $({\sf Initial}, v)$ message or
+  $\ceil{\frac{n+f}{2}}$ $({\sf Echo}, v)$ messages or $\ceil{\frac{f+1}{2}}$
+  $({\sf Ready}, v)$ messages, send $({\sf Echo}, v)$ to all parties in
+  $\mc{P}$.
+
+    \item Upon receiving $\ceil{\frac{n+f}{2}}$ $({\sf Echo}, v)$ messages or
+  $\ceil{\frac{f+1}{2}}$ $({\sf Ready}, v)$ messages, send $({\sf Ready}, v)$ to
+  all parties in $\mc{P}$.
+
+    \item Upon receiving $\ceil{\frac{f+1}{2}}$ $({\sf Ready}, v)$ messages,
+    accept $v$.
+  \end{enumerate}
+\end{boxdef}
+
+\section{Protocol Emulation}
+
+\begin{theorem}
+Protocol $\Pi_{\sf Bracha}$ $t$-securely realizes the functionality $\Func{ACAST}$
+for $t < N/3$.
+\end{theorem}
+
+\begin{proof-sketch}
+Let $\mc{A}$ be an adversary attacking $\Pi_{\sf Bracha}$. We build a
+corresponding simulator $\mc{S}$ as follows.
+
+\begin{boxdef}{Simulator}{$\mc{S}_{\sf ACAST}$}
+\end{boxdef}
+\end{proof-sketch}
+    
+\bibliographystyle{plain}
+\bibliography{reliable-broadcast}
+
+\end{document}

@@ -1,0 +1,28 @@
+\usepackage{enumitem}
+\usepackage[margin=1in]{geometry}
+\usepackage{goodcharter}
+\usepackage{joshuadunfield}
+\usepackage{listings}
+\usepackage{mathtools}
+\usepackage[most]{tcolorbox}
+\usepackage{upquote}
+
+\newcommand{\mc}[1]{\mathcal{{#1}}}
+\newcommand{\F}{\mc{F}}
+\newcommand{\Func}[1]{\F_{\textsc{#1}}}
+\newcommand{\parheader}[1]{\noindent\emph{\textbf{{#1}.}}}
+
+\newenvironment{proof-sketch}{\noindent{\emph{Proof sketch.}}}{\qed\bigskip}
+
+\newtcolorbox{boxdef}[2]
+{
+  title={\textbf{#1}~{#2}},
+  enhanced,
+  %drop shadow={black!50!white},
+  coltitle=black,
+  top=0.2in,
+  attach boxed title to top left=
+  {xshift=0.5cm,yshift=-\tcboxedtitleheight/2},
+  boxed title style={size=small,colback=white},
+  colback=white
+}

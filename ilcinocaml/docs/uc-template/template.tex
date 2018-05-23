@@ -1,0 +1,54 @@
+\def\OPTIONConf{0}%
+\def\OPTIONArxiv{0}%
+%
+\documentclass{llncs}
+\input{defs}
+
+\title{UC Template}
+\author{}
+\institute{}
+
+\begin{document}
+
+\maketitle
+
+\section{Overview}
+
+UC~\cite{canetti2001universally}.
+
+\section{Ideal Functionalities}
+
+\begin{boxdef}{Functionality}{$\Func{FOO}$}
+  $\Func{FOO}$ \ldots
+  \begin{enumerate}
+    \item Upon receiving \ldots
+  \end{enumerate}
+\end{boxdef}
+
+\section{Protocol Definition}
+
+\begin{boxdef}{Protocol}{$\Pi_{\sf Bar}$}
+  $\Pi_{\sf Bar}$ \ldots
+  \begin{enumerate}
+    \item Upon receiving \ldots
+   \end{enumerate}
+\end{boxdef}
+
+\section{Protocol Emulation}
+
+\begin{theorem}
+Protocol $\Pi_{\sf Bar}$ UC-realizes the functionality $\Func{FOO}$.
+\end{theorem}
+
+\begin{proof-sketch}
+Proof sketch goes here.
+
+\begin{boxdef}{Simulator}{$\mc{S}_{\sf FOO}$}
+Simulator definition goes here.
+\end{boxdef}
+\end{proof-sketch}
+    
+\bibliographystyle{plain}
+\bibliography{template}
+
+\end{document}

@@ -50,17 +50,17 @@ Adaptively secure broadcast~\cite{garay2011adaptively}. Bracha~\cite{bracha1987a
 \end{comment}
 
 \begin{boxdef}{Functionality}{$\Func{ACAST}$}
-  $\Func{ACAST}^t$ interacts with an adversary $\mc{S}$ and a set $\mc{P} = \{
+  $\Func{ACAST}$ interacts with an adversary $\mc{S}$ and a set $\mc{P} = \{
   P_1, \ldots, P_N \}$ of parties.
   \begin{enumerate}
     \item Upon receiving $({\sf Bcast}, sid, m)$ from $P_D$:
     
     \begin{itemize}
       \item If $P_D$ is honest, then, for each $P_i$ in $\mc{P}$, send $({\sf
-      Bcast}, sid, P_i, m)$ eventually.
+      Bcast}, sid, P_i, m)$ {\bf eventually}.
       
-      \item If $P_D$ is corrupted, then possibly, for each $P_i$ in $\mc{P}$,
-      send $({\sf Bcast}, sid, P_i, m)$ eventually.
+      \item If $P_D$ is corrupted, then {\bf possibly}, for each $P_i$ in $\mc{P}$,
+      send $({\sf Bcast}, sid, P_i, m)$ {\bf eventually}.
       \end{itemize}
   \end{enumerate}
 \end{boxdef}
@@ -92,11 +92,11 @@ Adaptively secure broadcast~\cite{garay2011adaptively}. Bracha~\cite{bracha1987a
     \end{itemize}
   \end{enumerate}
 \end{boxdef}
-\end{comment}
 
 \begin{boxdef}{ILC}{$\Func{ACAST}$}
 \lstinputlisting[style=ilc]{listings/F_acast.ilc}
 \end{boxdef}
+\end{comment}
 
 \section{Protocol Definition}
 
@@ -133,7 +133,25 @@ Let $\mc{A}$ be an adversary attacking $\Pi_{\sf Bracha}$. We build a
 corresponding simulator $\mc{S}$ as follows.
 
 \begin{boxdef}{Simulator}{$\mc{S}_{\sf ACAST}$}
+$\mc{S}$ invokes $\mc{A}$ and does the following:
+\begin{enumerate}
+  %\item $\mc{S}$ simulates all players in the computation.
+  \item Whenever $\mc{A}$ requests to corrupt some $P_i \in \mc{P}$, corrupt $P_i$
+  and sends the internal state of $P_i$ to $\mc{A}$. Hereafter, $\mc{S}$ has
+  $P_i$ follow $\mc{A}$'s instruction.
+  \item Whenever $\mc{A}$ sends a message to the environment $\mc{Z}$, $\mc{S}$
+  forwards this message to $\mc{Z}$.
+\end{enumerate}
 \end{boxdef}
+
+\noindent If an honest party $p_i$ accepts $m_i = m$, then in the ideal execution, $P_D$
+sent $m$ to $\Func{ACAST}$, even if $P_D$ was corrupted. Otherwise, if $P_i$
+accepts nothing, then $\mc{S}$ instructed $P_D$ to send $m_i \neq m$ to
+$\Func{ACAST}$. The correctness of $\Pi_{\sf
+Bracha}$~\cite{bracha1987asynchronous} implies that $P_i$ accepts nothing only
+when $P_D$ is actively corrupted. Verifying that $\textsc{Exec}[\Pi_{\sf
+Bracha}, \mc{A}, \mc{Z}] \approx \textsc{Exec}[\Func{ACAST}, \mc{S}, \mc{Z}]$ is left
+as an exercise to the reader because I have no idea what I'm doing.
 \end{proof-sketch}
     
 \bibliographystyle{plain}

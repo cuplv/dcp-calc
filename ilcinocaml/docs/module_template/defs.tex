@@ -1,3 +1,4 @@
+\usepackage{enumitem}
 \usepackage[margin=1in]{geometry}
 \usepackage{goodcharter}
 \usepackage{joshuadunfield}
@@ -13,12 +14,13 @@
 \newcommand{\Func}[1]{\F_{\textsc{#1}}}
 \newcommand{\parheader}[1]{\noindent\emph{\textbf{{#1}.}}}
 
-\newenvironment{proof-sketch}{\noindent{\sc Proof Sketch}\hspace*{1em}}{\qed\bigskip}
+\newenvironment{proof-sketch}{\noindent{\emph{Proof sketch.}}}{\qed\bigskip}
 
 \newtcolorbox{boxdef}[2]
 {
   title={\textbf{#1}~{#2}},
   enhanced,
+  %drop shadow={black!50!white},
   coltitle=black,
   top=0.2in,
   attach boxed title to top left=
@@ -51,7 +53,8 @@
     keywordstyle = [4]{\color{magenta}},
     morekeywords = [4]{nu, wr, rd},
     literate = {|>}{{\textcolor{magenta}{$\mid\triangleright\ $}}}1
-    {->}{{\textcolor{magenta}{$\rightarrow\ $}}}1 {\&}{{\textcolor{red}{\texttt{\&}}}}1,
+    {->}{{\textcolor{magenta}{$\rightarrow\ $}}}1 {\&}{{\textcolor{red}{\texttt{\&}}}}1
+    {lam}{{\textcolor{blue}{$\lambda$\ }}}1,
     xleftmargin=0.5cm,
     mathescape=true,
     showstringspaces=false

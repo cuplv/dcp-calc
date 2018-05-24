@@ -1,0 +1,33 @@
+let test = lam sid, N, f, F, P .
+  |> (F sid N f) ;
+  let mk_parties = lam n .
+    match n with
+    | 0 => ()
+    | n => |> (P sid n) ; mk_parties (n-1)
+    end
+  in mk_parties N
+in
+let F_ACS = lam sid, N, f .
+  let out = ref [] in
+  |> (!(let inp = rd ?p2f in
+      let out := inp :: @out)) ;
+  wait ((length @out) >= (N-f)) ;
+  (* do something *)
+  letrec wait =
+    if (length @out) >= (N-f) then
+      let bcast = lam n .
+        match n with
+        | 0 => ()
+        | n => |> (wr (msg, @out, n) -> ?f2p) ; bcast (n-1)
+        end
+      in bcast N
+    else wait
+  in wait
+in
+let Party = lam sid, pid .
+  wr ("hi" ++ show pid) -> ?p2f ;
+  let msg = rd ?f2p in
+    print (show pid ++ " " ++ show msg)
+in
+nu p2f, f2p .
+  test "sid" 4 1 F_ACS Party

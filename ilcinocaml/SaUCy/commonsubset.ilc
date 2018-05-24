@@ -9,20 +9,17 @@ let test = lam sid, N, f, F, P .
 in
 let F_ACS = lam sid, N, f .
   let out = ref [] in
-  |> (!(let inp = rd ?p2f in
-      let out := inp :: @out)) ;
-  wait ((length @out) >= (N-f)) ;
-  (* do something *)
-  letrec wait =
-    if (length @out) >= (N-f) then
-      let bcast = lam n .
-        match n with
-        | 0 => ()
-        | n => |> (wr (msg, @out, n) -> ?f2p) ; bcast (n-1)
-        end
-      in bcast N
-    else wait
-  in wait
+  nu c .
+    |> (!(let inp = rd ?p2f in
+        let out := inp :: @out ;
+        if (length @out) >= (N-f) then wr 1 -> c)) ;
+    |> (rd c ; 
+        let bcast = lam n .
+          match n with
+          | 0 => ()
+          | n => |> (wr (@out, n) -> ?f2p) ; bcast (n-1)
+          end
+        in bcast N)
 in
 let Party = lam sid, pid .
   wr ("hi" ++ show pid) -> ?p2f ;

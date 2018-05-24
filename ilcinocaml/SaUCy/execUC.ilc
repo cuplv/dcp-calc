@@ -4,7 +4,6 @@ let partyWrapper = lam sid, p, crupt .
   let newParty = lam pid . 
     nu pp2f, pp2z . 
       let partyMap := (pid, [("f2p", pp2f), ("z2p", pp2z)]) :: @partyMap ;
-      (* Turn these into replications? *)
       |> (!(let m = rd pp2f in
               wr (pid, m) -> ?p2f)) ;
       |> (!(let m = rd pp2z in

@@ -1,10 +1,20 @@
-let test_sharesingle_ideal = lam sid, N, f, F .
-  |> F ;
+let test_sharesingle_ideal = lam sid, N, f, F, P.
+  |> (F sid N f) ;
   |> (let loop = lam n .
         match n with
         | 0 => ()
-        | n => |> (*(P sid N f n)*) (print n) ; loop (n-1)
+        | n => |> (P sid N f n); loop (n-1)
         end
       in loop N)
 in
-test_sharesingle_ideal "sid" 4 1 20
+let F = lam sid, N, f .
+  let shares = getBits N in
+    |> (!(let pid = rd ?c in wr (shares, pid) -> ?c))
+in
+let P = lam sid, N, f, pid .
+  wr pid -> ?c ;
+  let msg = rd ?c in
+    print (show pid ++ " " ++ show msg)
+in
+nu c .
+  test_sharesingle_ideal "sid" 4 1 F P

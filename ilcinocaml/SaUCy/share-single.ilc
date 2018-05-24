@@ -9,6 +9,7 @@ let test_sharesingle_ideal = lam sid, N, f, F, P.
 in
 let F_SS = lam sid, N, f .
   let shares = getBits N in
+    (* Eventually send *)
     |> (!(let pid = rd ?c in wr (shares, pid) -> ?c))
 in
 let Party = lam sid, N, f, pid .

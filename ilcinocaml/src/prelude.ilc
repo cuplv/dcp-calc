@@ -1,189 +1,193 @@
 (* ILC Standard Prelude *)
-
-let map := (lam f, lst .
+let map = lam f, lst .
   match lst with
   | [] => []
   | x::xs => (f x) :: (map f xs)
-  end) ;
-
-let filter := (lam f, lst .
+  end
+in 
+let filter = lam f, lst .
   match lst with
   | [] => []
   | x::xs => if f x
                 then x :: (filter f xs)
                 else filter f xs
-  end) ;
-
-let foldl := (lam f, acc, lst .
+  end
+in
+let foldl = lam f, acc, lst .
   match lst with
   | [] => acc
   | x::xs => foldl f (f acc x) xs
-  end) ;
-
-let foldl1 := (lam f, lst .
+  end
+in
+let foldl1 = lam f, lst .
   match lst with
   | [] => "error: empty list"
   | x::xs => foldl f x xs
-  end) ;
-
-let scanl := (lam f, s, lst .
+  end
+in
+let scanl = lam f, s, lst .
   s :: match lst with
        | [] => []
        | x::xs => scanl f (f s x) xs
-       end) ;
-
-let scanl1 := (lam f, lst .
+       end
+in
+let scanl1 = lam f, lst .
   match lst with
   | [] => []
   | x::xs => scanl f x xs
-  end) ;
-
-let foldr := (lam f, lst, acc .
+  end
+in
+let foldr = lam f, lst, acc .
   match lst with
   | [] => acc
   | x::xs => f x (foldr f xs acc)
-  end) ;
-
-let foldr1 := (lam f, lst .
+  end
+in
+let foldr1 = lam f, lst .
   match lst with
   | [] => "error: empty list"
   | x::xs => foldr f xs s
-  end) ;
-
+  end
+in
 (* TODO: scanr, scanr1 *)
-
-let all := (lam f, lst .
+let all = lam f, lst .
   match lst with
   | [] => true
   | x :: xs => if f x then all f xs
                else false
-  end) ;
-
-let any := (lam f, lst .
+  end
+in
+let any = lam f, lst .
   match lst with
   | [] => false
   | x :: xs => if f x then true
                else any f xs
-  end) ;
-
-let and := (lam lst .
+  end
+in
+let and = lam lst .
   match lst with
   | [] => true
   | x::xs => if x then and xs
              else false
-  end) ;
-
-let or := (lam lst .
+  end
+in
+let or = lam lst .
   match lst with
   | [] => false
   | x::xs => if x then true
           else or xs
-  end) ;
-
-let nth := (lam n, lst .
+  end
+in
+let nth = lam n, lst .
   match (n, lst) with
   | (_, []) => "not found" (* TODO: Error handling *)
   | (1, x::xs) => x
   | (n', x::xs) => nth (n'-1) xs
-  end) ;
-
-let take := (lam n, lst .
+  end
+in
+let take = lam n, lst .
   match lst with
   | [] => "error"
   | x::xs => if n == 1 then [x]
              else x :: (take (n-1) xs)
-  end) ;
-
-let drop := (lam n, lst .
+  end
+in
+let drop = lam n, lst .
   match lst with
   | [] => []
   | x::xs => if n <= 0 then x::xs
              else drop (n-1) xs
-  end) ;
-
-let splitAt := (lam n, lst .
-  (take n lst, drop n lst)) ;
-
-let takeWhile := (lam f, lst .
+  end
+in
+let splitAt = lam n, lst .
+  (take n lst, drop n lst)
+in
+let takeWhile = lam f, lst .
   match lst with
   | [] => []
   | x::xs => if f x then x :: (takeWhile f xs)
              else takeWhile f xs
-  end) ;
-
-let dropWhile := (lam f, lst .
+  end
+in
+let dropWhile = lam f, lst .
   match lst with
   | [] => []
   | x::xs => if f x then dropWhile f xs
              else x::xs
-  end) ;
-
-let zip := (lam lst1, lst2 .
+  end
+in
+let zip = lam lst1, lst2 .
   match (lst1, lst2) with
   | ([], _) => []
   | (_, []) => []
   | (x::xs, y::ys) => (x, y) :: (zip xs ys)
-  end) ;
-
-let foldr := (lam f, lst, acc .
+  end
+in
+let foldr = lam f, lst, acc .
   match lst with
   | [] => acc
   | x::xs => f x (foldr f xs acc)
-  end) ;
-
-let null := (lam lst .
+  end
+in
+let null = lam lst .
   match lst with
   | [] => true
   | _ => false
-  end) ;
-
-let sum := (lam lst .
+  end
+in
+let sum = lam lst .
   match lst with
   | [] => 0
   | x::xs => x + sum xs
-  end) ;
-
-let product := (lam lst .
+  end
+in
+let product = lam lst .
   match lst with
   | [] => 0
   | x::xs => x + product xs
-  end) ;
-
-let min := (lam x, y .
-  if x < y then x else y) ;
-
-let max := (lam x, y .
-  if x > y then x else y) ;
-
-let minimum := (lam lst .
-  foldl1 min lst) ;
-
-let maximum := (lam lst .
-  foldl1 max lst) ;
-
-let init := (lam lst .
+  end
+in
+let min = lam x, y .
+  if x < y then x else y
+in
+let max = lam x, y .
+  if x > y then x else y
+in
+let minimum = lam lst .
+  foldl1 min lst
+in
+let maximum = lam lst .
+  foldl1 max lst
+in
+let init = lam lst .
   match lst with
   | [x] => []
   | x::xs => x :: (init xs)
-  end) ;
-
-let replicate := (lam n, x .
+  end
+in
+let replicate = lam n, x .
   match n with
   | 0 => []
   | n' => x :: replicate (n'-1) x
-  end) ;
-
+  end
+in
+let getBits = lam n .
+  match n with
+  | 0 => []
+  | n => getBit () :: getBits (n-1)
+  end
+in
 (* TODO: span, break *)
-
-let insert := (lam elem, lst .
+let insert = lam elem, lst .
   match lst with
   | [] => [elem]
   | x::xs => if elem < x then elem :: x :: xs
              else x :: (insert elem xs)
-  end) ;
-
-let sort := (lam lst .
+  end
+in
+let sort = lam lst .
   match lst with
   | [] => []
   | x::xs => insert x (sort xs)
-  end)
+  end
+in ()

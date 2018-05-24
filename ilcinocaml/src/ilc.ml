@@ -107,7 +107,7 @@ let print_ir = function
                 acc ^ (Machine.string_of_frame (Compile.compile p)) ^ "\n") in
           print_string (List.fold_left f "" ps)
 
-let run_full env ps = 
+let run_full env ps =
   let init_ps = List.mapi (fun i p ->
                     Machine.run (i, ([p], [], [env]))) ps in
   let rec loop = function
@@ -118,14 +118,34 @@ let run_full env ps =
   Machine.init_pid_counter (List.length init_ps);
   loop (Communication.run_comm (Machine.run_until_blocked init_ps))
 
+let get_name instrs =
+  match (List.rev instrs) with
+  | Machine.IUnscope [s] :: rest -> s
+  | _ -> raise (Runtime_error "invalid prelude")
+
+let rm_last instrs =
+  match (List.rev instrs) with
+  | Machine.IUnscope s :: rest -> List.rev rest
+  | _ -> raise (Runtime_error "invalid prelude")
+
+let get_env instrs =
+  let rec aux acc = function
+    | [Machine.IUnit] -> acc
+    | Machine.IClosure(f,x,frm)::ILet _::rest ->
+       let name = get_name rest in
+       let rec c = Machine.MClosure (x, frm, (name, c) :: []) in
+       aux ((name, c)::acc) (rm_last rest)
+    | _ -> raise (Runtime_error "wot")
+  in
+  aux [] instrs
+
 let prelude_env = function
   | Syntax.Process p :: [] ->
      let compiled_p = Compile.compile p in
-     let final_state = run_full [] [compiled_p] in
-     (match final_state with
-     | [(_, (_, _, env::env_tail))] -> env
-     | _ -> raise (Runtime_error "failed to compile prelude"))
-  | _ -> raise (Runtime_error "invalid prelude")    
+     get_env compiled_p
+     (*let wtf = List.map Machine.string_of_instr compiled_p in
+     List.iter print_endline wtf ; []*)
+  | _ -> raise (Runtime_error "invalid prelude")
 
 let exec verbose env = function
   | ps -> let f = function

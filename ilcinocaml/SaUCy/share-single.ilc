@@ -1,0 +1,10 @@
+let test_sharesingle_ideal = lam sid, N, f, F .
+  |> F ;
+  |> (let loop = lam n .
+        match n with
+        | 0 => ()
+        | n => |> (*(P sid N f n)*) (print n) ; loop (n-1)
+        end
+      in loop N)
+in
+test_sharesingle_ideal "sid" 4 1 20

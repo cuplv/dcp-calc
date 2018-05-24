@@ -622,7 +622,7 @@ let exec instr frms stck envs =
 (* Execute instructions *)
 let run p = 
   let rec loop = function
-    | (pid, ([], [], e)) as s -> s
+    | (pid, ([], [], e)) as s ->s
     (*    | (pid, ([], [v], e)) as s-> s*)
     | (pid, ([], v, e)) as s-> s
     | (pid, ((IRd "" :: is) :: frms, stck, envs)) ->
@@ -649,7 +649,7 @@ let run p =
   loop p
 
 let run_all ps = List.map run ps
-
+  
 (* Spawns new processes *)
 let pid_counter = ref 0 (* For communication purposes only *)
 

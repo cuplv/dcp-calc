@@ -11,6 +11,7 @@ let partyWrapper = lam sid, crupt, p, params .
       |> (p pid params)
   in
   let getParty = lam pid .
+    print (show pid) ;
     if (~(mem pid @partyMap)) then newParty pid ; 
     @partyMap.pid
   in
@@ -47,12 +48,19 @@ let execUC = lam z, p, f, a, params .
          |> (f sid crupt params) ;
          |> (a sid crupt) ;
          |> (partyWrapper sid crupt p params)) ;
-    z ()
+    z params
 in
-let testEnv = lam () .
-  wr ("sid", {}) -> ?z2exec
+let testEnv = lam params .
+  let N = params."N" in
+  wr ("sid", {}) -> ?z2exec ;
+  |> (let loop = lam n .
+      match n with
+      | 0 => ()
+      | n => |> (wr (n, "hi") -> ?z2p) ; loop (n-1)
+      end
+    in loop N)
 in
-let idealProtocol = lam sid, crupt, params .
+(*let idealProtocol = lam sid, crupt, params .
   let Party = lam pid .
     wr pid -> ?p2f ;
     let msg = rd ?f2p in
@@ -63,7 +71,11 @@ let idealProtocol = lam sid, crupt, params .
         | 0 => ()
         | n => |> (Party n) ; loop (n-1)
         end
-      in loop N)
+      in loop N)*)
+let idealProtocol = lam pid, params .
+  wr pid -> ?p2f
+  let msg = rd ?f2p in
+    print (show pid ++ " " ++ show msg)
 in
 let F_SS = lam sid, crupt, params .
   let N = params."N" in

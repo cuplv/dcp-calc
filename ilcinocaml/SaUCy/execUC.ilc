@@ -81,6 +81,7 @@ let voidAdversary = lam sid, crupt .
   |> (!(rd ?p2a))
 in
 let dummyFunctionality = lam sid, crupt .
+  print sid ;
   |> (!(let (pid, m) = rd ?p2f in
          wr (pid, m) -> ?f2p)) ;
   |> (!(let m = rd ?a2f in

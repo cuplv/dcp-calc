@@ -1,4 +1,4 @@
-let partyWrapper = lam sid, p, crupt .
+let partyWrapper = lam sid, crupt, p, params .
   (* Maps pids to assoc list of channels *)
   let partyMap = ref [] in
   let newParty = lam pid . 
@@ -8,7 +8,7 @@ let partyWrapper = lam sid, p, crupt .
               wr (pid, m) -> ?p2f)) ;
       |> (!(let m = rd pp2z in
               wr (pid, m) -> ?p2z)) ;
-      |> (p pid)
+      |> (p pid params)
   in
   let getParty = lam pid .
     if (~(mem pid @partyMap)) then newParty pid ; 
@@ -33,36 +33,43 @@ let partyWrapper = lam sid, p, crupt .
          if (mem pid crupt)
          then wr (pid, m) -> ?p2z))
 in
-let execUC = lam z, p, f, a .
+let execUC = lam z, p, f, a, params .
   nu z2p, p2z,
-     p2f, f2p,
-     f2a, a2f,
-     a2z, z2a,
-     a2p, p2a,
-     z2f, f2z,
-     z2exec, dump,
-     pump, outp .
-     |> (let (sid, crupt) = rd z2exec in
-          print (show sid) ;
-     |> (f sid crupt) ;
-     |> (a sid crupt) ;
-     |> (partyWrapper sid p crupt)) ;
-     (* Run until output *)
-     |> (letrec run =
-          wr () -> pump ;
-          let o = rd outp in
-            match o with
-            | () => run
-            | a  => print a
-            end
-          in run) ;
-     z ()
+    p2f, f2p,
+    f2a, a2f,
+    a2z, z2a,
+    a2p, p2a,
+    z2f, f2z,
+    z2exec, dump,
+    pump, outp .
+    |> (let (sid, crupt) = rd z2exec in
+         print (show sid) ;
+         |> (f sid crupt params) ;
+         |> (a sid crupt) ;
+         |> (partyWrapper sid crupt p params)) ;
+    z ()
 in
-let idealProtocol = lam pid .
-  |> (!(let m = rd ?z2p in
-         wr m -> ?p2f)) ;
-  |> (!(let m = rd ?f2p in
-         wr m -> ?p2z))
+let testEnv = lam () .
+  wr ("sid", {}) -> ?z2exec
+in
+let idealProtocol = lam sid, crupt, params .
+  let Party = lam pid .
+    wr pid -> ?p2f ;
+    let msg = rd ?f2p in
+      print (show pid ++ " " ++ show msg)
+  in
+  |> (let loop = lam n .
+        match n with
+        | 0 => ()
+        | n => |> (Party n) ; loop (n-1)
+        end
+      in loop N)
+in
+let F_SS = lam sid, crupt, params .
+  let N = params."N" in
+  let shares = getBits N in
+    (* Eventually send *)
+    |> (!(let pid = rd ?p2f in wr (pid, shares) -> ?f2p))
 in
 let dummyAdversary = lam sid, crupt .
   |> (!(match (rd ?z2a) with
@@ -74,34 +81,6 @@ let dummyAdversary = lam sid, crupt .
   |> (!(let m = rd ?p2a in
          wr m -> ?a2z))
 in
-(* pass channel? *)
-let voidAdversary = lam sid, crupt .
-  |> (!(rd ?z2a)) ;
-  |> (!(rd ?f2a)) ;
-  |> (!(rd ?p2a))
+let params = [("N", 4), ("f", 1)]
 in
-let dummyFunctionality = lam sid, crupt .
-  |> (!(let (pid, m) = rd ?p2f in
-         wr (pid, m) -> ?f2p)) ;
-  |> (!(let m = rd ?a2f in
-         wr m -> ?f2a))
-in
-let testEnv = lam () .
-  wr (999, {}) -> ?z2exec ;
-  |> (!(let x = rd ?p2z in
-         print ("Z: p sent " ++ show x) ;
-         (* ?pass *)
-         wr () -> ?outp)) ;
-  |> (!(let m = rd ?a2z in
-         print ("Z: a sent " ++ show m) ;
-         wr "environment output: 1" -> ?outp)) ;
-  rd ?pump ;
-  print "pump" ;
-  if true then
-    wr (0, "This is Alice") -> ?z2p
-  else
-    wr (1, "This is Bob") -> ?z2p ;
-  rd ?pump ;
-  wr "ok" -> ?z2a
-in
-execUC testEnv idealProtocol dummyFunctionality dummyAdversary
+execUC testEnv idealProtocol F_SS dummyAdversary params

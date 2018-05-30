@@ -1,5 +1,5 @@
 let test_sharesingle_ideal = lam sid, F, params .
-  (* Make this cleaner *)
+  (* Fix this later? *)
   let N = params."N" in
   let f = params."f" in
   let P = params."P" in
@@ -22,5 +22,5 @@ let Party = lam sid, N, f, pid .
     print (show pid ++ " " ++ show msg)
 in
 nu c .
-  let info = [("N", 4), ("f", 1), ("P", Party)] in
+  let params = [("N", 4), ("f", 1), ("P", Party)] in
   test_sharesingle_ideal "sid" F_SS params

@@ -1,7 +1,4 @@
-let test = lam sid, F, params .
-  let N = params."N" in
-  let f = params."f" in
-  let P = params."P" in
+let test = lam sid, N, f, F, P .
   |> (F sid N f) ;
   let mk_parties = lam n .
     match n with
@@ -30,5 +27,4 @@ let Party = lam sid, pid .
     print (show pid ++ " " ++ show msg)
 in
 nu p2f, f2p .
-  let params = [("N", 4), ("f", 1), ("P", Party)] in
-  test "sid" F_ACS params
+  test "sid" 4 1 F_ACS Party

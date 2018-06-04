@@ -1,18 +1,19 @@
-let partyWrapper = lam sid, p, crupt .
+let partyWrapper = lam sid, crupt, p, params .
   (* Maps pids to assoc list of channels *)
   let partyMap = ref [] in
-  let newParty = lam pid . 
-    nu pp2f, pp2z . 
-      let partyMap := (pid, [("f2p", pp2f), ("z2p", pp2z)]) :: @partyMap ;
+  let newParty = lam pid .
+    nu f2pp, pp2f,
+      z2pp, pp2z .
+      let partyMap := (pid, [("f2p", f2pp), ("z2p", z2pp)]) :: @partyMap ;
       |> (!(let m = rd pp2f in
               wr (pid, m) -> ?p2f)) ;
       |> (!(let m = rd pp2z in
               wr (pid, m) -> ?p2z)) ;
-      |> (p pid)
+      |> (p pid params)
   in
   let getParty = lam pid .
     if (~(mem pid @partyMap)) then newParty pid ; 
-    @partyMap.pid
+    @partyMap.pid 
   in
   (* Route messages from env to honest parties *)
   |> (!(let (pid, m) = rd ?z2p in
@@ -33,30 +34,21 @@ let partyWrapper = lam sid, p, crupt .
          if (mem pid crupt)
          then wr (pid, m) -> ?p2z))
 in
-let execUC = lam z, p, f, a .
+let execUC = lam z, p, f, a, params .
   nu z2p, p2z,
-     p2f, f2p,
-     f2a, a2f,
-     a2z, z2a,
-     a2p, p2a,
-     z2f, f2z,
-     z2exec, dump,
-     pump, outp .
-     |> (let (sid, crupt) = rd z2exec in
-          print (show sid) ;
-     |> (f sid crupt) ;
-     |> (a sid crupt) ;
-     |> (partyWrapper sid p crupt)) ;
-     (* Run until output *)
-     |> (letrec run =
-          wr () -> pump ;
-          let o = rd outp in
-            match o with
-            | () => run
-            | a  => print a
-            end
-          in run) ;
-     z ()
+    p2f, f2p,
+    f2a, a2f,
+    a2z, z2a,
+    a2p, p2a,
+    z2f, f2z,
+    z2exec, dump,
+    pump, outp .
+    |> (let (sid, crupt) = rd z2exec in
+         print (show sid) ;
+         |> (f sid crupt params) ;
+         |> (a sid crupt) ;
+         |> (partyWrapper sid crupt p params)) ;
+    z params
 in
 let dummyAdversary = lam sid, crupt .
   |> (!(match (rd ?z2a) with
@@ -67,17 +59,5 @@ let dummyAdversary = lam sid, crupt .
          wr m -> ?a2z)) ;
   |> (!(let m = rd ?p2a in
          wr m -> ?a2z))
-in
-(* pass channel? *)
-let voidAdversary = lam sid, crupt .
-  |> (!(rd ?z2a)) ;
-  |> (!(rd ?f2a)) ;
-  |> (!(rd ?p2a))
-in
-let dummyFunctionality = lam sid, crupt .
-  |> (!(let (pid, m) = rd ?p2f in
-         wr (pid, m) -> ?f2p)) ;
-  |> (!(let m = rd ?a2f in
-         wr m -> ?f2a))
 in
 ()

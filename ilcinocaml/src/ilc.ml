@@ -10,9 +10,7 @@ let show_ir = ref false
 
 let verbose = ref false
 
-let prelude_path = ref None
-
-let saucy_path = ref None
+let prelude_paths = ref []
 
 let file = ref None         
 
@@ -40,10 +38,10 @@ let options =
        Arg.Unit (fun () -> verbose := true),
        " Print verbose execution output");
       ("--prelude",
-       Arg.String (fun path -> prelude_path := Some path),
+       Arg.String (fun path -> prelude_paths := path :: !prelude_paths),
        "<file> Load <file> into prelude");
       ("--saucy",
-       Arg.String (fun path -> saucy_path := Some path),
+       Arg.String (fun path -> prelude_paths := path :: !prelude_paths),
        "<file> Load <file> into prelude");
     ]
 
@@ -122,59 +120,23 @@ let run_full env ps =
   in
   Machine.init_pid_counter (List.length init_ps);
   loop (Communication.run_comm (Machine.run_until_blocked init_ps))
-
-let run_saucy env p =
-  Machine.run_saucy(0, ([p], [], [env]))
   
-let get_name instrs =
-  match (List.rev instrs) with
-  | Machine.IUnscope [s] :: rest -> s
-  | _ -> raise (Runtime_error "invalid prelude")
-
-let rm_last instrs =
-  match (List.rev instrs) with
-  | Machine.IUnscope s :: rest -> List.rev rest
-  | _ -> raise (Runtime_error "invalid prelude")
-
-let get_env instrs =
-  let rec aux acc = function
-    | [Machine.IUnit] -> acc
-    | Machine.IClosure(f,x,frm)::ILet _::rest ->
-       let name = get_name rest in
-       let rec c = Machine.MClosure (x, frm, (name, c) :: []) in
-       aux ((name, c)::acc) (rm_last rest)
-    | _ -> raise (Runtime_error "wot")
-  in
-  aux [] instrs
-
-let saucy_env = function
-  | Syntax.Process p :: [] ->
-     let compiled_p = Compile.compile p in
-     run_saucy [] compiled_p
-  | _ -> raise (Runtime_error "invalid prelude")
-
-let prelude_env = function
-  | Syntax.Process p :: [] ->
-     let compiled_p = Compile.compile p in
-     get_env compiled_p
-  | _ -> raise (Runtime_error "invalid prelude")
-
 let exec verbose env = function
   | ps -> let f = function
             | Syntax.Process p -> Compile.compile p in
           let compiled_ps = List.map f ps in
           let print = if verbose then printr_verbose else printr in
-          List.iter print (run_full env compiled_ps)  
+          List.iter print (run_full env compiled_ps)
 
-let get_prelude filename =
-  match filename with
-  | Some path -> prelude_env (parse_file file_parser path)
-  | None -> []
-
-let get_saucy_prelude filename =
-  match filename with
-  | Some path -> saucy_env (parse_file file_parser path)
-  | None -> []
+let get_prelude paths =
+  let run_prelude p = Machine.run_prelude (0, ([p], [], [[]])) in
+  let get_env = function
+    | Syntax.Process p :: [] ->
+       let compiled_p = Compile.compile p in
+       run_prelude compiled_p
+    | _ -> raise (Runtime_error "invalid prelude") in
+  let f acc x = acc @ get_env (parse_file file_parser x) in
+  List.fold_left f [] paths
 
 let use_file filename prelude =
   let ps = parse_file file_parser filename in
@@ -182,18 +144,15 @@ let use_file filename prelude =
   else if !show_ir then print_ir ps
   else exec !verbose prelude ps
                                
-let toplevel ctx =
+let toplevel prelude =
   Format.printf "%si, version %s @." name version;
   try
-    let _ = ref ctx in
     while true do
       try
-        let prelude = get_prelude !prelude_path in
-        let saucy = get_saucy_prelude !saucy_path in
         let cmd = read_toplevel toplevel_parser () in
         if !show_ast then print_ast cmd
         else if !show_ir then print_ir cmd
-        else exec !verbose (prelude @ saucy) cmd;
+        else exec !verbose prelude cmd;
       with
       | Sys.Break -> prerr_endline "Interrupted."
     done
@@ -204,12 +163,11 @@ let main () =
   parse_args ();
   Format.set_max_boxes 42 ;
   Format.set_ellipsis_text "..." ;
-  let prelude = get_prelude !prelude_path in
-  let saucy = get_saucy_prelude !saucy_path in
+  let prelude = get_prelude !prelude_paths in
   try
     match !file with
-    | Some f -> use_file f (prelude @ saucy)
-    | None -> if !interactive_shell then toplevel ()
+    | Some f -> use_file f prelude
+    | None -> if !interactive_shell then toplevel prelude
   with
     Support.Error err -> Support.print_error err; exit 1
 

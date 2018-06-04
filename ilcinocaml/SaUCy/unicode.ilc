@@ -1,4 +1,0 @@
-let hotfire = lam x .
-  nu c .
-    if x != 420 then
-      |> wr 0 -> c ;

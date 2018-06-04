@@ -648,6 +648,16 @@ let run p =
   in
   loop p
 
+let run_saucy p = 
+  let rec loop = function
+    | (pid, ((IUnit :: is) :: frms, stck, env::envs)) -> env
+    | (pid, ((i :: is) :: frms, stck, envs)) ->
+       loop (pid, (exec i (is :: frms) stck envs))
+    | (pid, ([] :: frms, stck, envs)) -> loop (pid, (frms, stck, envs))
+    | _ -> error ("bad saucy prelude")
+  in
+  loop p
+
 let run_all ps = List.map run ps
   
 (* Spawns new processes *)

@@ -58,12 +58,6 @@ let execUC = lam z, p, f, a .
           in run) ;
      z ()
 in
-let idealProtocol = lam pid .
-  |> (!(let m = rd ?z2p in
-         wr m -> ?p2f)) ;
-  |> (!(let m = rd ?f2p in
-         wr m -> ?p2z))
-in
 let dummyAdversary = lam sid, crupt .
   |> (!(match (rd ?z2a) with
        | b        => wr b -> ?a2f
@@ -86,22 +80,4 @@ let dummyFunctionality = lam sid, crupt .
   |> (!(let m = rd ?a2f in
          wr m -> ?f2a))
 in
-let testEnv = lam () .
-  wr (999, {}) -> ?z2exec ;
-  |> (!(let x = rd ?p2z in
-         print ("Z: p sent " ++ show x) ;
-         (* ?pass *)
-         wr () -> ?outp)) ;
-  |> (!(let m = rd ?a2z in
-         print ("Z: a sent " ++ show m) ;
-         wr "environment output: 1" -> ?outp)) ;
-  rd ?pump ;
-  print "pump" ;
-  if true then
-    wr (0, "This is Alice") -> ?z2p
-  else
-    wr (1, "This is Bob") -> ?z2p ;
-  rd ?pump ;
-  wr "ok" -> ?z2a
-in
-execUC testEnv idealProtocol dummyFunctionality dummyAdversary
+()

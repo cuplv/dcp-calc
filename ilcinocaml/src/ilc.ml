@@ -12,6 +12,8 @@ let verbose = ref false
 
 let prelude_path = ref None
 
+let saucy_path = ref None
+
 let file = ref None         
 
 let read_more _ = false
@@ -39,6 +41,9 @@ let options =
        " Print verbose execution output");
       ("--prelude",
        Arg.String (fun path -> prelude_path := Some path),
+       "<file> Load <file> into prelude");
+      ("--saucy",
+       Arg.String (fun path -> saucy_path := Some path),
        "<file> Load <file> into prelude");
     ]
 
@@ -118,6 +123,9 @@ let run_full env ps =
   Machine.init_pid_counter (List.length init_ps);
   loop (Communication.run_comm (Machine.run_until_blocked init_ps))
 
+let run_saucy env p =
+  Machine.run_saucy(0, ([p], [], [env]))
+  
 let get_name instrs =
   match (List.rev instrs) with
   | Machine.IUnscope [s] :: rest -> s
@@ -139,12 +147,16 @@ let get_env instrs =
   in
   aux [] instrs
 
+let saucy_env = function
+  | Syntax.Process p :: [] ->
+     let compiled_p = Compile.compile p in
+     run_saucy [] compiled_p
+  | _ -> raise (Runtime_error "invalid prelude")
+
 let prelude_env = function
   | Syntax.Process p :: [] ->
      let compiled_p = Compile.compile p in
      get_env compiled_p
-     (*let wtf = List.map Machine.string_of_instr compiled_p in
-     List.iter print_endline wtf ; []*)
   | _ -> raise (Runtime_error "invalid prelude")
 
 let exec verbose env = function
@@ -159,6 +171,11 @@ let get_prelude filename =
   | Some path -> prelude_env (parse_file file_parser path)
   | None -> []
 
+let get_saucy_prelude filename =
+  match filename with
+  | Some path -> saucy_env (parse_file file_parser path)
+  | None -> []
+
 let use_file filename prelude =
   let ps = parse_file file_parser filename in
   if !show_ast then print_ast ps
@@ -171,11 +188,12 @@ let toplevel ctx =
     let _ = ref ctx in
     while true do
       try
-        let prelude_env = get_prelude !prelude_path in
+        let prelude = get_prelude !prelude_path in
+        let saucy = get_saucy_prelude !saucy_path in
         let cmd = read_toplevel toplevel_parser () in
         if !show_ast then print_ast cmd
         else if !show_ir then print_ir cmd
-        else exec !verbose prelude_env cmd;
+        else exec !verbose (prelude @ saucy) cmd;
       with
       | Sys.Break -> prerr_endline "Interrupted."
     done
@@ -187,9 +205,10 @@ let main () =
   Format.set_max_boxes 42 ;
   Format.set_ellipsis_text "..." ;
   let prelude = get_prelude !prelude_path in
+  let saucy = get_saucy_prelude !saucy_path in
   try
     match !file with
-    | Some f -> use_file f prelude
+    | Some f -> use_file f (prelude @ saucy)
     | None -> if !interactive_shell then toplevel ()
   with
     Support.Error err -> Support.print_error err; exit 1

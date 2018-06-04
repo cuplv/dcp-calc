@@ -1,0 +1,97 @@
+let partyWrapper = lam sid, crupt, p, params .
+  (* Maps pids to assoc list of channels *)
+  let partyMap = ref [] in
+  let newParty = lam pid .
+    nu f2pp, pp2f,
+      z2pp, pp2z .
+      let partyMap := (pid, [("f2p", f2pp), ("z2p", z2pp)]) :: @partyMap ;
+      |> (!(let m = rd pp2f in
+              wr (pid, m) -> ?p2f)) ;
+      |> (!(let m = rd pp2z in
+              wr (pid, m) -> ?p2z)) ;
+      |> (p pid params)
+  in
+  let getParty = lam pid .
+    if (~(mem pid @partyMap)) then newParty pid ; 
+    @partyMap.pid 
+  in
+  (* Route messages from env to honest parties *)
+  |> (!(let (pid, m) = rd ?z2p in
+         if (mem pid crupt)
+         then wr (pid, m) -> ?p2a
+         else wr m -> (getParty pid)."z2p")) ;
+  (* Route messages from func to honest parties *)
+  |> (!(let (pid, m) = rd ?f2p in
+         if (mem pid crupt)
+         then wr (pid, m) -> ?p2a
+         else wr m -> (getParty pid)."f2p")) ;
+  (* Forward messages to corrupt parties to func *)
+  |> (!(let (pid, m) = rd ?a2p in
+         if (mem pid crupt)
+         then wr (pid, m) -> ?p2f)) ;
+  (* Forward messages to corrupt parties to env *)
+  |> (!(let (pid, m) = rd ?a2p in
+         if (mem pid crupt)
+         then wr (pid, m) -> ?p2z))
+in
+let execUC = lam z, p, f, a, params .
+  nu z2p, p2z,
+    p2f, f2p,
+    f2a, a2f,
+    a2z, z2a,
+    a2p, p2a,
+    z2f, f2z,
+    z2exec, dump,
+    pump, outp .
+    |> (let (sid, crupt) = rd z2exec in
+         print (show sid) ;
+         |> (f sid crupt params) ;
+         |> (a sid crupt) ;
+         |> (partyWrapper sid crupt p params)) ;
+    z params
+in
+let testEnv = lam params .
+  let N = params."N" in
+  wr ("sid", {}) -> ?z2exec ;
+  |> (let loop = lam n .
+      match n with
+      | 0 => ()
+      | n => |> (wr (n, ()) -> ?z2p) ; loop (n-1)
+      end
+    in loop N)
+in
+let idealProtocol = lam pid, params .
+  rd ?z2pp ;
+  wr (pid, "hi " ++ show pid) -> ?p2f ;
+  let msg = rd ?f2pp in
+    print (show pid ++ " " ++ show msg)
+in
+let F_ACS = lam sid, crupt, params .
+  let N = params."N" in
+  let f = params."f" in
+  let out = ref [] in
+  nu c .
+    |> (!(let inp = rd ?p2f in
+        let out := inp :: @out ;
+        if (length @out) >= (N-f) then wr 1 -> c)) ;
+    |> (rd c ; 
+        let bcast = lam n .
+          match n with
+          | 0 => ()
+          | n => |> (wr (n, @out) -> ?f2p) ; bcast (n-1)
+          end
+        in bcast N)
+in
+let dummyAdversary = lam sid, crupt .
+  |> (!(match (rd ?z2a) with
+       | b        => wr b -> ?a2f
+       | (pid, m) => wr (pid, m) -> ?a2p
+       end)) ;
+  |> (!(let m = rd ?f2a in
+         wr m -> ?a2z)) ;
+  |> (!(let m = rd ?p2a in
+         wr m -> ?a2z))
+in
+let params = [("N", 4), ("f", 1)]
+in
+execUC testEnv idealProtocol F_ACS dummyAdversary params

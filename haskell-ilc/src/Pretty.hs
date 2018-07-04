@@ -1,11 +1,13 @@
-module Pretty (
-  ppexpr
-) where
-
-import Syntax
+module Pretty
+    (
+      ppexpr
+    , ppval
+    ) where
 
 import Text.PrettyPrint (Doc, (<>), (<+>))
 import qualified Text.PrettyPrint as PP
+
+import Syntax
 
 parensIf :: Bool -> Doc -> Doc
 parensIf True = PP.parens
@@ -15,13 +17,12 @@ class Pretty p where
   ppr :: Int -> p -> Doc
 
 instance Pretty Expr where
-  ppr _ (EInt n) = PP.text (show n)
-  ppr _ (EString s) = PP.text (show s)
-  ppr _ ETrue = PP.text "true"
-  ppr _ EFalse = PP.text "false"
-  ppr _ EUnit = PP.text "()"
-  ppr p (EList (e:es)) = ppr p e <+> ppr p (EList es)
-  ppr p (EList []) = PP.text "[]"
+  ppr _ (EInt n) = PP.text $ show n
+  ppr _ (EString s) = PP.text $ show s
+  ppr _ (EBool b) = PP.text $ show b
+  --ppr _ EUnit = PP.text "()"
+  {-ppr p (EList (e:es)) = ppr p e <+> ppr p (EList es)
+  ppr p (EList []) = PP.text "[]"-}
   ppr p (EPair e1 e2) =
         PP.text "(" <+> ppr p e1
     <+> PP.text "," <+> ppr p e2
@@ -32,5 +33,14 @@ instance Pretty Expr where
     <+> PP.text "then" <+> ppr p e2
     <+> PP.text "else" <+> ppr p e3
 
+instance Pretty Value where
+    ppr _ (VInt n) = PP.text $ show n
+    ppr _ (VBool b) = PP.text $ show b
+    ppr _ (VString s) = PP.text s
+    ppr _ _           = error "not implemented"
+
 ppexpr :: Expr -> String
 ppexpr = PP.render . ppr 0
+
+ppval :: Value -> String
+ppval = PP.render . ppr 0

@@ -30,17 +30,17 @@ optParser = Options <$> inputFile <*> ast
 opts :: ParserInfo Options
 opts = info (optParser <**> helper)
     ( fullDesc
-    <> progDesc ""
-    <> header "" )
+    <> progDesc "Interactive Lambda Calculus (ILC) interpreter"
+    <> header "ILC" )
 
+-- | TODO: Refactor this.
 process :: String -> IO ()
 process src = do
   let ast = parseExpr src
   case ast of
     Left err -> print err
-    Right p -> case eval p of
-      Nothing -> putStrLn "Cannot evaluate"
-      Just result -> putStrLn $ ppexpr result
+    Right p  -> do let v = eval [] p
+                   putStrLn $ ppval v
 
 interactive :: IO ()
 interactive = runInputT defaultSettings loop

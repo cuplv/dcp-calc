@@ -85,8 +85,8 @@ ifthen = do
 
 -- Constants
 true, false, unit :: Parser Expr
-true = reserved "true" >> return ETrue
-false = reserved "false" >> return EFalse
+true = reserved "true" >> return (EBool True)
+false = reserved "false" >> return (EBool False)
 unit = reserved "()" >> return EUnit
 
 -- Integer

@@ -1,11 +1,13 @@
 module Main where
 
+import Control.Monad.Trans
 import Data.Semigroup ((<>))
 import Options.Applicative
+import System.Console.Haskeline
 
---import Eval
+import Eval
 import Parser
---import Pretty
+import Pretty
 
 data Options = Options
     { optSrcFile :: Maybe FilePath
@@ -13,7 +15,7 @@ data Options = Options
     }
 
 inputFile :: Parser (Maybe FilePath)
-inputFile = optional $ strOption
+inputFile = optional $ argument str
     (  metavar "FILENAME"
     <> help "Source file" )
 
@@ -31,36 +33,28 @@ opts = info (optParser <**> helper)
     <> progDesc ""
     <> header "" )
 
-
-main :: IO ()
-main = do
-    options <- execParser opts
-    putStrLn "hi"
-    {-prog    <- readFile $ optSrcFile options
-    let prog' = rewrite prog
-    case (optOutFile options) of
-        Just outFile -> writeFile outFile prog'
-        Nothing  -> putStrLn prog'-}
-
-{-
-import Control.Monad.Trans
-import System.Console.Haskeline
-
 process :: String -> IO ()
-process line = do
-  let res = parseExpr line
-  case res of
+process src = do
+  let ast = parseExpr src
+  case ast of
     Left err -> print err
-    Right ex -> case eval ex of
+    Right p -> case eval p of
       Nothing -> putStrLn "Cannot evaluate"
       Just result -> putStrLn $ ppexpr result
 
-main :: IO ()
-main = runInputT defaultSettings loop
+interactive :: IO ()
+interactive = runInputT defaultSettings loop
   where
   loop = do
     minput <- getInputLine "\x03BB> "
     case minput of
       Nothing -> outputStrLn "Goodbye."
       Just input -> (liftIO $ process input ) >> loop
--}
+
+main :: IO ()
+main = do
+    options <- execParser opts
+    case (optSrcFile options) of
+        Just file -> readFile file >>= \ src ->
+                     process src
+        Nothing   -> interactive

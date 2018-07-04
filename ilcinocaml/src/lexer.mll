@@ -3,8 +3,6 @@
   
   exception SyntaxError of string
   
-  (* Support functions *)
-  
   let stringBuffer = ref (Bytes.create 2048)
   let stringEnd = ref 0
   

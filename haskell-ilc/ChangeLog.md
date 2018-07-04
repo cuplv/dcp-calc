@@ -1,3 +1,3 @@
-# Changelog for tapl
+# Changelog for haskell-ilc
 
 ## Unreleased changes

@@ -1,6 +1,6 @@
-name:                tapl
+name:                haskell-ilc
 version:             0.1.0.0
-github:              "kev-liao/tapl"
+github:              "kev-liao/haskell-ilc"
 license:             BSD3
 author:              "Kevin Liao"
 maintainer:          "kliao6@illinois.edu"
@@ -17,7 +17,7 @@ extra-source-files:
 # To avoid duplicated efforts in documentation and dealing with the
 # complications of embedding Haddock markup inside cabal files, it is
 # common to point users to the README.md file.
-description:         Please see the README on Github at <https://github.com/kev-liao/tapl#readme>
+description:         Please see the README on GitHub at <https://github.com/kev-liao/haskell-ilc#readme>
 
 dependencies:
 - base >= 4.7 && < 5
@@ -27,12 +27,13 @@ dependencies:
 - transformers
 - haskeline
 - mtl
+- optparse-applicative
 
 library:
   source-dirs: src
 
 executables:
-  tapl-exe:
+  haskell-ilc-exe:
     main:                Main.hs
     source-dirs:         app
     ghc-options:
@@ -40,10 +41,10 @@ executables:
     - -rtsopts
     - -with-rtsopts=-N
     dependencies:
-    - tapl
+    - haskell-ilc
 
 tests:
-  tapl-test:
+  haskell-ilc-test:
     main:                Spec.hs
     source-dirs:         test
     ghc-options:
@@ -51,4 +52,4 @@ tests:
     - -rtsopts
     - -with-rtsopts=-N
     dependencies:
-    - tapl
+    - haskell-ilc

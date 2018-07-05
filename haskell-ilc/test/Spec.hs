@@ -35,8 +35,8 @@ parserExamples =
       , Right (ENu (EVar "c") (EWr (EInt 1) (EVar "c")))
       )
     , ( "let binding"
-      , "let x = 100 in x + 1"
-      , Right (ELet (PVar "x") (EInt 100) (EPlus (EVar "x") (EInt 1)))
+      , "let x = 100 in x * 1"
+      , Right (ELet (PVar "x") (EInt 100) (ETimes (EVar "x") (EInt 1)))
       )
     , ( "let binding w/ tuple matching"
       , "let (x, y) = (1, 2) in x + y"
@@ -49,5 +49,14 @@ parserExamples =
       , Right (ELet (PUnit)
                     (EString "whatever")
                     (EApp (EVar "double") (EInt 2)))
+      )
+    , ( "sequencing let bindings"
+      , "let x = 1 in x; let y = 1 in y"
+      , Right (ESeq (ELet (PVar "x")
+                          (EInt 1)
+                          (EVar "x"))
+                    (ELet (PVar "y")
+                          (EInt 1)
+                          (EVar "y")))
       )
     ]

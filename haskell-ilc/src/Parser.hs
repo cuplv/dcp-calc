@@ -65,8 +65,9 @@ lexer = Tok.makeTokenParser langDef
 identifier :: Parser Name
 identifier = Tok.identifier lexer
 
+-- TODO: Fix this to parse only negative sign.
 integer :: Parser Integer
-integer = Tok.integer lexer
+integer = Tok.natural lexer
 
 stringLit :: Parser String
 stringLit = Tok.stringLiteral lexer
@@ -222,7 +223,6 @@ ops = [ [binaryOp "*" ETimes Ex.AssocLeft, binaryOp "/" EDivide Ex.AssocLeft]
           ]
         , [binaryOp "&&" EAnd Ex.AssocLeft]
         , [binaryOp "||" EOr Ex.AssocLeft]
-        , [binaryOp ";" ESeq Ex.AssocLeft]
         ]
 
 eIf = do
@@ -249,18 +249,6 @@ eLet = do
 -- EAssign
 -- ERef
 -- EDeref
-
-atomExpr =
-      eVar
-  <|> eImpVar
-  <|> eInt
-  <|> eBool
-  <|> eString
-  <|> eList
-  <|> eSet
-  <|> try eUnit
-  <|> try eTuple
-  <|> parens expr
 
 eLam = do
   reserved "lam"
@@ -314,20 +302,31 @@ eForce = do
   e <- atomExpr
   return $ EForce e
 
-piCalc =
+-- | Parser
+
+expr :: Parser Expr
+expr = Ex.buildExpressionParser ops factor
+
+piExpr =
       eRd
   <|> eWr
   <|> eNu
   <|> eRepl
   <|> eFork
-  
-expr :: Parser Expr
-expr = Ex.buildExpressionParser ops factor
 
-appExpr =
-      eApp
-  <|> eThunk
-  <|> eForce
+lazyExpr = eThunk <|> eForce
+
+atomExpr =
+      eVar
+  <|> eImpVar
+  <|> eInt
+  <|> eBool
+  <|> eString
+  <|> eList
+  <|> eSet
+  <|> try eUnit
+  <|> try eTuple
+  <|> parens expr
 
 factor :: Parser Expr
 factor =
@@ -336,9 +335,9 @@ factor =
   <|> eLet
   <|> eIf
   <|> eLam
-  <|> eForce
-  <|> eThunk
-  <|> piCalc
+  <|> lazyExpr
+  <|> piExpr
+
 
 contents :: Parser a -> Parser a
 contents p = do

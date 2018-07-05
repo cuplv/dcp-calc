@@ -37,10 +37,11 @@ opts = info (optParser <**> helper)
 process :: String -> IO ()
 process src = do
   let ast = parseExpr src
-  case ast of
+  putStrLn $ show ast
+{-  case ast of
     Left err -> print err
     Right p  -> do let v = eval [] p
-                   putStrLn $ ppval v
+                   putStrLn $ ppval v-}
 
 interactive :: IO ()
 interactive = runInputT defaultSettings loop

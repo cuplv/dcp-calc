@@ -15,8 +15,6 @@ data Type
 
 data Pattern
     = PVar Name
-    | PChan Name
-    | PImpChan Name
     | PInt Integer
     | PBool Bool
     | PString String
@@ -31,8 +29,7 @@ data Pattern
 
 data Expr
     = EVar Name
-    | EChan Name  -- ?
-    | EImpChan Name
+    | EImpVar Name
     | EInt Integer
     | EBool Bool
     | EString String
@@ -57,8 +54,8 @@ data Expr
     | ENeq Expr Expr
     | EIf Expr Expr Expr
     | EMatch Expr [(Pattern, Expr)]
-    | Let Pattern Expr Expr
-    | LetRec Pattern Expr Expr
+    | ELet Pattern Expr Expr
+    | ELetRec Pattern Expr Expr
     | EAssign Pattern Expr
     | ERef Expr
     | EDeref Expr
@@ -66,7 +63,7 @@ data Expr
     | EApp Expr Expr
     | ERd Expr
     | EWr Expr Expr
-    | ENu Expr
+    | ENu Expr Expr
     | ERepl Expr
     | EFork Expr
     | EThunk Expr

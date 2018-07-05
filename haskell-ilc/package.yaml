@@ -28,12 +28,17 @@ dependencies:
 - haskeline
 - mtl
 - optparse-applicative
+- tasty
+- tasty-hunit
+- tasty-hspec
+- tasty-quickcheck
+- tasty-smallcheck
 
 library:
   source-dirs: src
 
 executables:
-  haskell-ilc-exe:
+  ilc:
     main:                Main.hs
     source-dirs:         app
     ghc-options:

@@ -314,7 +314,6 @@ factor =
   <|> ethunk
   <|> pic
 
-
 contents :: Parser a -> Parser a
 contents p = do
   Tok.whiteSpace lexer

@@ -108,12 +108,12 @@ list = do
   return (EList xs)
 
 -- Pair
-pair :: Parser Expr
+{-pair :: Parser Expr
 pair = do
   fst <- expr
   char ','
   snd <- expr
-  return (EPair fst snd)
+  return (EPair fst snd)-}
   
 expr :: Parser Expr
 expr = Ex.buildExpressionParser table factor
@@ -126,7 +126,7 @@ factor =
   <|> int
   <|> int
   <|> str
-  <|> parens pair
+  -- <|> parens pair
   <|> parens expr
   <|> brackets list
 

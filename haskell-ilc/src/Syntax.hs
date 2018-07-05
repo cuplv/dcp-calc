@@ -13,30 +13,65 @@ data Type
     | TList Type
     deriving (Eq, Show)
 
+data Pattern
+    = PVar Name
+    | PChan Name
+    | PImpChan Name
+    | PInt Integer
+    | PBool Bool
+    | PString String
+    | PTag String
+    | PList [Pattern]
+    | PSet [Pattern]
+    | PCons Pattern Pattern
+    | PTuple [Pattern]
+    | PUnit
+    | PWildcard
+    deriving (Eq, Show)
+
 data Expr
-    = EInt Integer
+    = EVar Name
+    | EChan Name  -- ?
+    | EImpChan Name
+    | EInt Integer
     | EBool Bool
     | EString String
-    | EPair Expr Expr
-    | ENil
+    | ETag String
     | EList [Expr]
+    | ESet [Expr]
     | ETuple [Expr]
     | EUnit
-    | EIf Expr Expr Expr
     | EPlus Expr Expr
     | EMinus Expr Expr
     | ETimes Expr Expr
     | EDivide Expr Expr
     | EMod Expr Expr
-    | EOr Expr Expr
-    | EAnd Expr Expr
     | ENot Expr
+    | EAnd Expr Expr
+    | EOr Expr Expr
     | ELt Expr Expr
     | EGt Expr Expr
     | ELeq Expr Expr
     | EGeq Expr Expr
     | EEq Expr Expr
     | ENeq Expr Expr
+    | EIf Expr Expr Expr
+    | EMatch Expr [(Pattern, Expr)]
+    | Let Pattern Expr Expr
+    | LetRec Pattern Expr Expr
+    | EAssign Pattern Expr
+    | ERef Expr
+    | EDeref Expr
+    | ELam Expr Expr
+    | EApp Expr Expr
+    | ERd Expr
+    | EWr Expr Expr
+    | ENu Expr
+    | ERepl Expr
+    | EFork Expr
+    | EThunk Expr
+    | EForce Expr
+    | ESeq Expr Expr
     deriving (Eq, Show)
 
 data Value
@@ -44,5 +79,8 @@ data Value
     | VBool Bool
     | VString String
     | VPair Value Value
+    | VList [Value]
+    | VTuple [Value]
+    | VUnit
     | VClosure Env Expr
     deriving (Eq, Show)

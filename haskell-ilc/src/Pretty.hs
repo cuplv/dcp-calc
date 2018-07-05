@@ -23,10 +23,10 @@ instance Pretty Expr where
   --ppr _ EUnit = PP.text "()"
   {-ppr p (EList (e:es)) = ppr p e <+> ppr p (EList es)
   ppr p (EList []) = PP.text "[]"-}
-  ppr p (EPair e1 e2) =
+  {-ppr p (EPair e1 e2) =
         PP.text "(" <+> ppr p e1
     <+> PP.text "," <+> ppr p e2
-    <+> PP.text ")"
+    <+> PP.text ")"-}
   -- ppr p (EIsZero a) = (parensIf (p > 0) $ PP.text "iszero" <+> ppr (p+1) a)
   ppr p (EIf e1 e2 e3) =
         PP.text "if"   <+> ppr p e1

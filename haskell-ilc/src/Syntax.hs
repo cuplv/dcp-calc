@@ -20,8 +20,8 @@ data Pattern
     | PString String
     | PTag String
     | PList [Pattern]
-    | PSet [Pattern]
     | PCons Pattern Pattern
+    | PSet [Pattern]
     | PTuple [Pattern]
     | PUnit
     | PWildcard

@@ -17,13 +17,14 @@ tests :: TestTree
 tests = testGroup "Tests" [parserTests]
 
 parserTests :: TestTree
-parserTests = testGroup "Parser tests" $
-    map makeParserTests parserExamples
+parserTests =
+    testGroup "Parser tests" $ makeParserTests
 
-makeParserTests test =
-    case test of
-        (str, src, ast) -> testCase (printf "parse %s" str) $
-                           assertEqual "" (parseExpr src) (ast)
+makeParserTests = map f parserExamples
+  where f test = case test of
+            (str, src, ast) -> testCase (printf "parse %s" str) $
+                                 assertEqual "" (parseExpr src) (ast)
+                           
 parserExamples =
     [ ( "lambda"
       , "lam x . x + x"

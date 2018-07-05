@@ -1,18 +1,19 @@
-module Parser (
-  parseExpr
-  ) where
+module Parser
+    (
+      parseExpr
+    ) where
 
-import Syntax
+import           Data.Functor.Identity
 
-import Text.Parsec
-import Text.Parsec.String (Parser)
-import Text.Parsec.Language (emptyDef)
+import           Text.Parsec
+import qualified Text.Parsec.Expr      as Ex
+import           Text.Parsec.Language  (emptyDef)
+import           Text.Parsec.String    (Parser)
+import qualified Text.Parsec.Token     as Tok
 
-import qualified Text.Parsec.Expr as Ex
-import qualified Text.Parsec.Token as Tok
+import           Syntax
 
-import Data.Functor.Identity
-
+-- | Lexer
 langDef :: Tok.LanguageDef ()
 langDef = Tok.LanguageDef
   { Tok.commentStart = "{-"
@@ -31,17 +32,44 @@ langDef = Tok.LanguageDef
                         , "nu"
                         , "thunk"
                         , "force"
+                        , "not"
+                        , "if"
+                        , "then"
+                        , "else"
+                        , "true"
+                        , "false"
                         ]
-  , Tok.reservedOpNames = []
+  , Tok.reservedOpNames = [ "+"
+                          , "-"
+                          , "*"
+                          , "/"
+                          , "%"
+                          , "&&"
+                          , "||"
+                          , "<"
+                          , ">"
+                          , "<="
+                          , ">="
+                          , "=="
+                          , "<>"
+                          , "!"
+                          , "|>"
+                          , ";"
+                          ]
   , Tok.caseSensitive = True
   }
 
--- | Wrapper functions
 lexer :: Tok.TokenParser ()
 lexer = Tok.makeTokenParser langDef
 
 identifier :: Parser Name
 identifier = Tok.identifier lexer
+
+integer :: Parser Integer
+integer = Tok.integer lexer
+
+stringLit :: Parser String
+stringLit = Tok.stringLiteral lexer
 
 parens :: Parser a -> Parser a
 parens = Tok.parens lexer
@@ -49,11 +77,17 @@ parens = Tok.parens lexer
 brackets :: Parser a -> Parser a
 brackets = Tok.brackets lexer
 
+braces :: Parser a -> Parser a
+braces = Tok.braces lexer
+
 reserved :: String -> Parser ()
 reserved = Tok.reserved lexer
 
 semiSep :: Parser a -> Parser [a]
 semiSep = Tok.semiSep lexer
+
+comma :: Parser String
+comma = Tok.comma lexer
 
 commaSep :: Parser a -> Parser [a]
 commaSep = Tok.commaSep lexer
@@ -65,7 +99,7 @@ commaSep1 = Tok.commaSep1 lexer
 (<:>) a b = (:) <$> a <*> b
 
 commaSep2 :: Parser a -> Parser [a]
-commaSep2 p = (p <* char ',') <:> commaSep1 p
+commaSep2 p = (p <* comma) <:> commaSep1 p
 
 reservedOp :: String -> Parser ()
 reservedOp = Tok.reservedOp lexer
@@ -76,51 +110,104 @@ prefixOp s f = Ex.Prefix (reservedOp s >> return f)
 binaryOp :: String -> (a -> a -> a) -> Ex.Assoc -> Ex.Operator String () Identity a
 binaryOp s f = Ex.Infix (reservedOp s >> return f)
 
--- | EVar
-evar :: Parser Expr
-evar = do
+-- | Patterns
+
+pVar = do
   x <- identifier
-  return (EVar x)
+  return $ PVar x
 
--- | EChan
+pInt = do
+  n <- integer
+  return $ PInt n
 
--- | EImpChan
+pBool = pTrue <|> pFalse
+  where
+    pTrue = reserved "true" >> return (PBool True)
+    pFalse = reserved "false" >> return (PBool False)
 
--- | EInt
-eint :: Parser Expr
-eint = do
-  n <- Tok.integer lexer
-  return (EInt n)
-
--- | EBool, EUnit
-
-etrue = reserved "true" >> return (EBool True)
-efalse = reserved "false" >> return (EBool False)
-
-ebool = etrue <|> efalse
-eunit = reserved "()" >> return EUnit
-
--- | EString
-estring :: Parser Expr
-estring = do
+pString = do
   s <- Tok.stringLiteral lexer
-  return (EString s)
+  return $ PString s
 
--- | ETag  
-
--- | EList
-elist :: Parser Expr
-elist = do
-  xs <- brackets $ commaSep expr
-  return (EList xs)
-
--- | ETuple
-etuple :: Parser Expr
-etuple = do
-  xs <- parens $ commaSep2 expr
-  return (ETuple xs)
+pTag = do
+  char '\''
+  x <- identifier
+  return $ PTag x
   
--- | Arithmetic operators, logical operators
+pList = do
+  ps <- brackets $ commaSep pat
+  return $ PList ps
+
+-- pCons
+
+pSet = do
+  ps <- braces $ commaSep pat
+  return $ PSet ps
+
+pTuple = do
+  ps <- parens $ commaSep2 pat
+  return $ PTuple ps
+    
+pUnit = reserved "()" >> return PUnit
+
+pWildcard = reserved "_" >> return PWildcard
+
+pat =
+      pVar
+  <|> pInt
+  <|> pBool
+  <|> pString
+  <|> pList
+  <|> pSet
+  <|> try pUnit
+  <|> try pTuple
+  <|> pWildcard
+
+-- | Expressions
+
+eVar = do
+  x <- identifier
+  return $ EVar x
+
+eImpVar = do
+  char '?'
+  x <- identifier
+  return $ EImpVar x
+
+eInt = do
+  n <- integer
+  return $ EInt n
+
+eBool = eTrue <|> eFalse
+  where
+    eTrue  = reserved "true"  >> return (EBool True)
+    eFalse = reserved "false" >> return (EBool False)
+  
+eString = do
+  s <- stringLit
+  return $ EString s
+
+-- TODO
+eTag = do
+  char '\''
+  x <- identifier
+  return $ ETag x
+
+eList = do
+  xs <- brackets $ commaSep expr
+  return $ EList xs
+
+eSet = do
+  xs <- braces $ commaSep expr
+  return $ ESet xs
+
+eTuple = do
+  xs <- parens $ commaSep2 expr
+  return $ ETuple xs
+
+eUnit = reserved "()" >> return EUnit
+  
+-- | Arithmetic operators, logical operators, sequence
 ops :: [[Ex.Operator String () Identity Expr]]
 ops = [ [binaryOp "*" ETimes Ex.AssocLeft, binaryOp "/" EDivide Ex.AssocLeft]
         , [binaryOp "%" EMod Ex.AssocLeft]
@@ -138,181 +225,120 @@ ops = [ [binaryOp "*" ETimes Ex.AssocLeft, binaryOp "/" EDivide Ex.AssocLeft]
         , [binaryOp ";" ESeq Ex.AssocLeft]
         ]
 
--- | EIf
-eif :: Parser Expr
-eif = do
+eIf = do
   reserved "if"
   cond <- expr
   reservedOp "then"
   trueBranch <- expr
   reservedOp "else"
   falseBranch <- expr
-  return (EIf cond trueBranch falseBranch)
+  return $ EIf cond trueBranch falseBranch
 
--- | EMatch
+-- eMatch
 
--- | Pattern
-
-pvar = do
-  x <- identifier
-  return (PVar x)
-
-pint = do
-  n <- Tok.integer lexer
-  return (PInt n)
-
-ptrue = reserved "true" >> return (PBool True)
-pfalse = reserved "false" >> return (PBool False)
-pbool = ptrue <|> pfalse
-punit = reserved "()" >> return PUnit
-pwildcard = reserved "_" >> return PWildcard
-
-pstring :: Parser Pattern
-pstring = do
-  s <- Tok.stringLiteral lexer
-  return (PString s)
-
--- | PTag  
-
--- | PList
-plist :: Parser Pattern
-plist = do
-  ps <- brackets $ commaSep pat
-  return (PList ps)
-
--- | PTuple
-ptuple :: Parser Pattern
-ptuple = do
-  ps <- parens $ commaSep2 pat
-  return (PTuple ps)
-
--- | PSet
-
-
--- | PCons
-
-pat =
-      pvar
-  <|> pint
-  <|> pbool
-  <|> pstring
-  <|> plist
-  <|> try ptuple
-  <|> punit
-  <|> pwildcard
-
--- | ELet
-elet :: Parser Expr
-elet = do
+eLet = do
   reserved "let"
   p <- pat
   reserved "="
   e1 <- expr
   reserved "in"
   e2 <- expr
-  return (ELet p e1 e2)
+  return $ ELet p e1 e2
 
--- | ELetRec
--- | EAssign
--- | ERef
--- | EDeref
--- | ELam
-elam :: Parser Expr
-elam = do
-  reserved "lam"
-  x <- eatom
-  reserved "."
-  e <- expr
-  return (ELam x e)
+-- ELetRec
+-- EAssign
+-- ERef
+-- EDeref
 
-eatom =
-      eint
-  <|> ebool
-  <|> estring
-  <|> elist
-  <|> try etuple
-  <|> eunit
-  <|> evar
+atomExpr =
+      eVar
+  <|> eImpVar
+  <|> eInt
+  <|> eBool
+  <|> eString
+  <|> eList
+  <|> eSet
+  <|> try eUnit
+  <|> try eTuple
   <|> parens expr
 
+eLam = do
+  reserved "lam"
+  x <- atomExpr
+  reserved "."
+  e <- expr
+  return $ ELam x e
 
--- |  EApp
 -- TODO
-eapp :: Parser Expr
-eapp = do
-  f <- eatom
-  x <- eatom
-  return (EApp f x)
+eApp = do
+  f <- atomExpr
+  x <- atomExpr
+  return $ EApp f x
 
--- | ERd
-erd = do
+eRd = do
   reserved "rd"
   c <- expr
-  return (ERd c)
+  return $ ERd c
 
--- | EWr
-ewr = do
+eWr = do
   reserved "wr"
   e <- expr
   reserved "->"
   c <- expr
-  return (EWr e c)
+  return $ EWr e c
 
--- | ENu
-enu = do
+eNu = do
   reserved "nu"
   c <- expr
   reserved "."
   e <- expr
-  return (ENu c e)
+  return $ ENu c e
 
--- | ERepl
-erepl = do
+eRepl = do
   reserved "!"
-  e <- eatom
-  return (ERepl e)
+  e <- atomExpr
+  return $ ERepl e
 
--- | EFork
-efork = do
+eFork = do
   reserved "|>"
-  e <- eatom
-  return (EFork e)
+  e <- atomExpr
+  return $ EFork e
 
-pic =
-      erd
-  <|> ewr
-  <|> enu
-  <|> erepl
-  <|> efork
-
-ethunk = do
+eThunk = do
   reserved "thunk"
-  e <- eatom
-  return (EThunk e)
+  e <- atomExpr
+  return $ EThunk e
 
-eforce = do
+eForce = do
   reserved "force"
-  e <- eatom
-  return (EForce e)
+  e <- atomExpr
+  return $ EForce e
+
+piCalc =
+      eRd
+  <|> eWr
+  <|> eNu
+  <|> eRepl
+  <|> eFork
   
 expr :: Parser Expr
 expr = Ex.buildExpressionParser ops factor
 
-appexpr =
-      eapp
-  <|> ethunk
-  <|> eforce
+appExpr =
+      eApp
+  <|> eThunk
+  <|> eForce
 
 factor :: Parser Expr
 factor =
-      try eapp
-  <|> eatom
-  <|> elet
-  <|> eif
-  <|> elam
-  <|> eforce
-  <|> ethunk
-  <|> pic
+      try eApp
+  <|> atomExpr
+  <|> eLet
+  <|> eIf
+  <|> eLam
+  <|> eForce
+  <|> eThunk
+  <|> piCalc
 
 contents :: Parser a -> Parser a
 contents p = do

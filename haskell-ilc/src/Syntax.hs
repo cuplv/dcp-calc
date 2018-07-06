@@ -6,9 +6,12 @@ type Env = [(Name, Value)]
 data Type = TInt
           | TBool
           | TString
-          | TPair Type Type
+          | TChan
+          | TProd [Type]
           | TArrow Type Type
           | TList Type
+          | TRd Type
+          | TWr Type
           deriving (Eq, Show)
 
 data Pattern = PVar Name
@@ -80,4 +83,5 @@ data Value = VInt Integer
 
 data Command = CExpr Expr
              | CDef Pattern Expr
+             | CTySig Name Type
              deriving (Eq, Show)

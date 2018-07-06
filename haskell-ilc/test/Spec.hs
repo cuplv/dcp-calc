@@ -168,4 +168,31 @@ parserExamples =
                                ]))
               ]
       )
+    , ( "plus function w/ type signature"
+      , "plus :: Int -> Int -> Int let plus = lam x . lam y . x + y"
+      ,  Right [ CTySig "plus" (TArrow TInt (TArrow TInt TInt))
+               , CDef (PVar "plus")
+                      (ELam (EVar "x")
+                            (ELam (EVar "y")
+                                  (EPlus (EVar "x") (EVar "y"))))
+              ]
+      )
+    , ( "GetBit function signature w/ Wr mode"
+      , "GetBit :: Int -> Wr Int"
+      , Right [ CTySig "GetBit" (TArrow TInt (TWr TInt)) ]
+      )
+    , ( "GetBit"
+      , "let GetBit = lam x . nu c . |> (rd c) ; |> (wr 0 -> c) ; |> (wr 1 -> c) GetBit 1"
+      , Right [ CDef (PVar "GetBit")
+                     (ELam (EVar "x")
+                           (ENu (EVar "c")
+                                (ESeq (EFork (ERd (EVar "c")))
+                                      (ESeq (EFork (EWr (EInt 0)
+                                                        (EVar "c")))
+                                            (EFork (EWr (EInt 1)
+                                                        (EVar "c")))))))
+              , CExpr (EApp (EVar "GetBit")
+                            (EInt 1))
+              ]
+      )
     ]

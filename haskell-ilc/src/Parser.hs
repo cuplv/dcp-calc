@@ -44,6 +44,12 @@ langDef = Tok.LanguageDef
                           , "ref"
                           , "when"
                           , "print"
+                          , "Int"
+                          , "Bool"
+                          , "String"
+                          , "Chan"
+                          , "Rd"
+                          , "Wr"
                           ]
     , Tok.reservedOpNames = [ "+"
                             , "-"
@@ -125,12 +131,43 @@ prefixOp s f = Ex.Prefix (reservedOp s >> return f)
 binaryOp :: String -> (a -> a -> a) -> Ex.Assoc -> Ex.Operator String () Identity a
 binaryOp s f = Ex.Infix (reservedOp s >> return f)
 
--- | Types
--- TODO
-
--- | Patterns
-
 mklexer e p = p >>= \x -> return (e x)
+
+-- | Types
+
+tInt = reserved "Int" >> return TInt
+
+tBool = reserved "Bool" >> return TBool
+
+tString = reserved "String" >> return TString
+
+tChan = reserved "Chan" >> return TChan
+
+tProd = mklexer TProd $ parens $ commaSep2 ty
+
+tRd = mklexer TRd $ reserved "Rd" >> ty
+
+tWr = mklexer TWr $ reserved "Wr" >> ty
+
+tArrow = do
+    t1 <- ty'
+    reserved "->"
+    t2 <- ty
+    return $ TArrow t1 t2
+
+tList = mklexer TList $ brackets $ ty    
+
+ty = try tArrow <|> ty'
+ty' = tInt
+  <|> tBool
+  <|> tString
+  <|> tChan
+  <|> tProd
+  <|> tList
+  <|> tRd
+  <|> tWr
+ 
+-- | Patterns
 
 pVar = mklexer PVar identifier
 
@@ -197,7 +234,7 @@ eList = mklexer EList $ brackets $ commaSep expr
 
 eSet = mklexer ESet $ braces $ commaSep expr
 
-eTuple = mklexer ETuple $ parens $ commaSep expr
+eTuple = mklexer ETuple $ parens $ commaSep2 expr
 
 eUnit = reserved "()" >> return EUnit
   
@@ -335,7 +372,13 @@ cDef = do
     optional $ reserved ";;"
     return $ CDef x e
 
-cmd = try cExpr <|> cDef
+cTySig = do
+  x <- identifier
+  reserved "::"
+  t <- ty
+  return $ CTySig x t
+
+cmd = (try cTySig) <|> (try cExpr) <|> cDef
 
 -- | Parser
 

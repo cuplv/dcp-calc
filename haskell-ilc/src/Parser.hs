@@ -1,6 +1,6 @@
 module Parser
     (
-      parseExpr
+      parser
     ) where
 
 import           Data.Functor.Identity
@@ -55,6 +55,7 @@ langDef = Tok.LanguageDef
                           , "!"
                           , "|>"
                           , ";"
+                          , ";;"
                           ]
   , Tok.caseSensitive = True
   }
@@ -89,6 +90,9 @@ semiSep = Tok.semiSep lexer
 
 comma :: Parser String
 comma = Tok.comma lexer
+
+semi :: Parser String
+semi = Tok.semi lexer
 
 commaSep :: Parser a -> Parser [a]
 commaSep = Tok.commaSep lexer
@@ -209,8 +213,8 @@ eTuple = do
 eUnit = reserved "()" >> return EUnit
   
 -- | Arithmetic operators, logical operators, sequence
-ops :: [[Ex.Operator String () Identity Expr]]
-ops = [ [binaryOp "*" ETimes Ex.AssocLeft, binaryOp "/" EDivide Ex.AssocLeft]
+table :: [[Ex.Operator String () Identity Expr]]
+table = [ [binaryOp "*" ETimes Ex.AssocLeft, binaryOp "/" EDivide Ex.AssocLeft]
         , [binaryOp "%" EMod Ex.AssocLeft]
         , [binaryOp "+" EPlus Ex.AssocLeft, binaryOp "-" EMinus Ex.AssocLeft]
         , [prefixOp "not" ENot]
@@ -223,6 +227,7 @@ ops = [ [binaryOp "*" ETimes Ex.AssocLeft, binaryOp "/" EDivide Ex.AssocLeft]
           ]
         , [binaryOp "&&" EAnd Ex.AssocLeft]
         , [binaryOp "||" EOr Ex.AssocLeft]
+--        , [binaryOp ";" ESeq Ex.AssocLeft]
         ]
 
 eIf = do
@@ -302,10 +307,39 @@ eForce = do
   e <- atomExpr
   return $ EForce e
 
+eSeq = do
+  e1 <- expr'
+  reserved ";"
+  e2 <- expr
+  return $ ESeq e1 e2
+{-  es <- sepBy1 expr' semi
+  return $ ESeq es-}
+
+-- | Commands
+
+cExpr = do
+  e <- expr
+  optional $ reserved ";;"
+  return $ CExpr e
+
+cDef = do
+  reserved "let"
+  x <- pat
+  reserved "="
+  e <- expr
+  optional $ reserved ";;"
+  return $ CDef x e
+
+cmd = try cExpr <|> cDef
+
 -- | Parser
 
-expr :: Parser Expr
-expr = Ex.buildExpressionParser ops factor
+expr' :: Parser Expr
+expr' = Ex.buildExpressionParser table term
+
+expr =
+      try eSeq
+  <|> expr'
 
 piExpr =
       eRd
@@ -328,8 +362,8 @@ atomExpr =
   <|> try eTuple
   <|> parens expr
 
-factor :: Parser Expr
-factor =
+term :: Parser Expr
+term =
       try eApp
   <|> atomExpr
   <|> eLet
@@ -338,7 +372,6 @@ factor =
   <|> lazyExpr
   <|> piExpr
 
-
 contents :: Parser a -> Parser a
 contents p = do
   Tok.whiteSpace lexer
@@ -346,8 +379,8 @@ contents p = do
   eof
   return r
 
-toplevel :: Parser [Expr]
-toplevel = semiSep expr
+toplevel :: Parser [Command]
+toplevel = many1 cmd
 
-parseExpr :: String -> Either ParseError Expr
-parseExpr s = parse (contents expr) "<stdin>" s
+parser :: String -> Either ParseError [Command]
+parser s = parse (contents toplevel) "<stdin>" s

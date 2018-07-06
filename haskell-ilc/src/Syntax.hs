@@ -81,3 +81,8 @@ data Value
     | VUnit
     | VClosure Env Expr
     deriving (Eq, Show)
+
+data Command
+    = CExpr Expr
+    | CDef Pattern Expr
+    deriving (Eq, Show)

@@ -36,7 +36,7 @@ opts = info (optParser <**> helper)
 -- | TODO: Refactor this.
 process :: String -> IO ()
 process src = do
-  let ast = parseExpr src
+  let ast = parser src
   putStrLn $ show ast
 {-  case ast of
     Left err -> print err

@@ -26,6 +26,7 @@ langDef = Tok.LanguageDef
     , Tok.opLetter = oneOf ":!#$%&*+.?<=>?@\\^|-~"
     , Tok.reservedNames = [ "let"
                           , "in"
+                          , "letrec"
                           , "lam"
                           , "rd"
                           , "wr"
@@ -41,6 +42,8 @@ langDef = Tok.LanguageDef
                           , "match"
                           , "with"
                           , "ref"
+                          , "when"
+                          , "print"
                           ]
     , Tok.reservedOpNames = [ "+"
                             , "-"
@@ -59,6 +62,7 @@ langDef = Tok.LanguageDef
                             , "|>"
                             , ";"
                             , ";;"
+                            , ":"
                             , "::"
                             , ":="
                             , "@"
@@ -143,10 +147,11 @@ pTag = mklexer PTag $ char '\'' >> identifier
   
 pList = mklexer PList $ brackets $ commaSep pat
 
--- TODO: Cons isn't working.
 pCons = do
-    hd <- pat
-    reserved "::"
+    hd <- pat'
+    spaces
+    string ":"
+    spaces
     tl <- pat
     return (PCons hd tl)
 
@@ -158,13 +163,14 @@ pUnit = reserved "()" >> return PUnit
 
 pWildcard = reserved "_" >> return PWildcard
 
-pat = pVar
+pat = try pCons <|> pat'
+
+pat' = pVar
   <|> pInt
   <|> pBool
   <|> pString
   <|> pTag
   <|> pList
-  -- <|> pCons
   <|> pSet
   <|> try pUnit
   <|> pTuple
@@ -224,9 +230,15 @@ eIf = do
 eBranch = do
     reservedOp "|"
     p <- pat
+    g <- option (EBool True) eGuard
     reservedOp "=>"
     e <- expr
-    return (p, e)
+    return (p, g, e)
+
+eGuard = do
+    reserved "when"
+    e <- expr
+    return e
   
 eMatch = do
     reserved "match"
@@ -244,7 +256,14 @@ eLet = do
     e2 <- expr
     return $ ELet p e1 e2
 
--- ELetRec
+eLetRec = do
+    reserved "letrec"
+    p <- pat
+    reservedOp "="
+    e1 <- expr
+    reserved "in"
+    e2 <- expr
+    return $ ELetRec p e1 e2
 
 eAssign = do
     reserved "let"
@@ -299,6 +318,8 @@ eSeq = do
     e2 <- expr
     return $ ESeq e1 e2
 
+ePrint = mklexer EPrint $ reserved "print" >> atomExpr    
+
 -- | Commands
 
 cExpr = do
@@ -349,11 +370,13 @@ term = try eApp
    <|> eIf
    <|> eMatch
    <|> eLet
+   <|> eLetRec
    <|> eRef
    <|> eDeref
    <|> eLam
    <|> lazyExpr
    <|> piExpr
+   <|> ePrint
 
 contents :: Parser a -> Parser a
 contents p = do

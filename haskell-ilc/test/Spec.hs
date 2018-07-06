@@ -118,8 +118,8 @@ parserExamples =
     , ( "pattern matching"
       , "match b with | 0 => \"zero\" | 1 => \"one\""
       , Right [ CExpr (EMatch (EVar "b")
-                              ([ (PInt 0, EString "zero")
-                               , (PInt 1, EString "one")
+                              ([ (PInt 0, EBool True, EString "zero")
+                               , (PInt 1, EBool True, EString "one")
                                ]))
               ]
       )
@@ -148,6 +148,24 @@ parserExamples =
                                   (EAssign (PVar "b")
                                            (EInt 1)))
                             (EVar "b"))
+              ]
+      )
+    , ( "cons pattern matching"
+      , "match a with | [] => 0 | x:xs => 1"
+      , Right [ CExpr (EMatch (EVar "a")
+                              ([ (PList [], EBool True, EInt 0)
+                               , (PCons (PVar "x")
+                                        (PVar "xs"), EBool True, EInt 1)
+                               ]))
+              ]
+      )
+    , ( "pattern matching with guards"
+      , "match b with | 0 when 0 < 1 => 0 | 1 when true => 1"
+      , Right [ CExpr (EMatch (EVar "b")
+                              ([ (PInt 0, ELt (EInt 0)
+                                              (EInt 1), EInt 0)
+                               , (PInt 1, EBool True, EInt 1)
+                               ]))
               ]
       )
     ]

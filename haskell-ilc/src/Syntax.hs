@@ -49,9 +49,9 @@ data Expr = EVar Name
           | EEq Expr Expr
           | ENeq Expr Expr
           | EIf Expr Expr Expr
-          | EMatch Expr [(Pattern, Expr)]
+          | EMatch Expr [(Pattern, Expr, Expr)]
           | ELet Pattern Expr Expr
-          | ELetRec Pattern Expr Expr -- ^ ?
+          | ELetRec Pattern Expr Expr
           | EAssign Pattern Expr
           | ERef Expr
           | EDeref Expr
@@ -65,6 +65,7 @@ data Expr = EVar Name
           | EThunk Expr
           | EForce Expr
           | ESeq Expr Expr
+          | EPrint Expr
           deriving (Eq, Show)
 
 data Value = VInt Integer

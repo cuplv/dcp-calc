@@ -115,4 +115,39 @@ parserExamples =
                             (EInt 4))
               ]
       )
+    , ( "pattern matching"
+      , "match b with | 0 => \"zero\" | 1 => \"one\""
+      , Right [ CExpr (EMatch (EVar "b")
+                              ([ (PInt 0, EString "zero")
+                               , (PInt 1, EString "one")
+                               ]))
+              ]
+      )
+    , ( "let binding w/ assign"
+      , "let x = 1 ; let y := 1 in x + y"
+      , Right [ CExpr (ELet (PVar "x")
+                            (ESeq (EInt 1)
+                                  (EAssign (PVar "y")
+                                           (EInt 1)))
+                            (EPlus (EVar "x")
+                                   (EVar "y")))
+              ]
+      )
+    , ( "ref and deref"
+      , "let a = ref 1 ;; let b := @ a"
+      , Right [ CDef (PVar "a")
+                     (ERef (EInt 1))
+              , CExpr (EAssign (PVar "b")
+                               (EDeref (EVar "a")))
+              ]
+      )
+    , ( "let binding w/ sequencing and assign"
+      , "let a = 1 ; let b := 1 in b"
+      , Right [ CExpr (ELet (PVar "a")
+                            (ESeq (EInt 1)
+                                  (EAssign (PVar "b")
+                                           (EInt 1)))
+                            (EVar "b"))
+              ]
+      )
     ]

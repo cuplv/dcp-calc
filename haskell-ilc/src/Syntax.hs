@@ -62,7 +62,7 @@ data Expr
     | EAssign Pattern Expr
     | ERef Expr
     | EDeref Expr
-    | ELam Expr Expr
+    | ELam Pattern Expr
     | EApp Expr Expr
     | ERd Expr
     | EWr Expr Expr
@@ -84,7 +84,7 @@ data Value
     | VSet [Value]
     | VTuple [Value]
     | VUnit
-    | VClosure Environment Expr
+    | VClosure (Maybe Name) Environment Expr
     | VThunk Environment Expr
     deriving (Eq, Show)
 

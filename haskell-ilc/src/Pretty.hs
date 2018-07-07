@@ -43,7 +43,7 @@ instance Pretty Value where
     ppr _ (VSet vs) = PP.text "list"
     ppr _ (VTuple vs) = PP.text "list"
     ppr _ VUnit = PP.text "()"
-    ppr _ (VClosure env e) = PP.text "closure"
+    ppr _ (VClosure x env e) = PP.text "closure"
     ppr p (VThunk env e) = PP.text "thunk(" <> ppr p e <> PP.text ")"
 
 ppexpr :: Expr -> String

@@ -315,7 +315,7 @@ eDeref = mklexer EDeref $ reservedOp "@" >> atomExpr
 
 eLam = do
     reserved "lam"
-    x <- atomExpr -- ^ ?
+    x <- pat
     reserved "."
     e <- expr -- ^ ?
     return $ ELam x e

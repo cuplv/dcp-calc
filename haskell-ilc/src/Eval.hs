@@ -5,9 +5,6 @@ import Data.Maybe
 
 import Syntax
 
-{-eval env (Var x)      =
-    fromMaybe (error "Variable not found") $ lookup x env-}
-       
 eval :: Environment -> Expr -> Value       
 eval env (EVar x) = env Map.! x
 --eval env (EImpVar x) = 
@@ -79,8 +76,7 @@ eval env (EIf e1 e2 e3) =
     case (eval env e1) of
         VBool True        -> eval env e2
         VBool False       -> eval env e3
-eval env (EMatch e bs) = 
-    patternMatch env (eval env e) bs
+eval env (EMatch e bs) = pmThenEval env (eval env e) bs
 -- eval env (ELet p e1 e2) =
 -- eval env (ELetRec p e1 e2) =
 -- eval env (EAssign p e) =
@@ -102,27 +98,49 @@ eval env (ESeq e1 e2) =
         _ -> eval env e2
 -- eval env (EPrint e) =
 
-patternMatch env v ((PVar x, g, e):bs) = eval env e -- ^ [v/x]e
+pmThenEval :: Environment -> Value -> [(Pattern, Expr, Expr)] -> Value
+pmThenEval env v [] = error "pattern match failed" -- ^ Better error handling?
+pmThenEval env v ((p, g, e):bs) =
+    case (pmEnv v p) of
+        Just env' -> if g' == VBool True
+                     then eval env'' e
+                     else pmThenEval env v bs
+          where
+            env'' = update env env'
+            g'    = eval env'' g
+        Nothing   -> pmThenEval env v bs
 
-patternMatch env v@(VInt n) ((PInt n', g, e):bs) | n == n' = eval env e
-                                                 | otherwise = patternMatch env v bs
-patternMatch env v ((PInt _, _, _):bs) = patternMatch env v bs
+(<:>) :: Applicative f => f [a] -> f [a] -> f [a]
+(<:>) a b = pure (++) <*> a <*> b
 
-patternMatch env v@(VString s) ((PString s', g, e):bs) | s == s' = eval env e
-                                                       | otherwise = patternMatch env v bs
-patternMatch env v ((PString _, _, _):bs) = patternMatch env v bs
+pmEnv :: Value -> Pattern -> Maybe [(Name, Value)]
+pmEnv v p = go [] v p
+  where
+    go acc v (PVar x) = Just ((x, v) : acc)
+    go acc (VInt n) (PInt n') | n == n'   = Just acc
+                              | otherwise = Nothing
+    go acc (VBool b) (PBool b') | b == b'   = Just acc
+                                | otherwise = Nothing
+    go acc (VString s) (PString s') | s == s'   = Just acc
+                                    | otherwise = Nothing
+    go acc (VTag t) (PTag t') | t == t'   = Just acc
+                              | otherwise = Nothing
+    go acc (VList vs) (PList ps) = gos acc vs ps
+    go acc (VList (v:vs)) (PCons p ps) = foldl1 (<:>) [acc1, acc2, Just acc]
+      where
+        acc1 = pmEnv v p
+        acc2 = pmEnv (VList vs) ps
+    go acc (VList []) (PCons _ _) = Nothing
+    go acc (VSet vs) (PSet ps) = gos acc vs ps
+    go acc (VTuple vs) (PTuple ps) = gos acc vs ps
+    go acc VUnit PUnit = Just acc
+    go acc _ PWildcard = Just acc
 
-patternMatch env v@(VTag s) ((PTag s', g, e):bs) | s == s' = eval env e
-                                                 | otherwise = patternMatch env v bs
-patternMatch env v ((PTag _, _, _):bs) = patternMatch env v bs
-
-{-patternMatch env v@(VList (v:vs)) ((PList (p:ps), g, e):bs) | s == s' = eval env e
-                                                 | otherwise = patternMatch env v bs
-
-patternMatch env v@(VUnit) ((PUnit, g, e):bs) = eval env e
-patternMatch env v ((PUnit _, _, _):bs) = patternMatch env v bs
-
-patternMatch env v ((PWildcard, g, e):bs) = eval env e-}
+    gos acc vs ps | length vs == length ps = foldl (<:>) (Just []) accs
+                  | otherwise              = Nothing
+      where
+        accs  = map (\pair -> case pair of (v, p) -> go acc v p) vp
+        vp    = zip vs ps
 
 exec :: [Command] -> Environment -> Maybe Value
 exec ((CExpr e):[] ) env = Just (eval env e)

@@ -9,22 +9,21 @@ import Test.Tasty.SmallCheck as SC
 
 import Syntax
 import Parser
-import PatternMatch
+import Eval
 
 main :: IO ()
 main = defaultMain tests
 
 tests :: TestTree
-tests = testGroup "Tests" [parserTests, patternMatchTests]
+tests = testGroup "Tests" [parserTests, pmTests]
 
 parserTests :: TestTree
 parserTests =
     testGroup "Parser tests" $ makeParserTests
 
 makeParserTests = map f parserExamples
-  where f test = case test of
-            (str, src, ast) -> testCase (printf "parse %s" str) $
-                                 assertEqual "" (parser src) (ast)
+  where f (str, src, ast) = testCase (printf "parse %s" str) $
+                            assertEqual "" (parser src) (ast)
                            
 parserExamples =
     [ ( "lambda"
@@ -205,15 +204,15 @@ parserExamples =
       )
     ]
 
-patternMatchTests :: TestTree
-patternMatchTests =
-    testGroup "Pattern match tests" $ makePatternMatchTests
+pmTests :: TestTree
+pmTests =
+    testGroup "Pattern match tests" $ mkpmTests
 
-makePatternMatchTests = map f patternMatchExamples
+mkpmTests = map f pmExamples
   where f (str, v, p, env) = testCase (printf "pattern match %s" str) $
-                             assertEqual "" (getMapping v p) env
-                           
-patternMatchExamples =
+                             assertEqual "" (pmEnv v p) env
+                             
+pmExamples =
     [ ( "tuple w/ vars"
       , VTuple [VInt 1, VBool True]
       , PTuple [PVar "x", PVar "y"]
@@ -258,5 +257,10 @@ patternMatchExamples =
       , VList []
       , PCons (PVar "hd") (PVar "tl")
       , Nothing
+      )
+    , ( "double cons"
+      , VList [VInt 1, VInt 2]
+      , PCons (PVar "a") (PCons (PVar "b") (PVar "c"))
+      , Just [("a", VInt 1), ("b", VInt 2), ("c", VList [])]
       )
     ]

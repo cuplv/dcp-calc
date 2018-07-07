@@ -32,12 +32,19 @@ instance Pretty Expr where
         PP.text "if"   <+> ppr p e1
     <+> PP.text "then" <+> ppr p e2
     <+> PP.text "else" <+> ppr p e3
+  ppr _ _ = PP.text "expr"
 
 instance Pretty Value where
     ppr _ (VInt n) = PP.text $ show n
     ppr _ (VBool b) = PP.text $ show b
     ppr _ (VString s) = PP.text s
-    ppr _ _           = error "not implemented"
+    ppr _ (VTag s) = PP.text s
+    ppr _ (VList vs) = PP.text "list"
+    ppr _ (VSet vs) = PP.text "list"
+    ppr _ (VTuple vs) = PP.text "list"
+    ppr _ VUnit = PP.text "()"
+    ppr _ (VClosure env e) = PP.text "closure"
+    ppr p (VThunk env e) = PP.text "thunk(" <> ppr p e <> PP.text ")"
 
 ppexpr :: Expr -> String
 ppexpr = PP.render . ppr 0

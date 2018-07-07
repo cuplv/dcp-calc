@@ -74,11 +74,13 @@ data Expr = EVar Name
 data Value = VInt Integer
            | VBool Bool
            | VString String
-           | VPair Value Value
+           | VTag String
            | VList [Value]
+           | VSet [Value]
            | VTuple [Value]
            | VUnit
            | VClosure Env Expr
+           | VThunk Env Expr
            deriving (Eq, Show)
 
 data Command = CExpr Expr

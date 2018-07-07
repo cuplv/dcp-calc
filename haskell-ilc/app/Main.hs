@@ -8,6 +8,7 @@ import System.Console.Haskeline
 import Eval
 import Parser
 import Pretty
+import Syntax
 
 data Options = Options
     { optSrcFile :: Maybe FilePath
@@ -38,10 +39,13 @@ process :: String -> IO ()
 process src = do
   let ast = parser src
   putStrLn $ show ast
-{-  case ast of
+  case ast of
     Left err -> print err
-    Right p  -> do let v = eval [] p
-                   putStrLn $ ppval v-}
+    -- TODO
+    {-Right (CExpr e:cs) -> do let v = eval [] e
+                             putStrLn $ ppval v-}
+    Right cmds -> do let res = exec cmds
+                     putStrLn $ "foo"
 
 interactive :: IO ()
 interactive = runInputT defaultSettings loop

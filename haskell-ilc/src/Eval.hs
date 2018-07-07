@@ -1,18 +1,23 @@
 module Eval where
 
-import Syntax
-
+import qualified Data.Map.Strict as Map
 import Data.Maybe
 import Data.Functor
+
+import Syntax
 
 {-eval env (Var x)      =
     fromMaybe (error "Variable not found") $ lookup x env-}
        
 eval :: Env -> Expr -> Value       
+--eval env (EVar x) = 
+--eval env (EImpVar x) = 
 eval env (EInt n) = VInt n
 eval env (EBool b) = VBool b
 eval env (EString s) = VString s
+eval env (ETag s) = VTag s
 eval env (EList es) = VList $ map (eval env) es
+eval env (ESet es) = VSet $ map (eval env) es
 eval env (ETuple es) = VTuple $ map (eval env) es
 eval env EUnit = VUnit
 eval env (EPlus e1 e2)  =
@@ -75,3 +80,29 @@ eval env (EIf e1 e2 e3) =
     case (eval env e1) of
         VBool True        -> eval env e2
         VBool False       -> eval env e3
+{-eval env (EMatch e bs) =
+    patternMatch (eval env e) bs-}
+-- eval env (ELet p e1 e2) =
+-- eval env (ELetRec p e1 e2) =
+-- eval env (EAssign p e) =
+-- eval env (ERef e)
+-- eval env (EDeref e)
+-- eval env (ELam e1 e2)
+-- eval env (EApp e1 e2)
+-- eval env (ERd e)
+-- eval env (EWr e1 e2)
+-- eval env (ERepl e)
+-- eval env (EFork e)
+eval env (EThunk e) = VThunk env e
+eval env (EForce e) =
+    case (eval env e) of
+        (VThunk env' e') -> eval env' e'
+        _                -> error "expected thunk"
+eval env (ESeq e1 e2) =
+    case (eval env e1) of
+        _ -> eval env e2
+-- eval env (EPrint e) =
+
+type Environment = Map.Map Name Value
+
+exec cmds = []

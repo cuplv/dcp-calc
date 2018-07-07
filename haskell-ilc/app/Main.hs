@@ -35,17 +35,17 @@ opts = info (optParser <**> helper)
     <> header "ILC" )
 
 -- | TODO: Refactor this.
-process :: String -> IO ()
+--process :: String -> IO ()
 process src = do
-  let ast = parser src
-  putStrLn $ show ast
-  case ast of
+  let cmds = parser src
+  putStrLn $ show cmds
+  case cmds of
     Left err -> print err
     -- TODO
     {-Right (CExpr e:cs) -> do let v = eval [] e
                              putStrLn $ ppval v-}
-    Right cmds -> do let res = exec cmds
-                     putStrLn $ "foo"
+    Right cmds -> do let res = run cmds
+                     putStrLn (show res)
 
 interactive :: IO ()
 interactive = runInputT defaultSettings loop

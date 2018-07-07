@@ -366,7 +366,7 @@ cExpr = do
 
 cDef = do
     reserved "let"
-    x <- pat
+    x <- identifier
     reserved "="
     e <- expr
     optional $ reserved ";;"

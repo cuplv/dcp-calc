@@ -1,7 +1,8 @@
 module Syntax where
-type Name = String
 
-type Env = [(Name, Value)]
+import qualified Data.Map.Strict as Map
+
+type Name = String
 
 data Type = TInt
           | TBool
@@ -79,11 +80,19 @@ data Value = VInt Integer
            | VSet [Value]
            | VTuple [Value]
            | VUnit
-           | VClosure Env Expr
-           | VThunk Env Expr
+           | VClosure Environment Expr
+           | VThunk Environment Expr
            deriving (Eq, Show)
 
 data Command = CExpr Expr
-             | CDef Pattern Expr
+             | CDef Name Expr
              | CTySig Name Type
              deriving (Eq, Show)
+
+type Environment = Map.Map Name Value
+
+emptyEnv :: Environment
+emptyEnv = Map.empty
+
+extend :: Environment -> Name -> Value -> Environment
+extend env x v = Map.insert x v env

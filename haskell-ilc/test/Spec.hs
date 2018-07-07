@@ -195,4 +195,11 @@ parserExamples =
                             (EInt 1))
               ]
       )
+    , ( "product and list types"
+      , "myzip :: [Int] -> [Bool] -> [(Int, Bool)]"
+      , Right [ CTySig "myzip" (TArrow (TList TInt)
+                                       (TArrow (TList TBool)
+                                               (TList (TProd [TInt, TBool]))))
+              ]
+      )
     ]

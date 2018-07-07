@@ -9,12 +9,13 @@ import Test.Tasty.SmallCheck as SC
 
 import Syntax
 import Parser
+import PatternMatch
 
 main :: IO ()
 main = defaultMain tests
 
 tests :: TestTree
-tests = testGroup "Tests" [parserTests]
+tests = testGroup "Tests" [parserTests, patternMatchTests]
 
 parserTests :: TestTree
 parserTests =
@@ -86,23 +87,23 @@ parserExamples =
       )
     , ( "let commands"
       , "let x = 1 let y = 2 let z = x + y"
-      , Right [ CDef (PVar "x")
+      , Right [ CDef "x"
                      (EInt 1)
-              , CDef (PVar "y")
+              , CDef "y"
                      (EInt 2)
-              , CDef (PVar "z")
+              , CDef "z"
                      (EPlus (EVar "x")
                             (EVar "y"))
               ]
       )
     , ( "let command, let binding, expr command"
-      , "let _ = let x = 1 in 2 * x let y = 1;; \"foo\""
-      , Right [ CDef (PWildcard)
+      , "let z = let x = 1 in 2 * x let y = 1;; \"foo\""
+      , Right [ CDef "z"
                      (ELet (PVar "x")
                            (EInt 1)
                            (ETimes (EInt 2)
                                    (EVar "x")))
-              , CDef (PVar "y")
+              , CDef "y"
                      (EInt 1)
               , CExpr (EString "foo")
               ]
@@ -135,7 +136,7 @@ parserExamples =
       )
     , ( "ref and deref"
       , "let a = ref 1 ;; let b := @ a"
-      , Right [ CDef (PVar "a")
+      , Right [ CDef "a"
                      (ERef (EInt 1))
               , CExpr (EAssign (PVar "b")
                                (EDeref (EVar "a")))
@@ -171,7 +172,7 @@ parserExamples =
     , ( "plus function w/ type signature"
       , "plus :: Int -> Int -> Int let plus = lam x . lam y . x + y"
       ,  Right [ CTySig "plus" (TArrow TInt (TArrow TInt TInt))
-               , CDef (PVar "plus")
+               , CDef "plus"
                       (ELam (EVar "x")
                             (ELam (EVar "y")
                                   (EPlus (EVar "x") (EVar "y"))))
@@ -183,7 +184,7 @@ parserExamples =
       )
     , ( "GetBit"
       , "let GetBit = lam x . nu c . |> (rd c) ; |> (wr 0 -> c) ; |> (wr 1 -> c) GetBit 1"
-      , Right [ CDef (PVar "GetBit")
+      , Right [ CDef "GetBit"
                      (ELam (EVar "x")
                            (ENu (EVar "c")
                                 (ESeq (EFork (ERd (EVar "c")))
@@ -201,5 +202,61 @@ parserExamples =
                                        (TArrow (TList TBool)
                                                (TList (TProd [TInt, TBool]))))
               ]
+      )
+    ]
+
+patternMatchTests :: TestTree
+patternMatchTests =
+    testGroup "Pattern match tests" $ makePatternMatchTests
+
+makePatternMatchTests = map f patternMatchExamples
+  where f (str, v, p, env) = testCase (printf "pattern match %s" str) $
+                             assertEqual "" (getMapping v p) env
+                           
+patternMatchExamples =
+    [ ( "tuple w/ vars"
+      , VTuple [VInt 1, VBool True]
+      , PTuple [PVar "x", PVar "y"]
+      , Just [("x", VInt 1), ("y", VBool True)]
+      )
+    , ( "nested tuple w/ vars"
+      , VTuple [VInt 1, VTuple [VInt 2, VInt 3], VBool True]
+      , PTuple [PVar "x", PTuple [PVar "y", PWildcard], PVar "z"]
+      , Just [("x", VInt 1), ("y", VInt 2), ("z", VBool True)]
+      )
+    , ( "tuple w/ failure"
+      , VTuple [VInt 1, VInt 2, VInt 3]
+      , PTuple [PWildcard, PVar "x", PInt 4]
+      , Nothing
+      )
+    , ( "tuple w/ wildcards"
+      , VTuple [VInt 1, VInt 2, VInt 3]
+      , PTuple [PWildcard, PWildcard, PWildcard]
+      , Just []
+      )
+    , ( "cons success"
+      , VList [VInt 1, VInt 2, VInt 3]
+      , PCons (PVar "hd") (PVar "tl")
+      , Just [("hd", VInt 1), ("tl", VList [VInt 2, VInt 3])]
+      )
+    , ( "cons success w/ nil list"
+      , VList [VInt 1]
+      , PCons (PVar "hd") (PList [])
+      , Just [("hd", VInt 1)]
+      )
+    , ( "cons success w/ nil list 2"
+      , VList [VInt 1]
+      , PCons (PVar "hd") (PVar "tl")
+      , Just [("hd", VInt 1), ("tl", VList [])]
+      )
+    , ( "cons fail"
+      , VList [VInt 1, VInt 2]
+      , PCons (PVar "hd") (PList [])
+      , Nothing
+      )
+    , ( "cons fail on nil"
+      , VList []
+      , PCons (PVar "hd") (PVar "tl")
+      , Nothing
       )
     ]

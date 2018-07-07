@@ -2,7 +2,6 @@ module Eval where
 
 import qualified Data.Map.Strict as Map
 import Data.Maybe
-import Data.Functor
 
 import Syntax
 
@@ -104,10 +103,26 @@ eval env (ESeq e1 e2) =
 -- eval env (EPrint e) =
 
 patternMatch env v ((PVar x, g, e):bs) = eval env e -- ^ [v/x]e
+
 patternMatch env v@(VInt n) ((PInt n', g, e):bs) | n == n' = eval env e
                                                  | otherwise = patternMatch env v bs
-patternMatch env v ((PInt n', g, e):bs) = patternMatch env v bs
-                                                 
+patternMatch env v ((PInt _, _, _):bs) = patternMatch env v bs
+
+patternMatch env v@(VString s) ((PString s', g, e):bs) | s == s' = eval env e
+                                                       | otherwise = patternMatch env v bs
+patternMatch env v ((PString _, _, _):bs) = patternMatch env v bs
+
+patternMatch env v@(VTag s) ((PTag s', g, e):bs) | s == s' = eval env e
+                                                 | otherwise = patternMatch env v bs
+patternMatch env v ((PTag _, _, _):bs) = patternMatch env v bs
+
+{-patternMatch env v@(VList (v:vs)) ((PList (p:ps), g, e):bs) | s == s' = eval env e
+                                                 | otherwise = patternMatch env v bs
+
+patternMatch env v@(VUnit) ((PUnit, g, e):bs) = eval env e
+patternMatch env v ((PUnit _, _, _):bs) = patternMatch env v bs
+
+patternMatch env v ((PWildcard, g, e):bs) = eval env e-}
 
 exec :: [Command] -> Environment -> Maybe Value
 exec ((CExpr e):[] ) env = Just (eval env e)

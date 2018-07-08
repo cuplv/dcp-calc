@@ -15,7 +15,7 @@ main :: IO ()
 main = defaultMain tests
 
 tests :: TestTree
-tests = testGroup "Tests" [parserTests, pmTests]
+tests = testGroup "Tests" [parserTests, pmTests, execTests]
 
 parserTests :: TestTree
 parserTests =
@@ -28,7 +28,7 @@ makeParserTests = map f parserExamples
 parserExamples =
     [ ( "lambda"
       , "lam x . x + x"
-      , Right [ CExpr (ELam (EVar "x")
+      , Right [ CExpr (ELam (PVar "x")
                             (EPlus (EVar "x")
                                    (EVar "x")))
               ]
@@ -172,8 +172,8 @@ parserExamples =
       , "plus :: Int -> Int -> Int let plus = lam x . lam y . x + y"
       ,  Right [ CTySig "plus" (TArrow TInt (TArrow TInt TInt))
                , CDef "plus"
-                      (ELam (EVar "x")
-                            (ELam (EVar "y")
+                      (ELam (PVar "x")
+                            (ELam (PVar "y")
                                   (EPlus (EVar "x") (EVar "y"))))
               ]
       )
@@ -184,7 +184,7 @@ parserExamples =
     , ( "GetBit"
       , "let GetBit = lam x . nu c . |> (rd c) ; |> (wr 0 -> c) ; |> (wr 1 -> c) GetBit 1"
       , Right [ CDef "GetBit"
-                     (ELam (EVar "x")
+                     (ELam (PVar "x")
                            (ENu (EVar "c")
                                 (ESeq (EFork (ERd (EVar "c")))
                                       (ESeq (EFork (EWr (EInt 0)
@@ -262,5 +262,41 @@ pmExamples =
       , VList [VInt 1, VInt 2]
       , PCons (PVar "a") (PCons (PVar "b") (PVar "c"))
       , Just [("a", VInt 1), ("b", VInt 2), ("c", VList [])]
+      )
+    ]
+
+execTests :: TestTree
+execTests =
+    testGroup "Execution tests" $ mkExecTests
+
+mkExecTests = map f execExamples
+  where f (str, src, out) = testCase (printf "execute %s" str) $
+                            assertEqual "" (run <$> parser src) out
+
+-- TODO: Move these to files                            
+execExamples =
+    [ ( "factorial"
+      , "let f n = if n == 0 then 1 else n * f (n - 1) in f 6"
+      , Right $ Just $ VInt 720
+      )
+    , ( "factorial w/ pattern matching"
+      , "let f n = match n with | 0 => 1 | _ => n * f (n - 1) in f 6"
+      , Right $ Just $ VInt 720
+      )
+    , ( "slow fib"
+      , "  let fib n = if n < 1 \
+         \             then 0 \
+         \             else if n < 3 \
+         \                  then 1 \
+         \                  else fib (n - 2) + fib (n - 1) \
+         \ in fib 5"
+      , Right $ Just $ VInt 5
+      )
+    , ( "slow fib w/ pattern matching for the lols"
+      , "let fib n = match n with \
+         \           | n when n < 1 => 0 \
+         \           | n when n < 3 => 1 \
+         \           | n => fib (n - 2) + fib (n - 1) in fib 6"
+      , Right $ Just $ VInt 8
       )
     ]

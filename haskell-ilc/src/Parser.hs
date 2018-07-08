@@ -293,14 +293,15 @@ eLet = do
     e2 <- expr
     return $ ELet p e1 e2
 
-eLetRec = do
-    reserved "letrec"
-    p <- pat
+eFun = do
+    reserved "let"
+    p1 <- pat
+    p2 <- pat
     reservedOp "="
     e1 <- expr
     reserved "in"
     e2 <- expr
-    return $ ELetRec p e1 e2
+    return $ EFun p1 (ELam p2 e1) e2
 
 eAssign = do
     reserved "let"
@@ -319,6 +320,9 @@ eLam = do
     reserved "."
     e <- expr -- ^ ?
     return $ ELam x e
+
+
+    
 
 eApp = do
     f <- atomExpr
@@ -364,7 +368,7 @@ cExpr = do
     optional $ reserved ";;"
     return $ CExpr e
 
-cDef = do
+cDefLet = do
     reserved "let"
     x <- identifier
     reserved "="
@@ -372,13 +376,24 @@ cDef = do
     optional $ reserved ";;"
     return $ CDef x e
 
+cDefFun = do
+    reserved "let"
+    x <- identifier
+    p <- pat
+    reserved "="
+    e <- expr
+    optional $ reserved ";;"
+    return $ CDef x (ELam p e)
+
+cDef = try cDefLet <|> cDefFun    
+
 cTySig = do
   x <- identifier
   reserved "::"
   t <- ty
   return $ CTySig x t
 
-cmd = (try cTySig) <|> (try cExpr) <|> cDef
+cmd = try cTySig <|> try cExpr <|> try cDef
 
 -- | Parser
 
@@ -412,8 +427,8 @@ term = try eApp
    <|> try eAssign
    <|> eIf
    <|> eMatch
+   <|> try eFun
    <|> eLet
-   <|> eLetRec
    <|> eRef
    <|> eDeref
    <|> eLam

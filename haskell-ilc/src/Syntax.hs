@@ -58,7 +58,7 @@ data Expr
     | EIf Expr Expr Expr
     | EMatch Expr [(Pattern, Expr, Expr)]
     | ELet Pattern Expr Expr
-    | ELetRec Pattern Expr Expr
+    | EFun Pattern Expr Expr
     | EAssign Pattern Expr
     | ERef Expr
     | EDeref Expr

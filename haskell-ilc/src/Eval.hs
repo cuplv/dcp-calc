@@ -83,7 +83,14 @@ eval env (ELet p e1 e2) = eval env' e2
     v = eval env e1
     binds = fromMaybe (error "let pattern matching failed") $
             pmEnv v p
--- eval env (ELetRec p e1 e2) =
+eval env (EFun p e1 e2) = eval env' e2
+  where
+    env' = update env binds
+    binds = fromMaybe (error "let pattern matching failed") $
+            pmEnv f p
+    f = case (p, eval env e1) of
+            (PVar x, VClosure arg env e) -> VClosure arg (extend env x f) e
+            _                            -> error "expected closure"
 -- eval env (EAssign p e) =
 -- eval env (ERef e)
 -- eval env (EDeref e)

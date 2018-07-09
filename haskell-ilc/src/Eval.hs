@@ -213,13 +213,13 @@ eval' env x (ELt e1 e2) = evalRel (<) env x e1 e2
 
 eval' env x (EGt e1 e2) = evalRel (>) env x e1 e2
 
-eval' env x (ELeq e1 e2) = evalRel (>) env x e1 e2
+eval' env x (ELeq e1 e2) = evalRel (<=) env x e1 e2
 
-eval' env x (EGeq e1 e2) = evalRel (>) env x e1 e2
+eval' env x (EGeq e1 e2) = evalRel (>=) env x e1 e2
 
-eval' env x (EEq e1 e2) = evalRel (>) env x e1 e2
+eval' env x (EEq e1 e2) = evalRel (==) env x e1 e2
 
-eval' env x (ENeq e1 e2) = evalRel (>) env x e1 e2
+eval' env x (ENeq e1 e2) = evalRel (/=) env x e1 e2
 
 eval' env x (EIf e1 e2 e3) =
     evalSub env e1 >>= \cond ->

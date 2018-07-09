@@ -1,11 +1,13 @@
 module Eval where
 
+import Control.Concurrent
+import Control.Monad
 import qualified Data.Map.Strict as Map
 import Data.Maybe
 
 import Syntax
-
-eval :: Environment -> Expr -> Value       
+{-
+-- eval :: Environment -> Expr -> Value       
 eval env (EVar x) = env Map.! x
 --eval env (EImpVar x) = 
 eval env (EInt n) = VInt n
@@ -110,7 +112,7 @@ eval env (EApp e1 e2) =
 -- eval env (ERd e)
 -- eval env (EWr e1 e2)
 -- eval env (ERepl e)
--- eval env (EFork e)
+--eval env (EFork e) = do forkIO $ putChar 'A'
 eval env (EThunk e) = VThunk env e
 eval env (EForce e) =
     case (eval env e) of
@@ -119,9 +121,132 @@ eval env (EForce e) =
 eval env (ESeq e1 e2) =
     case (eval env e1) of
         _ -> eval env e2
--- eval env (EPrint e) =
+-- eval env (EPrint e) =-}
 
-pmThenEval :: Environment -> Value -> [(Pattern, Expr, Expr)] -> Value
+-- | Pi calc eval
+
+evalSub :: Environment -> Expr -> IO Value
+evalSub env e = newEmptyMVar >>= \x ->
+                eval' env x e >>
+                takeMVar x >>= return
+                
+evalSubs :: Environment -> Expr -> Expr -> IO (Value, Value)
+evalSubs env e1 e2 = evalSub env e1 >>= \v1 ->
+                     evalSub env e2 >>= \v2 ->
+                     return (v1, v2)
+
+evalBinOp :: ((Value, Value) -> IO Value)
+          -> Environment
+          -> MVar Value
+          -> Expr
+          -> Expr
+          -> IO ()
+evalBinOp f env x e1 e2 =
+    evalSubs env e1 e2 >>= f >>= putMVar x
+
+    
+evalArith :: (Integer -> Integer -> Integer)
+          -> Environment
+          -> MVar Value
+          -> Expr
+          -> Expr
+          -> IO ()
+evalArith op = evalBinOp (go op)
+  where
+    go op v = return $ case v of
+        (VInt n1, VInt n2) -> VInt (op n1 n2)
+        _                  -> error "expected integer operands"
+
+evalBool :: (Bool -> Bool -> Bool)
+          -> Environment
+          -> MVar Value
+          -> Expr
+          -> Expr
+          -> IO ()
+evalBool op = evalBinOp (go op)
+  where
+    go op v = return $ case v of
+        (VBool b1, VBool b2) -> VBool (op b1 b2)
+        _                  -> error "expected boolean operands"
+
+evalRel :: (Integer -> Integer -> Bool)
+          -> Environment
+          -> MVar Value
+          -> Expr
+          -> Expr
+          -> IO ()
+evalRel op = evalBinOp (go op)
+  where
+    go op v = return $ case v of
+        (VInt b1, VInt b2) -> VBool (op b1 b2)
+        _                  -> error "expected integer operands"
+
+eval e = newEmptyMVar >>= \v ->
+         eval' emptyEnv v e >>
+         takeMVar v >>= putStrLn . show
+  
+eval' env x (EInt n) = putMVar x $ VInt n
+    
+eval' env x (EBool b) = putMVar x $ VBool b
+    
+eval' env x (EPlus e1 e2) = evalArith (+) env x e1 e2
+
+eval' env x (EMinus e1 e2) = evalArith (-) env x e1 e2
+
+eval' env x (ETimes e1 e2) = evalArith (*) env x e1 e2
+
+eval' env x (EDivide e1 e2) = evalArith quot env x e1 e2
+
+eval' env x (EMod e1 e2) = evalArith mod env x e1 e2
+
+eval' env x (ENot e) = evalSub env e >>= go >>= putMVar x
+  where
+    go v = return $ case v of
+        VBool b -> VBool $ not b
+        _       -> error "expected boolean"
+
+eval' env x (EAnd e1 e2) = evalBool (&&) env x e1 e2
+
+eval' env x (EOr e1 e2) = evalBool (||) env x e1 e2
+
+eval' env x (ELt e1 e2) = evalRel (<) env x e1 e2
+
+eval' env x (EGt e1 e2) = evalRel (>) env x e1 e2
+
+eval' env x (ELeq e1 e2) = evalRel (>) env x e1 e2
+
+eval' env x (EGeq e1 e2) = evalRel (>) env x e1 e2
+
+eval' env x (EEq e1 e2) = evalRel (>) env x e1 e2
+
+eval' env x (ENeq e1 e2) = evalRel (>) env x e1 e2
+
+eval' env x (EIf e1 e2 e3) =
+    evalSub env e1 >>= \cond ->
+    (case cond of
+        VBool True  -> evalSub env e2
+        VBool False -> evalSub env e3) >>=
+    putMVar x 
+  
+eval' env r (EFork e) = do
+    e' <- newEmptyMVar
+    forkIO $ do eval' env e' e
+    r' <- takeMVar e'
+    putMVar r r'
+    
+{-eval' env (ERd e)
+eval' env (EWr e1 e2)
+eval' env (ERepl e)-}
+eval' env r (ESeq e1 e2) = do
+    e1' <- newEmptyMVar
+    e2' <- newEmptyMVar
+    eval' env e1' e1
+    takeMVar e1'
+    eval' env e2' e2
+    v <- takeMVar e2'
+    putMVar r v
+
+{-pmThenEval :: Environment -> Value -> [(Pattern, Expr, Expr)] -> Value
 pmThenEval env v [] = error "pattern match failed" -- ^ Better error handling?
 pmThenEval env v ((p, g, e):bs) =
     case (pmEnv v p) of
@@ -180,3 +305,4 @@ exec [] env = Nothing
 
 run :: [Command] -> Maybe Value
 run cmds = exec cmds emptyEnv
+-}

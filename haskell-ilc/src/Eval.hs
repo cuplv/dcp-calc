@@ -228,23 +228,16 @@ eval' env x (EIf e1 e2 e3) =
         VBool False -> evalSub env e3) >>=
     putMVar x 
   
-eval' env r (EFork e) = do
-    e' <- newEmptyMVar
-    forkIO $ do eval' env e' e
-    r' <- takeMVar e'
-    putMVar r r'
+eval' env x (EFork e) = do
+    x' <- newEmptyMVar
+    forkIO $ do eval' env x' e
+    putMVar x VUnit
     
 {-eval' env (ERd e)
 eval' env (EWr e1 e2)
 eval' env (ERepl e)-}
-eval' env r (ESeq e1 e2) = do
-    e1' <- newEmptyMVar
-    e2' <- newEmptyMVar
-    eval' env e1' e1
-    takeMVar e1'
-    eval' env e2' e2
-    v <- takeMVar e2'
-    putMVar r v
+eval' env x (ESeq e1 e2) =
+    evalSub env e1 >> evalSub env e2 >>= putMVar x
 
 {-pmThenEval :: Environment -> Value -> [(Pattern, Expr, Expr)] -> Value
 pmThenEval env v [] = error "pattern match failed" -- ^ Better error handling?

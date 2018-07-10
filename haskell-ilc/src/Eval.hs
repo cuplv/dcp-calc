@@ -122,15 +122,15 @@ eval' env x (EIf e1 e2 e3) =
         VBool False -> evalSub env e3) >>=
     putMVar x 
 
-{-eval env (EMatch e bs) = pmThenEval env (eval env e) bs
+--eval env (EMatch e bs) = pmThenEval env (eval env e) bs
 
-eval env (ELet p e1 e2) = eval env' e2
-  where
-    env' = update env binds
-    v = eval env e1
-    binds = fromMaybe (error "let pattern matching failed") $
-            pmEnv v p
-eval env (EFun p e1 e2) = eval env' e2
+eval' env x (ELet p e1 e2) =
+    evalSub env e1 >>= \v1 ->
+    let binds = getBinds p v1
+        env'  = update env binds
+    in evalSub env' e2 >>= putMVar x
+
+{-eval env (EFun p e1 e2) = eval env' e2
   where
     env' = update env binds
     binds = fromMaybe (error "let pattern matching failed") $
@@ -206,11 +206,13 @@ pmThenEval env v ((p, g, e):bs) =
           where
             env'' = update env env'
             g'    = eval env'' g
-        Nothing   -> pmThenEval env v bs
+        Nothing   -> pmThenEval env v bs-}
 
 (<:>) :: Applicative f => f [a] -> f [a] -> f [a]
 (<:>) a b = pure (++) <*> a <*> b
 
+getBinds p v = fromMaybe (error "let pattern matching failed") $
+               pmEnv v p
 pmEnv :: Value -> Pattern -> Maybe [(Name, Value)]
 pmEnv v p = go [] v p
   where
@@ -239,21 +241,16 @@ pmEnv v p = go [] v p
                   | otherwise              = Nothing
       where
         accs  = map (\pair -> case pair of (v, p) -> go acc v p) vp
-        vp    = zip vs ps-}
+        vp    = zip vs ps
 
 exec :: [Command] -> IO ()
 exec cmds = go emptyEnv cmds
   where
-    go env ((CExpr e):[] ) = do
-      eval env e
-    go env ((CExpr e):rest) = do
-      eval env e
-      go env rest
-    -- TODO: 
-    go env ((CDef x e):rest) = do
-      go (extend env x (VClosure Nothing env e)) rest
-    go env ((CTySig _ _):rest) = do
-      go env rest
-    go env [] = do
-      return ()
-
+    go env ((CExpr e):[] ) = eval env e
+    go env ((CExpr e):rest) = eval env e >>
+                              go env rest
+    go env ((CDef x e):rest) = evalSub env e >>= \v ->
+                               let env' = extend env x v
+                               in go env' rest
+    go env ((CTySig _ _):rest) = go env rest
+    go env [] = return ()

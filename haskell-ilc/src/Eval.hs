@@ -9,9 +9,9 @@ import Data.Maybe
 import Syntax
 
 evalSub :: Environment -> Expr -> IO Value
-evalSub env e = newEmptyMVar >>= \x ->
-                eval' env x e >>
-                takeMVar x >>= return
+evalSub env e = newEmptyMVar >>= \m ->
+                eval' env m e >>
+                takeMVar m >>= return
                 
 evalSubs :: Environment -> Expr -> Expr -> IO (Value, Value)
 evalSubs env e1 e2 = evalSub env e1 >>= \v1 ->
@@ -24,8 +24,8 @@ evalBinOp :: ((Value, Value) -> IO Value)
           -> Expr
           -> Expr
           -> IO ()
-evalBinOp f env x e1 e2 =
-    evalSubs env e1 e2 >>= f >>= putMVar x
+evalBinOp f env m e1 e2 =
+    evalSubs env e1 e2 >>= f >>= putMVar m
     
 evalArith :: (Integer -> Integer -> Integer)
           -> Environment
@@ -33,11 +33,10 @@ evalArith :: (Integer -> Integer -> Integer)
           -> Expr
           -> Expr
           -> IO ()
-evalArith op = evalBinOp (go op)
+evalArith op = evalBinOp $ f op
   where
-    go op v = return $ case v of
-        (VInt n1, VInt n2) -> VInt (op n1 n2)
-        _                  -> error "expected integer operands"
+    f op (VInt n1, VInt n2) = return $ VInt (op n1 n2)
+    f op _                  = error "expected integer operands"
 
 evalBool :: (Bool -> Bool -> Bool)
           -> Environment
@@ -45,11 +44,10 @@ evalBool :: (Bool -> Bool -> Bool)
           -> Expr
           -> Expr
           -> IO ()
-evalBool op = evalBinOp (go op)
+evalBool op = evalBinOp $ f op
   where
-    go op v = return $ case v of
-        (VBool b1, VBool b2) -> VBool (op b1 b2)
-        _                  -> error "expected boolean operands"
+    f op (VBool b1, VBool b2) = return $ VBool (op b1 b2)
+    f op _                  = error "expected boolean operands"
 
 evalRel :: (Integer -> Integer -> Bool)
           -> Environment
@@ -57,155 +55,144 @@ evalRel :: (Integer -> Integer -> Bool)
           -> Expr
           -> Expr
           -> IO ()
-evalRel op = evalBinOp (go op)
+evalRel op = evalBinOp $ f op
   where
-    go op v = return $ case v of
-        (VInt b1, VInt b2) -> VBool (op b1 b2)
-        _                  -> error "expected integer operands"
+    f op (VInt n1, VInt n2) = return $ VBool (op n1 n2)
+    f op _                  = error "expected integer operands"
+
+evalList env m con es = sequence (map (evalSub env) es) >>= \vs ->
+                        putMVar m $ con vs
 
 eval :: Environment -> Expr -> IO ()
 eval env e = newEmptyMVar >>= \v ->
          eval' env v e >>
          takeMVar v >>= putStrLn . show
 
-eval' env x (EVar x') = putMVar x $ env Map.! x'
+eval' env m (EVar x) = putMVar m $ env Map.! x
 
---eval' env x (EImpVar x') = 
+--eval' env m (EImpVar x) = 
   
-eval' env x (EInt n) = putMVar x $ VInt n
+eval' env m (EInt n) = putMVar m $ VInt n
     
-eval' env x (EBool b) = putMVar x $ VBool b
+eval' env m (EBool b) = putMVar m $ VBool b
 
-eval' env x (EString s) = putMVar x $ VString s
+eval' env m (EString s) = putMVar m $ VString s
 
-eval' env x (ETag s) = putMVar x $ VTag s
+eval' env m (ETag s) = putMVar m $ VTag s
 
-eval' env x (EList es) =
-    sequence (map (evalSub env) es) >>= \vs ->
-    putMVar x $ VList vs
+eval' env m (EList es) = evalList env m VList es
 
-eval' env x (ESet es) =
-    sequence (map (evalSub env) es) >>= \vs ->
-    putMVar x $ VSet vs
+eval' env m (ESet es) = evalList env m VSet es
 
-eval' env x (ETuple es) =
-    sequence (map (evalSub env) es) >>= \vs ->
-    putMVar x $ VTuple vs
+eval' env m (ETuple es) = evalList env m VTuple es
 
-eval' env x (EPlus e1 e2) = evalArith (+) env x e1 e2
+eval' env m (EPlus e1 e2) = evalArith (+) env m e1 e2
 
-eval' env x (EMinus e1 e2) = evalArith (-) env x e1 e2
+eval' env m (EMinus e1 e2) = evalArith (-) env m e1 e2
 
-eval' env x (ETimes e1 e2) = evalArith (*) env x e1 e2
+eval' env m (ETimes e1 e2) = evalArith (*) env m e1 e2
 
-eval' env x (EDivide e1 e2) = evalArith quot env x e1 e2
+eval' env m (EDivide e1 e2) = evalArith quot env m e1 e2
 
-eval' env x (EMod e1 e2) = evalArith mod env x e1 e2
+eval' env m (EMod e1 e2) = evalArith mod env m e1 e2
 
-eval' env x (ENot e) = evalSub env e >>= go >>= putMVar x
+eval' env m (ENot e) = evalSub env e >>= neg >>= putMVar m
   where
-    go v = return $ case v of
-        VBool b -> VBool $ not b
-        _       -> error "expected boolean"
+    neg (VBool b) = return $ VBool $ not b
+    neg _         = error "expected boolean"
 
-eval' env x (EAnd e1 e2) = evalBool (&&) env x e1 e2
+eval' env m (EAnd e1 e2) = evalBool (&&) env m e1 e2
 
-eval' env x (EOr e1 e2) = evalBool (||) env x e1 e2
+eval' env m (EOr e1 e2) = evalBool (||) env m e1 e2
 
-eval' env x (ELt e1 e2) = evalRel (<) env x e1 e2
+eval' env m (ELt e1 e2) = evalRel (<) env m e1 e2
 
-eval' env x (EGt e1 e2) = evalRel (>) env x e1 e2
+eval' env m (EGt e1 e2) = evalRel (>) env m e1 e2
 
-eval' env x (ELeq e1 e2) = evalRel (<=) env x e1 e2
+eval' env m (ELeq e1 e2) = evalRel (<=) env m e1 e2
 
-eval' env x (EGeq e1 e2) = evalRel (>=) env x e1 e2
+eval' env m (EGeq e1 e2) = evalRel (>=) env m e1 e2
 
-eval' env x (EEq e1 e2) = evalRel (==) env x e1 e2
+eval' env m (EEq e1 e2) = evalRel (==) env m e1 e2
 
-eval' env x (ENeq e1 e2) = evalRel (/=) env x e1 e2
+eval' env m (ENeq e1 e2) = evalRel (/=) env m e1 e2
 
-eval' env x (EIf e1 e2 e3) =
-    evalSub env e1 >>= \cond ->
-    (case cond of
-        VBool True  -> evalSub env e2
-        VBool False -> evalSub env e3) >>=
-    putMVar x 
+eval' env m (EIf e1 e2 e3) = evalSub env e1 >>= evalBranch >>= putMVar m
+  where
+    evalBranch (VBool True)  = evalSub env e2
+    evalBranch (VBool False) = evalSub env e3
 
-eval' env x (EMatch e bs) =
-    evalSub env e >>= \v ->
-    evalPatMatch env v bs >>=
-    putMVar x 
+eval' env m (EMatch e bs) = evalSub env e >>= \v ->
+                            evalPatMatch env v bs >>=
+                            putMVar m 
 
-eval' env x (ELet p e1 e2) =
-    evalSub env e1 >>= \v1 ->
-    let binds = letBinds p v1
-        env'  = update env binds
-    in evalSub env' e2 >>= putMVar x
+eval' env m (ELet p e1 e2) = evalSub env e1 >>= \v1 ->
+                             let binds = letBinds p v1
+                                 env'  = update env binds
+                             in evalSub env' e2 >>= putMVar m
 
 {-eval env (EFun p e1 e2) = eval env' e2
   where
     env' = update env binds
     binds = letBinds p f
     f = case (p, eval env e1) of
-            (PVar x, VClosure arg env e) -> VClosure arg (extend env x f) e
+            (PVar x, VClosure arg env e) -> VClosure arg (extend env m f) e
             _                            -> error "expected closure"
 -- eval env (EAssign p e) =
 -- eval env (ERef e)
--- eval env (EDeref e)
-eval env (ELam p e) = VClosure name env e
+-- eval env (EDeref e)-}
+
+-- TODO: Handle unit argument.
+eval' env m (ELam p e) = putMVar m $ VClosure (f p) env e
   where
-    name = case p of
-        PVar x -> Just x
-        _      -> Nothing
-eval env (EApp e1 e2) =
-    case (eval env e1, eval env e2) of
-        (VClosure x env e, v) -> eval env' e
-          where
-            env' = case x of
-                Just x  -> extend env x v
-                Nothing -> error "wot"
-        _                     -> error "expected closure"-}
-
-eval' env x (ENu c e) =
-    newChan >>= \c' ->
-    evalSub (extend env c $ VChannel c c') e >>= putMVar x
+    f (PVar x) = Just x
+    f _        = Nothing
     
-eval' env x (ERd e) =
-    evalSub env e >>= \v ->
-    return (case v of
-        VChannel _ c -> c) >>= readChan >>= putMVar x
+eval' env m (EApp e1 e2) = evalSub env e1 >>= \v1 ->
+                           evalSub env e2 >>= \v2 ->
+                           evalApp v1 v2 >>= putMVar m
+  where
+    evalApp (VClosure x env e) v = let env' = extend env x' v
+                                       x'   = fromMaybe (error "") x
+                                   in evalSub env' e
+    evalApp _                  _ = error "expected closure"
 
-eval' env x (EWr e1 e2) =
-    evalSub env e1 >>= \v1 ->
-    evalSub env e2 >>= \v2 ->
-    return (case v2 of
-        VChannel _ c -> c) >>= \c ->
-    writeChan c v1 >>
-    putMVar x VUnit
+eval' env m (ENu c e) = newChan >>= \c' ->
+                        evalSub (extend env c $ VChannel c c') e >>=
+                        putMVar m
     
-eval' env x (EFork e) = do
-    x' <- newEmptyMVar
-    forkIO $ do eval' env x' e
-    putMVar x VUnit
+eval' env m (ERd e) = evalSub env e >>= getChan >>= readChan >>= putMVar m
+  where
+    getChan (VChannel _ c) = return c
+    getChan _              = error "expected channel"
 
-eval' env x (ERepl e) = do
-    x' <- newEmptyMVar
-    forkIO $ forever $ do eval' env x' e
-    putMVar x VUnit
+eval' env m (EWr e1 e2) = evalSub env e2 >>= getChan >>= \c ->
+                          evalSub env e1 >>= writeChan c >> putMVar m VUnit
+  where
+    getChan (VChannel _ c) = return c
+    getChan _              = error "expected channel"
 
-eval' env x (EThunk e) = putMVar x $ VThunk env e
+eval' env m (EFork e) = newEmptyMVar >>= \m' ->
+                        forkIO (eval' env m' e) >>
+                        putMVar m VUnit
 
-eval' env x (EForce e) =
-    evalSub env e >>= \v ->
-    (case v of
-         VThunk env' e' -> evalSub env' e'
-         _              -> error "expected thunk") >>= putMVar x
+-- TODO: fork forever or forever fork?                        
+eval' env m (ERepl e) = newEmptyMVar >>= \m' ->
+                        forkIO (forever $ eval' env m' e) >>
+                        putMVar m VUnit
+
+eval' env m (EThunk e) = putMVar m $ VThunk env e
+
+eval' env m (EForce e) = evalSub env e >>= force >>= putMVar m
+  where
+    force (VThunk env e) = evalSub env e
+    force _              = error "expected thunk"
     
-eval' env x (ESeq e1 e2) =
-    evalSub env e1 >> evalSub env e2 >>= putMVar x
+eval' env m (ESeq e1 e2) =
+    evalSub env e1 >> evalSub env e2 >>= putMVar m
 
-eval' env x (EPrint e) =
-    evalSub env e >>= putStrLn . show >> putMVar x VUnit
+eval' env m (EPrint e) =
+    evalSub env e >>= putStrLn . show >> putMVar m VUnit
 
 evalPatMatch :: Environment -> Value -> [(Pattern, Expr, Expr)] -> IO Value
 evalPatMatch env v ((p, g, e):bs) =
@@ -215,7 +202,7 @@ evalPatMatch env v ((p, g, e):bs) =
                       case v of
                           VBool True  -> evalSub env' e
                           VBool False -> evalPatMatch env v bs
-        Nothing   -> evalPatMatch env v bs
+        Nothing    -> evalPatMatch env v bs
 
 (<:>) :: Applicative f => f [a] -> f [a] -> f [a]
 (<:>) a b = pure (++) <*> a <*> b

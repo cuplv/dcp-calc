@@ -80,8 +80,17 @@ eval' env x (EString s) = putMVar x $ VString s
 
 eval' env x (ETag s) = putMVar x $ VTag s
 
--- eval env (EList es) = VList $ map (eval env) es
---eval' env x (EList es) = putMVar x $ VTag s
+eval' env x (EList es) =
+    sequence (map (evalSub env) es) >>= \vs ->
+    putMVar x $ VList vs
+
+eval' env x (ESet es) =
+    sequence (map (evalSub env) es) >>= \vs ->
+    putMVar x $ VSet vs
+
+eval' env x (ETuple es) =
+    sequence (map (evalSub env) es) >>= \vs ->
+    putMVar x $ VTuple vs
 
 eval' env x (EPlus e1 e2) = evalArith (+) env x e1 e2
 
@@ -122,19 +131,21 @@ eval' env x (EIf e1 e2 e3) =
         VBool False -> evalSub env e3) >>=
     putMVar x 
 
---eval env (EMatch e bs) = pmThenEval env (eval env e) bs
+eval' env x (EMatch e bs) =
+    evalSub env e >>= \v ->
+    evalPatMatch env v bs >>=
+    putMVar x 
 
 eval' env x (ELet p e1 e2) =
     evalSub env e1 >>= \v1 ->
-    let binds = getBinds p v1
+    let binds = letBinds p v1
         env'  = update env binds
     in evalSub env' e2 >>= putMVar x
 
 {-eval env (EFun p e1 e2) = eval env' e2
   where
     env' = update env binds
-    binds = fromMaybe (error "let pattern matching failed") $
-            pmEnv f p
+    binds = letBinds p f
     f = case (p, eval env e1) of
             (PVar x, VClosure arg env e) -> VClosure arg (extend env x f) e
             _                            -> error "expected closure"
@@ -196,46 +207,45 @@ eval' env x (ESeq e1 e2) =
 eval' env x (EPrint e) =
     evalSub env e >>= putStrLn . show >> putMVar x VUnit
 
-{-pmThenEval :: Environment -> Value -> [(Pattern, Expr, Expr)] -> Value
-pmThenEval env v [] = error "pattern match failed" -- ^ Better error handling?
-pmThenEval env v ((p, g, e):bs) =
-    case (pmEnv v p) of
-        Just env' -> if g' == VBool True
-                     then eval env'' e
-                     else pmThenEval env v bs
-          where
-            env'' = update env env'
-            g'    = eval env'' g
-        Nothing   -> pmThenEval env v bs-}
+evalPatMatch :: Environment -> Value -> [(Pattern, Expr, Expr)] -> IO Value
+evalPatMatch env v ((p, g, e):bs) =
+    case (getBinds p v) of
+        Just binds -> let env' = update env binds
+                      in evalSub env' g >>= \v ->
+                      case v of
+                          VBool True  -> evalSub env' e
+                          VBool False -> evalPatMatch env v bs
+        Nothing   -> evalPatMatch env v bs
 
 (<:>) :: Applicative f => f [a] -> f [a] -> f [a]
 (<:>) a b = pure (++) <*> a <*> b
 
-getBinds p v = fromMaybe (error "let pattern matching failed") $
-               pmEnv v p
-pmEnv :: Value -> Pattern -> Maybe [(Name, Value)]
-pmEnv v p = go [] v p
+letBinds p v = fromMaybe (error "let pattern matching failed") $
+               getBinds p v
+               
+getBinds :: Pattern -> Value -> Maybe [(Name, Value)]
+getBinds p v = go [] p v
   where
-    go acc v (PVar x) = Just ((x, v) : acc)
-    go acc (VInt n) (PInt n') | n == n'   = Just acc
+    go acc (PVar x) v= Just ((x, v) : acc)
+    go acc (PInt n) (VInt n') | n == n'   = Just acc
                               | otherwise = Nothing
-    go acc (VBool b) (PBool b') | b == b'   = Just acc
+    go acc (PBool b) (VBool b') | b == b'   = Just acc
                                 | otherwise = Nothing
-    go acc (VString s) (PString s') | s == s'   = Just acc
+    go acc (PString s) (VString s') | s == s'   = Just acc
                                     | otherwise = Nothing
-    go acc (VTag t) (PTag t') | t == t'   = Just acc
+    go acc (PTag t) (VTag t') | t == t'   = Just acc
                               | otherwise = Nothing
-    go acc (VList vs) (PList ps) = gos acc vs ps
-    go acc (VList (v:vs)) (PCons p ps) = foldl1 (<:>) [acc1, acc2, Just acc]
+    go acc (PList ps) (VList vs) = gos acc ps vs
+    go acc (PCons p ps) (VList (v:vs)) = foldl1 (<:>) [acc1, acc2, Just acc]
       where
-        acc1 = pmEnv v p
-        acc2 = pmEnv (VList vs) ps
-    go acc (VList []) (PCons _ _) = Nothing
+        acc1 = getBinds p v
+        acc2 = getBinds ps (VList vs)
+    go acc (PCons _ _) (VList []) = Nothing
     -- TODO: Set pattern matching not implemented.
-    go acc (VSet vs) (PSet ps) = gos acc vs ps
-    go acc (VTuple vs) (PTuple ps) = gos acc vs ps
-    go acc VUnit PUnit = Just acc
-    go acc _ PWildcard = Just acc
+    go acc (PSet ps) (VSet vs) = gos acc ps vs
+    go acc (PTuple ps) (VTuple vs) = gos acc ps vs
+    go acc PUnit VUnit = Just acc
+    go acc PWildcard _ = Just acc
 
     gos acc vs ps | length vs == length ps = foldl (<:>) (Just []) accs
                   | otherwise              = Nothing

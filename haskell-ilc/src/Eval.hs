@@ -60,8 +60,8 @@ evalRel op = evalBinOp $ f op
     f op (VInt n1, VInt n2) = return $ VBool (op n1 n2)
     f op _                  = error "expected integer operands"
 
-evalList env m con es = sequence (map (evalSub env) es) >>= \vs ->
-                        putMVar m $ con vs
+
+evalList env m con es = mapM (evalSub env) es >>= return . con >>= putMVar m
 
 evalPatMatch :: Environment -> [(Pattern, Expr, Expr)] -> Value -> IO Value
 evalPatMatch env ((p, g, e):bs) v =
@@ -74,7 +74,7 @@ evalPatMatch env ((p, g, e):bs) v =
         Nothing    -> evalPatMatch env bs v
 
 (<:>) :: Applicative f => f [a] -> f [a] -> f [a]
-(<:>) a b = pure (++) <*> a <*> b
+(<:>) a b = (++) <$> a <*> b
 
 letBinds p v = fromMaybe (error "let pattern matching failed") $
                getBinds p v
@@ -111,8 +111,8 @@ getBinds p v = go [] p v
 
 eval :: Environment -> Expr -> IO Value
 eval env e = newEmptyMVar >>= \v ->
-     eval' env v e >>
-     takeMVar v
+             eval' env v e >>
+             takeMVar v
          
 eval' env m (EVar x) = putMVar m $ env Map.! x
 --eval' env m (EImpVar x) = 
@@ -203,13 +203,15 @@ eval' env m (ESeq e1 e2) =
     evalSub env e1 >> evalSub env e2 >>= putMVar m
 eval' env m (EPrint e) =
     evalSub env e >>= putStrLn . show >> putMVar m VUnit
-    
+
+-- TODO: Types    
 exec :: [Command] -> IO Value
 exec cmds = go emptyEnv cmds
   where
     go env ((CExpr e):[] ) = eval env e
     go env ((CExpr e):rest) = eval env e >>
                               go env rest
+    go env ((CDef x e):[]) = eval env e
     go env ((CDef x e):rest) = eval env e >>= \v ->
                                let env' = extend env x v
                                in go env' rest

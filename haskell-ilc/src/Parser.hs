@@ -299,12 +299,12 @@ eLet = do
 eFun = do
     reserved "let"
     p1 <- pat
-    args <- many1 pat
+    args <- reverse <$> many1 pat
     reservedOp "="
     e1 <- expr
     reserved "in"
     e2 <- expr
-    return $ EFun p1 (curry e1 $ reverse args) e2
+    return $ EFun p1 (curry e1 args) e2
   where
     curry acc (x:[]) = ELam x acc
     curry acc (x:xs) = curry (ELam x acc) xs
@@ -392,11 +392,11 @@ cDefLet = do
 cDefFun = do
     reserved "let"
     x <- identifier
-    ps <- many pat
+    ps <- reverse <$> many1 pat
     reserved "="
     e <- expr
     optional $ reserved ";;"
-    return $ CDef x (curry e $ reverse ps)
+    return $ CDef x (curry e  ps)
   where
     curry acc (p:[]) = ELam p acc
     curry acc (p:ps) = curry (ELam p acc) ps

@@ -63,15 +63,15 @@ evalRel op = evalBinOp $ f op
 evalList env m con es = sequence (map (evalSub env) es) >>= \vs ->
                         putMVar m $ con vs
 
-evalPatMatch :: Environment -> Value -> [(Pattern, Expr, Expr)] -> IO Value
-evalPatMatch env v ((p, g, e):bs) =
+evalPatMatch :: Environment -> [(Pattern, Expr, Expr)] -> Value -> IO Value
+evalPatMatch env ((p, g, e):bs) v =
     case (getBinds p v) of
         Just binds -> let env' = update env binds
                       in evalSub env' g >>= \v ->
                       case v of
                           VBool True  -> evalSub env' e
-                          VBool False -> evalPatMatch env v bs
-        Nothing    -> evalPatMatch env v bs
+                          VBool False -> evalPatMatch env bs v
+        Nothing    -> evalPatMatch env bs v
 
 (<:>) :: Applicative f => f [a] -> f [a] -> f [a]
 (<:>) a b = pure (++) <*> a <*> b
@@ -144,8 +144,8 @@ eval' env m (EIf e1 e2 e3) = evalSub env e1 >>= evalBranch >>= putMVar m
   where
     evalBranch (VBool True)  = evalSub env e2
     evalBranch (VBool False) = evalSub env e3
-eval' env m (EMatch e bs) = evalSub env e >>= \v ->
-                            evalPatMatch env v bs >>=
+eval' env m (EMatch e bs) = evalSub env e >>=
+                            evalPatMatch env bs >>=
                             putMVar m 
 eval' env m (ELet p e1 e2) = evalSub env e1 >>= \v1 ->
                              let binds = letBinds p v1

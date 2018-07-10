@@ -173,9 +173,9 @@ eval' env m (EApp e1 e2) = evalSub env e1 >>= \v1 ->
                                        x'   = fromMaybe (error "") x
                                    in evalSub env' e
     evalApp _                  _ = error "expected closure"
-eval' env m (ENu c e) = newChan >>= \c' ->
-                        evalSub (extend env c $ VChannel c c') e >>=
-                        putMVar m
+eval' env m (ENu x e) = newChan >>= \' ->
+                        let env' = extend env x $ VChannel x c
+                        in evalSub env' e >>= putMVar m
 eval' env m (ERd e) = evalSub env e >>= getChan >>= readChan >>= putMVar m
   where
     getChan (VChannel _ c) = return c

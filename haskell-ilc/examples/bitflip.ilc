@@ -1,6 +1,5 @@
-let GetBit x =
-  nu c . |> (rd c);
-        |> (wr 0 -> c);
-        |> (wr 1 -> c)
-
-GetBit1 1
+let GetBit x = 
+  nu c . |> (wr 0 -> c);
+        |> (wr 1 -> c);
+        rd c
+in GetBit 1

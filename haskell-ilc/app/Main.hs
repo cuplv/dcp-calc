@@ -34,31 +34,26 @@ opts = info (optParser <**> helper)
     <> progDesc "Interactive Lambda Calculus (ILC) interpreter"
     <> header "ILC" )
 
--- | TODO: Refactor this.
---process :: String -> IO ()
+process :: String -> IO ()
 process src = do
   let cmds = parser src
-  putStrLn $ show cmds
+  -- putStrLn $ show cmds
   case cmds of
     Left err -> print err
-    -- TODO
-    {-Right (CExpr e:cs) -> do let v = eval [] e
-                             putStrLn $ ppval v-}
-    Right cmds -> exec cmds
+    Right cmds -> exec cmds >>= print
 
 interactive :: IO ()
 interactive = runInputT defaultSettings loop
   where
-  loop = do
-    minput <- getInputLine "\x03BB> "
-    case minput of
-      Nothing -> outputStrLn "Goodbye."
-      Just input -> (liftIO $ process input ) >> loop
+    loop = do
+        minput <- getInputLine "\x03BB> "
+        case minput of
+            Nothing -> outputStrLn "Goodbye."
+            Just input -> (liftIO $ process input ) >> loop
 
 main :: IO ()
 main = do
     options <- execParser opts
     case (optSrcFile options) of
-        Just file -> readFile file >>= \ src ->
-                     process src
+        Just file -> readFile file >>= process
         Nothing   -> interactive

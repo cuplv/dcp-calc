@@ -3,4 +3,5 @@ let GetBit x =
   nu c . |> (wr 0 -> c);
         |> (wr 1 -> c);
         rd c
-in GetBit 1
+
+let main = GetBit 1

@@ -108,10 +108,12 @@ getBinds p v = go [] p v
         accs  = map (\pair -> case pair of (v, p) -> go acc v p) vp
         vp    = zip vs ps
 
-eval :: Environment -> Expr -> IO ()
+
+eval :: Environment -> Expr -> IO Value
 eval env e = newEmptyMVar >>= \v ->
-         eval' env v e >>
-         takeMVar v >>= putStrLn . show
+     eval' env v e >>
+     takeMVar v
+         
 eval' env m (EVar x) = putMVar m $ env Map.! x
 --eval' env m (EImpVar x) = 
 eval' env m (EInt n) = putMVar m $ VInt n
@@ -173,7 +175,7 @@ eval' env m (EApp e1 e2) = evalSub env e1 >>= \v1 ->
                                        x'   = fromMaybe (error "") x
                                    in evalSub env' e
     evalApp _                  _ = error "expected closure"
-eval' env m (ENu x e) = newChan >>= \' ->
+eval' env m (ENu x e) = newChan >>= \c ->
                         let env' = extend env x $ VChannel x c
                         in evalSub env' e >>= putMVar m
 eval' env m (ERd e) = evalSub env e >>= getChan >>= readChan >>= putMVar m
@@ -202,14 +204,13 @@ eval' env m (ESeq e1 e2) =
 eval' env m (EPrint e) =
     evalSub env e >>= putStrLn . show >> putMVar m VUnit
     
-exec :: [Command] -> IO ()
+exec :: [Command] -> IO Value
 exec cmds = go emptyEnv cmds
   where
     go env ((CExpr e):[] ) = eval env e
     go env ((CExpr e):rest) = eval env e >>
                               go env rest
-    go env ((CDef x e):rest) = evalSub env e >>= \v ->
+    go env ((CDef x e):rest) = eval env e >>= \v ->
                                let env' = extend env x v
                                in go env' rest
     go env ((CTySig _ _):rest) = go env rest
-    go env [] = return ()

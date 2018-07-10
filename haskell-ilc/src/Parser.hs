@@ -369,12 +369,18 @@ ePrint = mklexer EPrint $ reserved "print" >> atomExpr
 
 -- | Commands
 
+cMain = do
+  reserved "let"
+  reserved "main"
+  reserved "="
+  e <- expr
+  return $ CExpr e
+
 cExpr = do
     e <- expr
     optional $ reserved ";;"
     return $ CExpr e
 
--- TODO: Multiple CDefLets?
 cDefLet = do
     reserved "let"
     x <- identifier
@@ -403,7 +409,7 @@ cTySig = do
   t <- ty
   return $ CTySig x t
 
-cmd = try cTySig <|> try cExpr <|> try cDef
+cmd = try cMain <|> try cTySig <|> try cExpr <|> try cDef -- ^ Fix
 
 -- | Parser
 

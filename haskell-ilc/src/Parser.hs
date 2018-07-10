@@ -286,22 +286,28 @@ eMatch = do
 
 eLet = do
     reserved "let"
-    p <- pat
+    ps <- commaSep1 pat
     reservedOp "="
     e1 <- expr
     reserved "in"
     e2 <- expr
-    return $ ELet p e1 e2
+    return $ curry e2 ps e1
+  where
+    curry acc (p:[]) e = ELet p e acc
+    curry acc (p:ps) e = curry (ELet p e acc) ps e
 
 eFun = do
     reserved "let"
     p1 <- pat
-    p2 <- pat
+    args <- many pat
     reservedOp "="
     e1 <- expr
     reserved "in"
     e2 <- expr
-    return $ EFun p1 (ELam p2 e1) e2
+    return $ EFun p1 (curry e1 $ reverse args) e2
+  where
+    curry acc (x:[]) = ELam x acc
+    curry acc (x:xs) = curry (ELam x acc) xs
 
 eAssign = do
     reserved "let"
@@ -318,16 +324,16 @@ eLam = do
     reserved "lam"
     x <- pat
     reserved "."
-    e <- expr -- ^ ?
+    e <- expr
     return $ ELam x e
-
-
-    
 
 eApp = do
     f <- atomExpr
-    x <- atomExpr
-    return $ EApp f x
+    args <- many1 atomExpr
+    return $ curry f args
+  where
+    curry acc (x:[]) = EApp acc x
+    curry acc (x:xs) = curry (EApp acc x) xs
 
 eRd = mklexer ERd $ reserved "rd" >> expr
 
@@ -368,6 +374,7 @@ cExpr = do
     optional $ reserved ";;"
     return $ CExpr e
 
+-- TODO: Multiple CDefLets?
 cDefLet = do
     reserved "let"
     x <- identifier
@@ -379,11 +386,14 @@ cDefLet = do
 cDefFun = do
     reserved "let"
     x <- identifier
-    p <- pat
+    ps <- many pat
     reserved "="
     e <- expr
     optional $ reserved ";;"
-    return $ CDef x (ELam p e)
+    return $ CDef x (curry e $ reverse ps)
+  where
+    curry acc (p:[]) = ELam p acc
+    curry acc (p:ps) = curry (ELam p acc) ps
 
 cDef = try cDefLet <|> cDefFun    
 

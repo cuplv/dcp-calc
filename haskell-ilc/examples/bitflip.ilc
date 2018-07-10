@@ -1,3 +1,4 @@
+{- TODO: Unit and wildcard formal and actual parameters -}
 let GetBit x = 
   nu c . |> (wr 0 -> c);
         |> (wr 1 -> c);

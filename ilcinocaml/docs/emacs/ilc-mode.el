@@ -83,10 +83,10 @@
 
 (setq ilc-mode-syntax-table
       (let ((synTable (make-syntax-table)))
-        ;; Wolfram Language style comment “(* … *)”
-        (modify-syntax-entry ?\( ". 1" synTable)
-        (modify-syntax-entry ?\) ". 4" synTable)
-        (modify-syntax-entry ?* ". 23" synTable)
+        ;; Haskell style comment “{- … -}”
+        (modify-syntax-entry ?\{ ". 1" synTable)
+        (modify-syntax-entry ?\} ". 4" synTable)
+        (modify-syntax-entry ?- ". 23" synTable)
         synTable))
 
 (defun my-pretty-lambda ()

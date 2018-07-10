@@ -299,7 +299,7 @@ eLet = do
 eFun = do
     reserved "let"
     p1 <- pat
-    args <- many pat
+    args <- many1 pat
     reservedOp "="
     e1 <- expr
     reserved "in"

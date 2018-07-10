@@ -131,13 +131,15 @@ eval' env m (ELet p e1 e2) = evalSub env e1 >>= \v1 ->
                                  env'  = update env binds
                              in evalSub env' e2 >>= putMVar m
 
-{-eval env (EFun p e1 e2) = eval env' e2
-  where
-    env' = update env binds
-    binds = letBinds p f
-    f = case (p, eval env e1) of
-            (PVar x, VClosure arg env e) -> VClosure arg (extend env m f) e
-            _                            -> error "expected closure"
+eval' env m (EFun p e1 e2) =
+    evalSub env e1 >>= \v1 ->
+    let env'  = update env binds
+        binds = letBinds p f
+        f     = case (p, v1) of
+                (PVar x, VClosure arg env e) -> VClosure arg (extend env x f) e
+                _                            -> error "expected closure"
+    in evalSub env' e2 >>= putMVar m
+
 -- eval env (EAssign p e) =
 -- eval env (ERef e)
 -- eval env (EDeref e)-}

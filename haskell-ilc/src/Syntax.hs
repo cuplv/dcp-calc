@@ -1,5 +1,7 @@
 module Syntax where
 
+--import Control.Concurrent
+import Control.Concurrent.Chan
 import qualified Data.Map.Strict as Map
 
 type Name = String
@@ -66,7 +68,7 @@ data Expr
     | EApp Expr Expr
     | ERd Expr
     | EWr Expr Expr
-    | ENu Expr Expr
+    | ENu Name Expr -- ^ Name?
     | ERepl Expr
     | EFork Expr
     | EThunk Expr
@@ -86,13 +88,30 @@ data Value
     | VUnit
     | VClosure (Maybe Name) Environment Expr
     | VThunk Environment Expr
-    deriving (Eq, Show)
+    | VChannel Name (Chan Value)
+    deriving (Eq)
 
 data Command
     = CExpr Expr
     | CDef Name Expr
     | CTySig Name Type
     deriving (Eq, Show)
+
+data Program
+  = Program [Command]
+
+instance Show Value where
+    show (VInt n) = show n
+    show (VBool b) = show b
+    show (VString s) = show s
+    show (VTag t) = show t
+    show (VList vs) = show vs
+    show (VSet vs) = show vs
+    show (VTuple vs) = show vs
+    show VUnit = show ()
+    show (VClosure _ _ _) = "closure"
+    show (VThunk _ _) = "thunk"
+    show (VChannel x _) = x
 
 type Environment = Map.Map Name Value
 

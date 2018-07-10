@@ -1,6 +1,7 @@
 module Eval where
 
 import Control.Concurrent
+import Control.Concurrent.Chan
 import Control.Monad
 import qualified Data.Map.Strict as Map
 import Data.Maybe
@@ -143,7 +144,6 @@ evalBinOp :: ((Value, Value) -> IO Value)
           -> IO ()
 evalBinOp f env x e1 e2 =
     evalSubs env e1 e2 >>= f >>= putMVar x
-
     
 evalArith :: (Integer -> Integer -> Integer)
           -> Environment
@@ -181,9 +181,12 @@ evalRel op = evalBinOp (go op)
         (VInt b1, VInt b2) -> VBool (op b1 b2)
         _                  -> error "expected integer operands"
 
-eval e = newEmptyMVar >>= \v ->
-         eval' emptyEnv v e >>
+eval :: Environment -> Expr -> IO ()
+eval env e = newEmptyMVar >>= \v ->
+         eval' env v e >>
          takeMVar v >>= putStrLn . show
+
+eval' env x (EVar x') = putMVar x $ env Map.! x'
   
 eval' env x (EInt n) = putMVar x $ VInt n
     
@@ -232,12 +235,34 @@ eval' env x (EFork e) = do
     x' <- newEmptyMVar
     forkIO $ do eval' env x' e
     putMVar x VUnit
+
+eval' env x (ENu c e) =
+    newChan >>= \c' ->
+    evalSub (extend env c $ VChannel c c') e >>= putMVar x
     
-{-eval' env (ERd e)
-eval' env (EWr e1 e2)
-eval' env (ERepl e)-}
+eval' env x (ERd e) =
+    evalSub env e >>= \v ->
+    return (case v of
+        VChannel _ c -> c) >>= readChan >>= putMVar x
+
+eval' env x (EWr e1 e2) =
+    evalSub env e1 >>= \v1 ->
+    evalSub env e2 >>= \v2 ->
+    return (case v2 of
+        VChannel _ c -> c) >>= \c ->
+    writeChan c v1 >>
+    putMVar x VUnit
+
+eval' env x (ERepl e) = do
+    x' <- newEmptyMVar
+    forkIO $ forever $ do eval' env x' e
+    putMVar x VUnit
+    
 eval' env x (ESeq e1 e2) =
     evalSub env e1 >> evalSub env e2 >>= putMVar x
+
+eval' env x (EPrint e) =
+    evalSub env e >>= putStrLn . show >> putMVar x VUnit
 
 {-pmThenEval :: Environment -> Value -> [(Pattern, Expr, Expr)] -> Value
 pmThenEval env v [] = error "pattern match failed" -- ^ Better error handling?
@@ -282,20 +307,20 @@ pmEnv v p = go [] v p
                   | otherwise              = Nothing
       where
         accs  = map (\pair -> case pair of (v, p) -> go acc v p) vp
-        vp    = zip vs ps
+        vp    = zip vs ps-}
 
-exec :: [Command] -> Environment -> Maybe Value
-exec ((CExpr e):[] ) env = Just (eval env e)
-exec ((CExpr e):rest) env = exec rest env
+--exec :: [Command] -> Environment -> Maybe Value
+exec cmds = go emptyEnv cmds
   where
-    v = eval env e
-exec ((CDef x e):rest) env = exec rest env'
-  where
-    v = eval env e
-    env' = extend env x v
-exec ((CTySig _ _):rest) env = exec rest env
-exec [] env = Nothing
+    go env ((CExpr e):[] ) = do
+      eval env e
+    go env ((CExpr e):rest) = do
+      eval env e
+      go env rest
+    go env ((CDef x e):rest) = do
+      go (extend env x (VClosure (Just x) env e)) rest
+    go env ((CTySig _ _):rest) = do
+      go env rest
+    go env [] = do
+      return ()
 
-run :: [Command] -> Maybe Value
-run cmds = exec cmds emptyEnv
--}

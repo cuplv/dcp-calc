@@ -44,8 +44,7 @@ process src = do
     -- TODO
     {-Right (CExpr e:cs) -> do let v = eval [] e
                              putStrLn $ ppval v-}
-    Right cmds -> do let res = run cmds
-                     putStrLn (show res)
+    Right cmds -> exec cmds
 
 interactive :: IO ()
 interactive = runInputT defaultSettings loop

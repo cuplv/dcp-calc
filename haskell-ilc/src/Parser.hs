@@ -340,7 +340,7 @@ eWr = do
 
 eNu = do
     reserved "nu"
-    c <- expr
+    c <- identifier
     reserved "."
     e <- expr
     return $ ENu c e

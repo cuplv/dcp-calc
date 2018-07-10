@@ -7,124 +7,6 @@ import qualified Data.Map.Strict as Map
 import Data.Maybe
 
 import Syntax
-{-
--- eval :: Environment -> Expr -> Value       
-eval env (EVar x) = env Map.! x
---eval env (EImpVar x) = 
-eval env (EInt n) = VInt n
-eval env (EBool b) = VBool b
-eval env (EString s) = VString s
-eval env (ETag s) = VTag s
-eval env (EList es) = VList $ map (eval env) es
-eval env (ESet es) = VSet $ map (eval env) es
-eval env (ETuple es) = VTuple $ map (eval env) es
-eval env EUnit = VUnit
-eval env (EPlus e1 e2)  =
-    case (eval env e1, eval env e2) of
-        (VInt n1, VInt n2) -> VInt (n1 + n2)
-        _                  -> error "add"
-eval env (EMinus e1 e2)  =
-    case (eval env e1, eval env e2) of
-        (VInt n1, VInt n2) -> VInt (n1 - n2)
-        _                  -> error "sub"
-eval env (ETimes e1 e2)  =
-    case (eval env e1, eval env e2) of
-        (VInt n1, VInt n2) -> VInt (n1 * n2)
-        _                  -> error "mul"
-eval env (EDivide e1 e2)  =
-    case (eval env e1, eval env e2) of
-        (VInt n1, VInt n2) -> VInt (n1 `quot` n2)
-        _                  -> error "div"
-eval env (EMod e1 e2)  =
-    case (eval env e1, eval env e2) of
-        (VInt n1, VInt n2) -> VInt (n1 `mod` n2)
-        _                  -> error "mod"
-eval env (ENot e)       =
-    case (eval env e) of
-        VBool b -> VBool (not b)
-        _       -> error "not"
-eval env (EAnd e1 e2)   =
-    case (eval env e1, eval env e2) of
-        (VBool b1, VBool b2) -> VBool (b1 && b2)
-        _                    -> error "and"
-eval env (EOr  e1 e2)   =
-    case (eval env e1, eval env e2) of
-        (VBool b1, VBool b2) -> VBool (b1 || b2)
-        _                    -> error "or"
-eval env (ELt  e1 e2)   =
-    case (eval env e1, eval env e2) of
-        (VInt b1, VInt b2) -> VBool (b1 < b2)
-        _                    -> error "lt"
-eval env (EGt  e1 e2)   =
-    case (eval env e1, eval env e2) of
-        (VInt b1, VInt b2) -> VBool (b1 > b2)
-        _                    -> error "gt"
-eval env (ELeq e1 e2)   =
-    case (eval env e1, eval env e2) of
-        (VInt b1, VInt b2) -> VBool (b1 <= b2)
-        _                    -> error "leq"
-eval env (EGeq e1 e2)   =
-    case (eval env e1, eval env e2) of
-        (VInt b1, VInt b2) -> VBool (b1 >= b2)
-        _                    -> error "geq"
-eval env (EEq e1 e2)   =
-    case (eval env e1, eval env e2) of
-        (VInt b1, VInt b2) -> VBool (b1 == b2)
-        _                    -> error "eq"
-eval env (ENeq e1 e2)   =
-    case (eval env e1, eval env e2) of
-        (VInt b1, VInt b2) -> VBool (b1 /= b2)
-        _                    -> error "neq"
-eval env (EIf e1 e2 e3) =
-    case (eval env e1) of
-        VBool True        -> eval env e2
-        VBool False       -> eval env e3
-eval env (EMatch e bs) = pmThenEval env (eval env e) bs
-eval env (ELet p e1 e2) = eval env' e2
-  where
-    env' = update env binds
-    v = eval env e1
-    binds = fromMaybe (error "let pattern matching failed") $
-            pmEnv v p
-eval env (EFun p e1 e2) = eval env' e2
-  where
-    env' = update env binds
-    binds = fromMaybe (error "let pattern matching failed") $
-            pmEnv f p
-    f = case (p, eval env e1) of
-            (PVar x, VClosure arg env e) -> VClosure arg (extend env x f) e
-            _                            -> error "expected closure"
--- eval env (EAssign p e) =
--- eval env (ERef e)
--- eval env (EDeref e)
-eval env (ELam p e) = VClosure name env e
-  where
-    name = case p of
-        PVar x -> Just x
-        _      -> Nothing
-eval env (EApp e1 e2) =
-    case (eval env e1, eval env e2) of
-        (VClosure x env e, v) -> eval env' e
-          where
-            env' = case x of
-                Just x  -> extend env x v
-                Nothing -> error "wot"
-        _                     -> error "expected closure"
--- eval env (ERd e)
--- eval env (EWr e1 e2)
--- eval env (ERepl e)
---eval env (EFork e) = do forkIO $ putChar 'A'
-eval env (EThunk e) = VThunk env e
-eval env (EForce e) =
-    case (eval env e) of
-        (VThunk env' e') -> eval env' e'
-        _                -> error "expected thunk"
-eval env (ESeq e1 e2) =
-    case (eval env e1) of
-        _ -> eval env e2
--- eval env (EPrint e) =-}
-
--- | Pi calc eval
 
 evalSub :: Environment -> Expr -> IO Value
 evalSub env e = newEmptyMVar >>= \x ->
@@ -187,11 +69,20 @@ eval env e = newEmptyMVar >>= \v ->
          takeMVar v >>= putStrLn . show
 
 eval' env x (EVar x') = putMVar x $ env Map.! x'
+
+--eval' env x (EImpVar x') = 
   
 eval' env x (EInt n) = putMVar x $ VInt n
     
 eval' env x (EBool b) = putMVar x $ VBool b
-    
+
+eval' env x (EString s) = putMVar x $ VString s
+
+eval' env x (ETag s) = putMVar x $ VTag s
+
+-- eval env (EList es) = VList $ map (eval env) es
+--eval' env x (EList es) = putMVar x $ VTag s
+
 eval' env x (EPlus e1 e2) = evalArith (+) env x e1 e2
 
 eval' env x (EMinus e1 e2) = evalArith (-) env x e1 e2
@@ -230,11 +121,39 @@ eval' env x (EIf e1 e2 e3) =
         VBool True  -> evalSub env e2
         VBool False -> evalSub env e3) >>=
     putMVar x 
-  
-eval' env x (EFork e) = do
-    x' <- newEmptyMVar
-    forkIO $ do eval' env x' e
-    putMVar x VUnit
+
+{-eval env (EMatch e bs) = pmThenEval env (eval env e) bs
+
+eval env (ELet p e1 e2) = eval env' e2
+  where
+    env' = update env binds
+    v = eval env e1
+    binds = fromMaybe (error "let pattern matching failed") $
+            pmEnv v p
+eval env (EFun p e1 e2) = eval env' e2
+  where
+    env' = update env binds
+    binds = fromMaybe (error "let pattern matching failed") $
+            pmEnv f p
+    f = case (p, eval env e1) of
+            (PVar x, VClosure arg env e) -> VClosure arg (extend env x f) e
+            _                            -> error "expected closure"
+-- eval env (EAssign p e) =
+-- eval env (ERef e)
+-- eval env (EDeref e)
+eval env (ELam p e) = VClosure name env e
+  where
+    name = case p of
+        PVar x -> Just x
+        _      -> Nothing
+eval env (EApp e1 e2) =
+    case (eval env e1, eval env e2) of
+        (VClosure x env e, v) -> eval env' e
+          where
+            env' = case x of
+                Just x  -> extend env x v
+                Nothing -> error "wot"
+        _                     -> error "expected closure"-}
 
 eval' env x (ENu c e) =
     newChan >>= \c' ->
@@ -252,11 +171,24 @@ eval' env x (EWr e1 e2) =
         VChannel _ c -> c) >>= \c ->
     writeChan c v1 >>
     putMVar x VUnit
+    
+eval' env x (EFork e) = do
+    x' <- newEmptyMVar
+    forkIO $ do eval' env x' e
+    putMVar x VUnit
 
 eval' env x (ERepl e) = do
     x' <- newEmptyMVar
     forkIO $ forever $ do eval' env x' e
     putMVar x VUnit
+
+eval' env x (EThunk e) = putMVar x $ VThunk env e
+
+eval' env x (EForce e) =
+    evalSub env e >>= \v ->
+    (case v of
+         VThunk env' e' -> evalSub env' e'
+         _              -> error "expected thunk") >>= putMVar x
     
 eval' env x (ESeq e1 e2) =
     evalSub env e1 >> evalSub env e2 >>= putMVar x
@@ -309,7 +241,7 @@ pmEnv v p = go [] v p
         accs  = map (\pair -> case pair of (v, p) -> go acc v p) vp
         vp    = zip vs ps-}
 
---exec :: [Command] -> Environment -> Maybe Value
+exec :: [Command] -> IO ()
 exec cmds = go emptyEnv cmds
   where
     go env ((CExpr e):[] ) = do
@@ -317,8 +249,9 @@ exec cmds = go emptyEnv cmds
     go env ((CExpr e):rest) = do
       eval env e
       go env rest
+    -- TODO: 
     go env ((CDef x e):rest) = do
-      go (extend env x (VClosure (Just x) env e)) rest
+      go (extend env x (VClosure Nothing env e)) rest
     go env ((CTySig _ _):rest) = do
       go env rest
     go env [] = do

@@ -311,10 +311,10 @@ eFun = do
 
 eAssign = do
     reserved "let"
-    p <- pat
+    x <- identifier
     reservedOp ":="
     e <- expr
-    return $ EAssign p e
+    return $ EAssign x e
 
 eRef = mklexer ERef $ reserved "ref" >> atomExpr
 

@@ -1,7 +1,7 @@
 module Syntax where
 
---import Control.Concurrent
 import Control.Concurrent.Chan
+import Data.IORef
 import qualified Data.Map.Strict as Map
 
 type Name = String
@@ -61,7 +61,7 @@ data Expr
     | EMatch Expr [(Pattern, Expr, Expr)]
     | ELet Pattern Expr Expr
     | EFun Pattern Expr Expr
-    | EAssign Pattern Expr
+    | EAssign Name Expr
     | ERef Expr
     | EDeref Expr
     | ELam Pattern Expr
@@ -89,6 +89,7 @@ data Value
     | VClosure (Maybe Name) Environment Expr
     | VThunk Environment Expr
     | VChannel Name (Chan Value)
+    | VRef (IORef Value)
     deriving (Eq)
 
 data Command
@@ -112,6 +113,10 @@ instance Show Value where
     show (VClosure _ _ _) = "closure"
     show (VThunk _ _) = "thunk"
     show (VChannel x _) = x
+    show (VRef x) = show x
+
+instance Show (IORef a) where
+    show _ = "ref"
 
 type Environment = Map.Map Name Value
 

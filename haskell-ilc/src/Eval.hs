@@ -3,6 +3,7 @@ module Eval where
 import Control.Concurrent
 import Control.Concurrent.Chan
 import Control.Monad
+import Data.IORef
 import qualified Data.Map.Strict as Map
 import Data.Maybe
 
@@ -159,9 +160,17 @@ eval' env m (EFun p e1 e2) =
                 (PVar x, VClosure arg env e) -> VClosure arg (extend env x f) e
                 _                            -> error "expected closure"
     in evalSub env' e2 >>= putMVar m
--- eval env (EAssign p e) =
--- eval env (ERef e)
--- eval env (EDeref e)-}
+eval' env m (EAssign x e) = getRef (env Map.! x) >>= \r ->
+                            evalSub env e >>=
+                            writeIORef r >> putMVar m VUnit
+  where
+    getRef (VRef r) = return r
+    getRef _        = error "expected reference"
+eval' env m (ERef e) = evalSub env e >>= newIORef >>= return . VRef >>= putMVar m
+eval' env m (EDeref e) = evalSub env e >>= getRef >>= readIORef >>= putMVar m
+  where
+    getRef (VRef r) = return r
+    getRef _        = error "expected reference"
 -- TODO: Handle unit argument.
 eval' env m (ELam p e) = putMVar m $ VClosure (f p) env e
   where

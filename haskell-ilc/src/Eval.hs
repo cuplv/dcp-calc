@@ -4,6 +4,7 @@ import Control.Concurrent
 import Control.Concurrent.Chan
 import Control.Monad
 import Data.IORef
+import Data.List
 import qualified Data.Map.Strict as Map
 import Data.Maybe
 
@@ -19,48 +20,23 @@ evalSubs env e1 e2 = evalSub env e1 >>= \v1 ->
                      evalSub env e2 >>= \v2 ->
                      return (v1, v2)
 
-evalBinOp :: ((Value, Value) -> IO Value)
-          -> Environment
-          -> MVar Value
-          -> Expr
-          -> Expr
-          -> IO ()
 evalBinOp f env m e1 e2 =
     evalSubs env e1 e2 >>= f >>= putMVar m
     
-evalArith :: (Integer -> Integer -> Integer)
-          -> Environment
-          -> MVar Value
-          -> Expr
-          -> Expr
-          -> IO ()
 evalArith op = evalBinOp $ f op
   where
     f op (VInt n1, VInt n2) = return $ VInt (op n1 n2)
     f op _                  = error "expected integer operands"
 
-evalBool :: (Bool -> Bool -> Bool)
-          -> Environment
-          -> MVar Value
-          -> Expr
-          -> Expr
-          -> IO ()
 evalBool op = evalBinOp $ f op
   where
     f op (VBool b1, VBool b2) = return $ VBool (op b1 b2)
     f op _                  = error "expected boolean operands"
 
-evalRel :: (Integer -> Integer -> Bool)
-          -> Environment
-          -> MVar Value
-          -> Expr
-          -> Expr
-          -> IO ()
 evalRel op = evalBinOp $ f op
   where
     f op (VInt n1, VInt n2) = return $ VBool (op n1 n2)
     f op _                  = error "expected integer operands"
-
 
 evalList env m con es = mapM (evalSub env) es >>= return . con >>= putMVar m
 
@@ -122,8 +98,9 @@ eval' env m (EBool b) = putMVar m $ VBool b
 eval' env m (EString s) = putMVar m $ VString s
 eval' env m (ETag s) = putMVar m $ VTag s
 eval' env m (EList es) = evalList env m VList es
-eval' env m (ESet es) = evalList env m VSet es
+eval' env m (ESet es) = evalList env m VSet $ nub es
 eval' env m (ETuple es) = evalList env m VTuple es
+eval' env m EUnit = putMVar m VUnit
 eval' env m (EPlus e1 e2) = evalArith (+) env m e1 e2
 eval' env m (EMinus e1 e2) = evalArith (-) env m e1 e2
 eval' env m (ETimes e1 e2) = evalArith (*) env m e1 e2

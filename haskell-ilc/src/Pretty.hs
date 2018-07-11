@@ -20,7 +20,7 @@ instance Pretty Expr where
   ppr _ (EInt n) = PP.text $ show n
   ppr _ (EString s) = PP.text $ show s
   ppr _ (EBool b) = PP.text $ show b
-  --ppr _ EUnit = PP.text "()"
+  ppr _ EUnit = PP.text "()"
   {-ppr p (EList (e:es)) = ppr p e <+> ppr p (EList es)
   ppr p (EList []) = PP.text "[]"-}
   {-ppr p (EPair e1 e2) =
@@ -36,15 +36,20 @@ instance Pretty Expr where
 
 instance Pretty Value where
     ppr _ (VInt n) = PP.text $ show n
-    ppr _ (VBool b) = PP.text $ show b
-    ppr _ (VString s) = PP.text s
+    ppr _ (VBool True) = PP.text "true"
+    ppr _ (VBool False) = PP.text "false"
+    ppr _ (VString s) = PP.text $ show s
     ppr _ (VTag s) = PP.text s
-    ppr _ (VList vs) = PP.text "list"
-    ppr _ (VSet vs) = PP.text "list"
-    ppr _ (VTuple vs) = PP.text "list"
+    ppr p (VList vs) = PP.brackets $ ppList p vs
+    ppr p (VSet vs) = PP.braces $ ppList p vs
+    ppr p (VTuple vs) = PP.parens $ ppList p vs
     ppr _ VUnit = PP.text "()"
-    ppr _ (VClosure x env e) = PP.text "closure"
-    ppr p (VThunk env e) = PP.text "thunk(" <> ppr p e <> PP.text ")"
+    ppr _ (VClosure x _ _) = PP.text "closure"
+    ppr p (VThunk _ e) = PP.text "thunk(" <> ppr p e <> PP.text ")"
+    ppr _ (VChannel x _) = PP.text x
+    ppr _ (VRef x) = PP.text $ show x
+
+ppList p vs = PP.hcat $ PP.punctuate PP.comma $ map (ppr p) vs
 
 ppexpr :: Expr -> String
 ppexpr = PP.render . ppr 0

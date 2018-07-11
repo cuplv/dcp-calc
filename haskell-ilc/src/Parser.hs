@@ -431,6 +431,7 @@ atomExpr = eVar
        <|> eInt
        <|> eBool
        <|> eString
+       <|> eTag
        <|> eList
        <|> eSet
        <|> try eUnit

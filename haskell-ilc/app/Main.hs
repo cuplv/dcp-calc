@@ -40,7 +40,7 @@ process src = do
   -- putStrLn $ show cmds
   case cmds of
     Left err -> print err
-    Right cmds -> exec cmds >>= print
+    Right cmds -> exec cmds >>= return . ppval >>= putStrLn
 
 interactive :: IO ()
 interactive = runInputT defaultSettings loop

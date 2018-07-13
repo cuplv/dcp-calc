@@ -43,7 +43,7 @@ evalList env m con es = mapM (evalSub env) es >>= return . con >>= putMVar m
 evalPatMatch :: Environment -> [(Pattern, Expr, Expr)] -> Value -> IO Value
 evalPatMatch env ((p, g, e):bs) v =
     case (getBinds p v) of
-        Just binds -> let env' = update env binds
+        Just binds -> let env' = updateEnv env binds
                       in evalSub env' g >>= \v ->
                       case v of
                           VBool True  -> evalSub env' e
@@ -127,14 +127,14 @@ eval' env m (EMatch e bs) = evalSub env e >>=
                             putMVar m 
 eval' env m (ELet p e1 e2) = evalSub env e1 >>= \v1 ->
                              let binds = letBinds p v1
-                                 env'  = update env binds
+                                 env'  = updateEnv env binds
                              in evalSub env' e2 >>= putMVar m
 eval' env m (EFun p e1 e2) =
     evalSub env e1 >>= \v1 ->
-    let env'  = update env binds
+    let env'  = updateEnv env binds
         binds = letBinds p f
         f     = case (p, v1) of
-                (PVar x, VClosure arg env e) -> VClosure arg (extend env x f) e
+                (PVar x, VClosure arg env e) -> VClosure arg (extendEnv env x f) e
                 _                            -> error "expected closure"
     in evalSub env' e2 >>= putMVar m
 eval' env m (EAssign x e) = getRef (env Map.! x) >>= \r ->
@@ -157,12 +157,12 @@ eval' env m (EApp e1 e2) = evalSub env e1 >>= \v1 ->
                            evalSub env e2 >>= \v2 ->
                            evalApp v1 v2 >>= putMVar m
   where
-    evalApp (VClosure x env e) v = let env' = extend env x' v
+    evalApp (VClosure x env e) v = let env' = extendEnv env x' v
                                        x'   = fromMaybe (error "") x
                                    in evalSub env' e
     evalApp _                  _ = error "expected closure"
 eval' env m (ENu x e) = newChan >>= \c ->
-                        let env' = extend env x $ VChannel x c
+                        let env' = extendEnv env x $ VChannel x c
                         in evalSub env' e >>= putMVar m
 eval' env m (ERd e) = evalSub env e >>= getChan >>= readChan >>= putMVar m
   where
@@ -199,6 +199,6 @@ exec cmds = go emptyEnv cmds
                               go env rest
     go env ((CDef x e):[]) = eval env e
     go env ((CDef x e):rest) = eval env e >>= \v ->
-                               let env' = extend env x v
+                               let env' = extendEnv env x v
                                in go env' rest
     go env ((CTySig _ _):rest) = go env rest

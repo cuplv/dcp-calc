@@ -8,15 +8,17 @@ type Name = String
 
 data Type
     = TInt
-   | TBool
-   | TString
-   | TChan
-   | TProd [Type]
-   | TArrow Type Type
-   | TList Type
-   | TRd Type
-   | TWr Type
-   deriving (Eq, Show)
+    | TBool
+    | TString
+    | TTag
+    | TUnit
+    | TChan
+    | TProd [Type]
+    | TArrow Type Type
+    | TList Type
+    | TRd Type
+    | TWr Type
+    deriving (Eq, Show)
 
 data Pattern
     = PVar Name
@@ -123,10 +125,23 @@ type Environment = Map.Map Name Value
 emptyEnv :: Environment
 emptyEnv = Map.empty
 
-extend :: Environment -> Name -> Value -> Environment
-extend env x v = Map.insert x v env
+extendEnv :: Environment -> Name -> Value -> Environment
+extendEnv env x v = Map.insert x v env
 
-update :: Environment -> [(Name, Value)] -> Environment
-update env env' = foldl f env env'
+updateEnv :: Environment -> [(Name, Value)] -> Environment
+updateEnv env env' = foldl f env env'
   where
     f env (x, v) = Map.insert x v env
+
+{-type Context = Map.Map Name Type
+
+emptyCtx :: Context
+emptyCtx = Map.empty
+
+extendCtx :: Context -> Name -> Type -> Context
+extendCtx env x v = Map.insert x v env
+
+updateCtx :: Context -> [(Name, Type)] -> Context
+updateCtx env env' = foldl f env env'
+  where
+    f env (x, v) = Map.insert x v env-}

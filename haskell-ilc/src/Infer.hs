@@ -2,8 +2,6 @@
 
 module Infer where
 
-import Prelude hiding (foldr)
-
 import Control.Monad.State
 import Control.Monad.Except
 import Data.Monoid
@@ -27,21 +25,26 @@ data TypeError
     | InfiniteType TVar Ty
     | UnboundVariable Name
 
-{-extend :: TypeEnv -> (Name, Scheme) -> TypeEnv
-extend (TypeEnv env) (x, s) = TypeEnv $ Map.insert x s env
-
 runInfer :: Infer (Subst, Ty) -> Either TypeError Scheme
 runInfer m = case evalState (runExceptT m) initUnique of
-    Left err -> Left err
+    Left err  -> Left err
     Right res -> Right $ closeOver res
 
+closeOver :: (Map.Map TVar Ty, Ty) -> Scheme -- ?
+closeOver (sub, ty) = normalize sc
+    where sc = generalize emptyTyenv (apply sub ty)
 
+initUnique :: Unique
+initUnique = Unique { count = 0 }
 
-nullSubst :: Subst
-nullSubst = Map.empty
+extend :: TypeEnv -> (Name, Scheme) -> TypeEnv
+extend (TypeEnv env) (x, s) = TypeEnv $ Map.insert x s env
 
-compose :: Subst -> Subst -> Subst
-s1 `compose` s2 = Map.map (apply s1) s2 `Map.union` s1
+emptyTyenv :: TypeEnv
+emptyTyenv = TypeEnv Map.empty
+
+typeof :: TypeEnv -> Name -> Maybe Scheme
+typeof (TypeEnv env) name = Map.lookup name env
 
 class Substitutable a where
     apply :: Subst -> a -> a
@@ -52,7 +55,7 @@ instance Substitutable Ty where
     apply s t@(TVar a) = Map.findWithDefault t a s
     apply s (t1 `TArr` t2) = apply s t1 `TArr` apply s t2
 
-    ftv TCon{} = Set.empty -- Wot
+    ftv TCon{} = Set.empty  -- What do the braces mean?
     ftv (TVar a) = Set.singleton a
     ftv (t1 `TArr` t2) = ftv t1 `Set.union` ftv t2
 
@@ -70,16 +73,22 @@ instance Substitutable TypeEnv where
     apply s (TypeEnv env) = TypeEnv $ Map.map (apply s) env
     ftv (TypeEnv env) = ftv $ Map.elems env
 
+nullSubst :: Subst
+nullSubst = Map.empty
+
+compose :: Subst -> Subst -> Subst
+s1 `compose` s2 = Map.map (apply s1) s2 `Map.union` s1
+
 letters :: [String]
 letters = [1..] >>= flip replicateM ['a'..'z']
 
-fresh :: Infer Type
+fresh :: Infer Ty
 fresh = do
     s <- get
     put s{count = count s + 1}
     return $ TVar $ TV (letters !! count s)
 
-occursCheck :: Substitutable a => TVar -> a -> Bool
+{-occursCheck :: Substitutable a => TVar -> a -> Bool
 occursCheck a t = a `Set.member` ftv t
 
 unify :: Ty -> Ty -> Infer Subst

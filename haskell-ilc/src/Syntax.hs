@@ -97,11 +97,10 @@ data Value
 data Command
     = CExpr Expr
     | CDef Name Expr
-    | CTySig Name Type
+    | CTySig Name Type -- ?
     deriving (Eq, Show)
 
-data Program
-  = Program [Command]
+data Program = Program [Command] Expr
 
 instance Show Value where
     show (VInt n) = show n
@@ -132,16 +131,3 @@ updateEnv :: Environment -> [(Name, Value)] -> Environment
 updateEnv env env' = foldl f env env'
   where
     f env (x, v) = Map.insert x v env
-
-{-type Context = Map.Map Name Type
-
-emptyCtx :: Context
-emptyCtx = Map.empty
-
-extendCtx :: Context -> Name -> Type -> Context
-extendCtx env x v = Map.insert x v env
-
-updateCtx :: Context -> [(Name, Type)] -> Context
-updateCtx env env' = foldl f env env'
-  where
-    f env (x, v) = Map.insert x v env-}

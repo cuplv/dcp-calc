@@ -8,18 +8,18 @@ import qualified Data.Map as Map
 newtype TVar = TV String
   deriving (Show, Eq, Ord)
 
-data Ty
+data Type
     = TVar TVar
     | TCon String
-    | TArr Ty Ty
+    | TArr Type Type
     deriving (Show, Eq, Ord)
 
 infixr `TArr`
 
-data Scheme = Forall [TVar] Ty
+data Scheme = Forall [TVar] Type
     deriving (Show, Eq, Ord)
 
-typeInt, typeBool :: Ty
+typeInt, typeBool :: Type
 typeInt  = TCon "Int"
 typeBool = TCon "Bool"
 

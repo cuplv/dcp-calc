@@ -36,21 +36,21 @@ data InferState = InferState { count :: Int }
 initInfer :: InferState
 initInfer = InferState { count = 0 }
 
-type Constraint = (Ty, Ty)
+type Constraint = (Type, Type)
 
 type Unifier = (Subst, [Constraint])
 
 -- | Constraint solver monad
 type Solve a = ExceptT TypeError Identity a
 
-newtype Subst = Subst (Map.Map TVar Ty)
+newtype Subst = Subst (Map.Map TVar Type)
     deriving (Eq, Ord, Show, Monoid)
 
 class Substitutable a where
     apply :: Subst -> a -> a
     ftv   :: a -> Set.Set TVar
 
-instance Substitutable Ty where
+instance Substitutable Type where
     apply _ (TCon a) = TCon a
     apply (Subst s) t@(TVar a) = Map.findWithDefault t a s
     apply s (t1 `TArr` t2) = apply s t1 `TArr` apply s t2
@@ -77,11 +77,11 @@ instance Substitutable Env where
     ftv (TypeEnv env) = ftv $ Map.elems env
 
 data TypeError
-    = UnificationFail Ty Ty
-    | InfiniteType TVar Ty
+    = UnificationFail Type Type
+    | InfiniteType TVar Type
     | UnboundVariable Name
     | Ambiguous [Constraint]
-    | UnificationMismatch [Ty] [Ty]
+    | UnificationMismatch [Type] [Type]
     deriving (Show)
 
 -------------------------------------------------------------------------------
@@ -89,7 +89,7 @@ data TypeError
 -------------------------------------------------------------------------------
 
 -- | Run the inference monad
-runInfer :: Env -> Infer (Ty, [Constraint]) -> Either TypeError (Ty, [Constraint])
+runInfer :: Env -> Infer (Type, [Constraint]) -> Either TypeError (Type, [Constraint])
 runInfer env m = runExcept $ evalStateT (runReaderT m env) initInfer
 
 -- | Solve for toplevel type of an expression in a give environment
@@ -101,7 +101,7 @@ inferExpr env ex = case runInfer env (infer ex) of
         Right subst -> Right $ closeOver $ apply subst ty
 
 -- | Return internal constraints used in solving for type of expression
-constraintsExpr :: Env -> Expr -> Either TypeError ([Constraint], Subst, Ty, Scheme)
+constraintsExpr :: Env -> Expr -> Either TypeError ([Constraint], Subst, Type, Scheme)
 constraintsExpr env ex = case runInfer env (infer ex) of
     Left       err -> Left err
     Right (ty, cs) -> case runSolve cs of
@@ -109,7 +109,7 @@ constraintsExpr env ex = case runInfer env (infer ex) of
         Right subst -> Right (cs, subst, ty, sc)
           where sc = closeOver $ apply subst ty
 
-closeOver :: Ty -> Scheme
+closeOver :: Type-> Scheme
 closeOver = normalize . generalize Type.empty
 
 inEnv :: (Name, Scheme) -> Infer a -> Infer a
@@ -117,7 +117,7 @@ inEnv (x, sc) m = do
     let scope e = (remove e x) `extend` (x, sc)
     local scope m
 
-lookupEnv :: Name -> Infer Ty
+lookupEnv :: Name -> Infer Type
 lookupEnv x = do
     (TypeEnv env) <- ask
     case Map.lookup x env of
@@ -128,23 +128,23 @@ lookupEnv x = do
 letters :: [String]
 letters = [1..] >>= flip replicateM ['a'..'z']
 
-fresh :: Infer Ty
+fresh :: Infer Type
 fresh = do
     s <- get
     put s{count = count s + 1}
     return $ TVar $ TV (letters !! count s)
 
-instantiate :: Scheme -> Infer Ty -- ^ T-Inst
+instantiate :: Scheme -> Infer Type-- ^ T-Inst
 instantiate (Forall as t) = do
     as' <- mapM (const fresh) as
     let s = Subst $ Map.fromList $ zip as as'
     return $ apply s t
 
-generalize :: Env -> Ty -> Scheme -- ^ T-Gen
+generalize :: Env -> Type-> Scheme -- ^ T-Gen
 generalize env t = Forall as t
     where as = Set.toList $ ftv t `Set.difference` ftv env
 
-infer :: Expr -> Infer (Ty, [Constraint])
+infer :: Expr -> Infer (Type, [Constraint])
 infer expr = case expr of
     EInt _ -> return (typeInt, [])
     EBool _ -> return (typeBool, [])
@@ -210,7 +210,7 @@ runSolve :: [Constraint] -> Either TypeError Subst
 runSolve cs = runIdentity $ runExceptT $ solver st
     where st = (emptySubst, cs)
 
-unifyMany :: [Ty] -> [Ty] -> Solve Subst
+unifyMany :: [Type] -> [Type] -> Solve Subst
 unifyMany [] []  = return emptySubst
 unifyMany (t1 : ts1) (t2 : ts2) =
     do su1 <- unifies t1 t2
@@ -218,7 +218,7 @@ unifyMany (t1 : ts1) (t2 : ts2) =
        return (su2 `compose` su1)
 unifyMany t1 t2 = throwError $ UnificationMismatch t1 t2
 
-unifies :: Ty -> Ty -> Solve Subst
+unifies :: Type-> Type-> Solve Subst
 unifies t1 t2 | t1 == t2 = return emptySubst
 unifies (TVar v)t  = v `bind` t
 unifies t (TVar v) = v `bind` t
@@ -233,7 +233,7 @@ solver (su, cs) =
           su1 <- unifies t1 t2
           solver (su1 `compose` su, apply su1 cs0)
 
-bind :: TVar -> Ty -> Solve Subst
+bind :: TVar -> Type-> Solve Subst
 bind a t | t == TVar a     = return emptySubst
          | occursCheck a t = throwError $ InfiniteType a t
          | otherwise       = return (Subst $ Map.singleton a t)

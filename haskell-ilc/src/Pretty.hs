@@ -8,6 +8,7 @@ import Text.PrettyPrint (Doc, (<>), (<+>))
 import qualified Text.PrettyPrint as PP
 
 import Syntax
+import Eval
 
 parensIf :: Bool -> Doc -> Doc
 parensIf True = PP.parens

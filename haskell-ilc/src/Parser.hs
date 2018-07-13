@@ -11,131 +11,12 @@ import Text.Parsec.Language (emptyDef)
 import Text.Parsec.String (Parser)
 import qualified Text.Parsec.Token as Tok
 
+import Lexer
 import Syntax
-
--- | Lexer
-langDef :: Tok.LanguageDef ()
-langDef = Tok.LanguageDef
-    { Tok.commentStart = "{-"
-    , Tok.commentEnd   = "-}"
-    , Tok.commentLine  = "--"
-    , Tok.nestedComments = True
-    , Tok.identStart = letter
-    , Tok.identLetter = alphaNum <|> oneOf "_'?"
-    , Tok.opStart = oneOf ":!#$%&*+.?<=>?@\\^|-~"
-    , Tok.opLetter = oneOf ":!#$%&*+.?<=>?@\\^|-~"
-    , Tok.reservedNames = [ "let"
-                          , "in"
-                          , "letrec"
-                          , "lam"
-                          , "rd"
-                          , "wr"
-                          , "nu"
-                          , "thunk"
-                          , "force"
-                          , "not"
-                          , "if"
-                          , "then"
-                          , "else"
-                          , "true"
-                          , "false"
-                          , "match"
-                          , "with"
-                          , "ref"
-                          , "when"
-                          , "print"
-                          , "Int"
-                          , "Bool"
-                          , "String"
-                          , "Chan"
-                          , "Rd"
-                          , "Wr"
-                          ]
-    , Tok.reservedOpNames = [ "+"
-                            , "-"
-                            , "*"
-                            , "/"
-                            , "%"
-                            , "&&"
-                            , "||"
-                            , "<"
-                            , ">"
-                            , "<="
-                            , ">="
-                            , "=="
-                            , "<>"
-                            , "!"
-                            , "|>"
-                            , ";"
-                            , ";;"
-                            , ":"
-                            , "::"
-                            , ":="
-                            , "@"
-                            ]
-    , Tok.caseSensitive = True
-    }
-
-lexer :: Tok.TokenParser ()
-lexer = Tok.makeTokenParser langDef
-
-identifier :: Parser Name
-identifier = Tok.identifier lexer
-
--- TODO: Fix this to parse only negative sign.
-integer :: Parser Integer
-integer = Tok.natural lexer
-
-stringLit :: Parser String
-stringLit = Tok.stringLiteral lexer
-
-parens :: Parser a -> Parser a
-parens = Tok.parens lexer
-
-brackets :: Parser a -> Parser a
-brackets = Tok.brackets lexer
-
-braces :: Parser a -> Parser a
-braces = Tok.braces lexer
-
-reserved :: String -> Parser ()
-reserved = Tok.reserved lexer
-
-semiSep :: Parser a -> Parser [a]
-semiSep = Tok.semiSep lexer
-
-comma :: Parser String
-comma = Tok.comma lexer
-
-semi :: Parser String
-semi = Tok.semi lexer
-
-commaSep :: Parser a -> Parser [a]
-commaSep = Tok.commaSep lexer
-
-commaSep1 :: Parser a -> Parser [a]
-commaSep1 = Tok.commaSep1 lexer
-
-(<:>) :: (Applicative f) => f a -> f [a] -> f [a]
-(<:>) a b = (:) <$> a <*> b
-
-commaSep2 :: Parser a -> Parser [a]
-commaSep2 p = (p <* comma) <:> commaSep1 p
-
-reservedOp :: String -> Parser ()
-reservedOp = Tok.reservedOp lexer
-
-prefixOp :: String -> (a -> a) -> Ex.Operator String () Identity a
-prefixOp s f = Ex.Prefix (reservedOp s >> return f)
-
-binaryOp :: String -> (a -> a -> a) -> Ex.Assoc -> Ex.Operator String () Identity a
-binaryOp s f = Ex.Infix (reservedOp s >> return f)
-
-mklexer e p = p >>= \x -> return (e x)
 
 -- | Types
 
-tInt = reserved "Int" >> return TInt
+{-tInt = reserved "Int" >> return TInt
 
 tBool = reserved "Bool" >> return TBool
 
@@ -165,7 +46,7 @@ ty' = tInt
   <|> tProd
   <|> tList
   <|> tRd
-  <|> tWr
+  <|> tWr-}
  
 -- | Patterns
 
@@ -219,16 +100,16 @@ eVar = mklexer EVar identifier
 
 eImpVar = mklexer EImpVar $ char '?' >> identifier
 
-eInt = mklexer EInt integer
+eInt = mklexer (ELit . LInt) integer
 
 eBool = eTrue <|> eFalse
   where
-    eTrue  = reserved "true"  >> return (EBool True)
-    eFalse = reserved "false" >> return (EBool False)
+    eTrue  = reserved "true"  >> return (ELit $ LBool True)
+    eFalse = reserved "false" >> return (ELit $ LBool False)
 
-eString = mklexer EString stringLit  
+eString = mklexer (ELit . LString) stringLit  
 
-eTag = mklexer ETag $ char '\'' >> identifier
+eTag = mklexer (ELit . LTag) $ char '\'' >> identifier
 
 eList = mklexer EList $ brackets $ commaSep expr
 
@@ -236,23 +117,23 @@ eSet = mklexer ESet $ braces $ commaSep expr
 
 eTuple = mklexer ETuple $ parens $ commaSep2 expr
 
-eUnit = reserved "()" >> return EUnit
+eUnit = reserved "()" >> return (ELit LUnit)
   
--- | Arithmetic operators, logical operators, sequence
+-- | Arithmetic operators, logical operators, relations
 table :: [[Ex.Operator String () Identity Expr]]
-table = [ [binaryOp "*" ETimes Ex.AssocLeft, binaryOp "/" EDivide Ex.AssocLeft]
-        , [binaryOp "%" EMod Ex.AssocLeft]
-        , [binaryOp "+" EPlus Ex.AssocLeft, binaryOp "-" EMinus Ex.AssocLeft]
-        , [prefixOp "not" ENot]
-        , [binaryOp "<" ELt Ex.AssocNone
-          , binaryOp ">" EGt Ex.AssocNone
-          , binaryOp "<=" ELeq Ex.AssocNone
-          , binaryOp ">=" EGeq Ex.AssocNone
-          , binaryOp "==" EEq Ex.AssocNone
-          , binaryOp "<>" ENeq Ex.AssocNone
+table = [ [binaryOp "*" (EBin Mul) Ex.AssocLeft, binaryOp "/" (EBin Div) Ex.AssocLeft]
+        , [binaryOp "%" (EBin Mod) Ex.AssocLeft]
+        , [binaryOp "+" (EBin Add) Ex.AssocLeft, binaryOp "-" (EBin Sub) Ex.AssocLeft]
+        , [prefixOp "not" (EUn Not)]
+        , [binaryOp "<" (EBin Lt) Ex.AssocNone
+          , binaryOp ">" (EBin Gt) Ex.AssocNone
+          , binaryOp "<=" (EBin Leq) Ex.AssocNone
+          , binaryOp ">=" (EBin Geq) Ex.AssocNone
+          , binaryOp "==" (EBin Eql) Ex.AssocNone
+          , binaryOp "<>" (EBin Neq) Ex.AssocNone
           ]
-        , [binaryOp "&&" EAnd Ex.AssocLeft]
-        , [binaryOp "||" EOr Ex.AssocLeft]
+        , [binaryOp "&&" (EBin And) Ex.AssocLeft]
+        , [binaryOp "||" (EBin Or) Ex.AssocLeft]
         ]
 
 eIf = do
@@ -267,7 +148,7 @@ eIf = do
 eBranch = do
     reservedOp "|"
     p <- pat
-    g <- option (EBool True) eGuard
+    g <- option (ELit $ LBool True) eGuard
     reservedOp "=>"
     e <- expr
     return (p, g, e)
@@ -367,49 +248,51 @@ eSeq = do
 
 ePrint = mklexer EPrint $ reserved "print" >> atomExpr    
 
--- | Commands
+-- | Declarations
 
-cMain = do
+{-dMain = do
   reserved "let"
   reserved "main"
   reserved "="
   e <- expr
-  return $ CExpr e
+  return $ DExpr e-}
 
-cExpr = do
+dExpr = do
     e <- expr
     optional $ reserved ";;"
-    return $ CExpr e
+    return $ DExpr e
 
-cDefLet = do
+dDeclLet = do
     reserved "let"
     x <- identifier
     reserved "="
     e <- expr
     optional $ reserved ";;"
-    return $ CDef x e
+    return $ DDecl x e
 
-cDefFun = do
+dDeclFun = do
     reserved "let"
     x <- identifier
     ps <- reverse <$> many1 pat
     reserved "="
     e <- expr
     optional $ reserved ";;"
-    return $ CDef x (curry e  ps)
+    return $ DDecl x (curry e ps)
   where
     curry acc (p:[]) = ELam p acc
     curry acc (p:ps) = curry (ELam p acc) ps
 
-cDef = try cDefLet <|> cDefFun    
-
-cTySig = do
+dDecl = try dDeclLet <|> dDeclFun
+  
+{-cTySig = do
   x <- identifier
   reserved "::"
   t <- ty
   return $ CTySig x t
 
-cmd = try cMain <|> try cTySig <|> try cExpr <|> try cDef -- ^ Fix
+cmd = try cMain <|> try cTySig <|> try cExpr <|> try cDef -- ^ Fix-}
+
+decl = try dExpr <|> try dDecl
 
 -- | Parser
 
@@ -460,8 +343,8 @@ contents p = do
     eof
     return r
 
-toplevel :: Parser [Command]
-toplevel = many1 cmd
+toplevel :: Parser [Decl]
+toplevel = many1 decl
 
-parser :: String -> Either ParseError [Command]
+parser :: String -> Either ParseError [Decl]
 parser s = parse (contents toplevel) "<stdin>" s

@@ -16,7 +16,7 @@ data Expr
     | EBin Binop Expr Expr
     | EUn Unop Expr
     | EIf Expr Expr Expr
-    | EMatch Expr [(Pattern, Expr, Expr)]
+    | EMatch Expr [(Pattern, Expr, Expr)] -- Guard into Maybe?
     | ELet Pattern Expr Expr
     | EFun Pattern Expr Expr
     | EAssign Name Expr

@@ -18,10 +18,10 @@ class Pretty p where
   ppr :: Int -> p -> Doc
 
 instance Pretty Expr where
-  ppr _ (EInt n) = PP.text $ show n
-  ppr _ (EString s) = PP.text $ show s
-  ppr _ (EBool b) = PP.text $ show b
-  ppr _ EUnit = PP.text "()"
+  ppr _ (ELit (LInt n)) = PP.text $ show n
+  ppr _ (ELit (LString s)) = PP.text $ show s
+  ppr _ (ELit (LBool b)) = PP.text $ show b
+  ppr _ (ELit LUnit) = PP.text "()"
   {-ppr p (EList (e:es)) = ppr p e <+> ppr p (EList es)
   ppr p (EList []) = PP.text "[]"-}
   {-ppr p (EPair e1 e2) =

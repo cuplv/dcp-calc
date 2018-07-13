@@ -146,8 +146,8 @@ generalize env t = Forall as t
 
 infer :: Expr -> Infer (Type, [Constraint])
 infer expr = case expr of
-    EInt _ -> return (typeInt, [])
-    EBool _ -> return (typeBool, [])
+    ELit (LInt _) -> return (typeInt, [])
+    ELit (LBool _) -> return (typeBool, [])
     
     EVar x -> do
         t <- lookupEnv x

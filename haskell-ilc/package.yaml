@@ -29,6 +29,7 @@ dependencies:
 - haskeline
 - mtl
 - optparse-applicative
+- repline
 - tasty
 - tasty-hunit
 - tasty-hspec

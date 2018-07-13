@@ -71,17 +71,14 @@ evalBinOp f env m e1 e2 =
 evalArith op = evalBinOp $ f op
   where
     f op (VInt n1, VInt n2) = return $ VInt (op n1 n2)
-    f op _                  = error "expected integer operands"
 
 evalBool op = evalBinOp $ f op
   where
     f op (VBool b1, VBool b2) = return $ VBool (op b1 b2)
-    f op _                  = error "expected boolean operands"
 
 evalRel op = evalBinOp $ f op
   where
     f op (VInt n1, VInt n2) = return $ VBool (op n1 n2)
-    f op _                  = error "expected integer operands"
 
 evalList env m con es = mapM (evalSub env) es >>= return . con >>= putMVar m
 
@@ -188,7 +185,6 @@ eval' env m expr = case expr of
             binds = letBinds p f
             f     = case (p, v1) of
                     (PVar x, VClosure arg env e) -> VClosure arg (extendEnv env x f) e
-                    _                            -> error "expected closure"
         in evalSub env' e2 >>= putMVar m
 
     EAssign x e -> getRef (env Map.! x) >>= \r ->
@@ -196,14 +192,12 @@ eval' env m expr = case expr of
                    writeIORef r >> putMVar m VUnit
       where
         getRef (VRef r) = return r
-        getRef _        = error "expected reference"
 
     ERef e -> evalSub env e >>= newIORef >>= return . VRef >>= putMVar m
 
     EDeref e -> evalSub env e >>= getRef >>= readIORef >>= putMVar m
       where
         getRef (VRef r) = return r
-        getRef _        = error "expected reference"
 
     -- TODO: Handle unit argument.
     ELam p e -> putMVar m $ VClosure (f p) env e
@@ -217,7 +211,6 @@ eval' env m expr = case expr of
         evalApp (VClosure x env e) v = let env' = extendEnv env x' v
                                            x'   = fromMaybe (error "") x
                                        in evalSub env' e
-        evalApp _                  _ = error "expected closure"
 
     ENu x e -> newChan >>= \c ->
                let env' = extendEnv env x $ VChannel x c
@@ -226,13 +219,11 @@ eval' env m expr = case expr of
     ERd e -> evalSub env e >>= getChan >>= readChan >>= putMVar m
       where
         getChan (VChannel _ c) = return c
-        getChan _              = error "expected channel"
 
     EWr e1 e2 -> evalSub env e2 >>= getChan >>= \c ->
                  evalSub env e1 >>= writeChan c >> putMVar m VUnit
       where
         getChan (VChannel _ c) = return c
-        getChan _              = error "expected channel"
 
     EFork e -> newEmptyMVar >>= \m' ->
                forkIO (eval' env m' e) >>
@@ -247,13 +238,10 @@ eval' env m expr = case expr of
     EForce e -> evalSub env e >>= force >>= putMVar m
       where
         force (VThunk env e) = evalSub env e
-        force _              = error "expected thunk"
 
     ESeq e1 e2 -> evalSub env e1 >> evalSub env e2 >>= putMVar m
 
     EPrint e -> evalSub env e >>= putStrLn . show >> putMVar m VUnit
-
-
 
 -- TODO: Types    
 exec :: [Decl] -> IO Value

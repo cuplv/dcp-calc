@@ -9,7 +9,10 @@ import qualified Text.Parsec.Token as Tok
 
 import Syntax
 
--- | Lexer
+-------------------------------------------------------------------------------
+-- Lexer
+-------------------------------------------------------------------------------
+
 langDef :: Tok.LanguageDef ()
 langDef = Tok.LanguageDef
     { Tok.commentStart = "{-"

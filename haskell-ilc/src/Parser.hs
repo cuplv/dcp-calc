@@ -14,6 +14,10 @@ import qualified Text.Parsec.Token as Tok
 import Lexer
 import Syntax
 
+-------------------------------------------------------------------------------
+-- Parser
+-------------------------------------------------------------------------------
+
 -- | Types
 
 {-tInt = reserved "Int" >> return TInt
@@ -345,6 +349,9 @@ contents p = do
 
 toplevel :: Parser [Decl]
 toplevel = many1 decl
+
+parserD :: String -> Either ParseError Decl
+parserD s = parse (contents
 
 parser :: String -> Either ParseError [Decl]
 parser s = parse (contents toplevel) "<stdin>" s

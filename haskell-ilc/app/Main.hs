@@ -1,12 +1,18 @@
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TypeSynonymInstances #-}
+
 module Main where
 
 import Control.Monad.Trans
 import Control.Monad.Identity
 import Control.Monad.State.Strict
-import Data.Semigroup ((<>))
+-- import Data.Semigroup ((<>))
 import qualified Data.Text.Lazy as L
 import qualified Data.Text.Lazy.IO as L
-import Data.Monoid hiding ((<>))
+import Data.List (isPrefixOf, foldl')
+import Data.Monoid
 import qualified Data.Map as Map
 import Options.Applicative
 import System.Console.Haskeline
@@ -62,23 +68,49 @@ initState :: IState
 initState = IState Type.empty emptyEnv -- TODO
 
 type Repl a = HaskelineT (StateT IState IO) a
-hoistErr :: Show a => Either e a -> Repl a
+hoistErr :: Show e => Either e a -> Repl a
 hoistErr (Right val) = return val
-{-hoistErr (Left err) = do
+hoistErr (Left err) = do
     liftIO $ print err
-    abort-}
+    abort
 
 -------------------------------------------------------------------------------
 -- Execution
 -------------------------------------------------------------------------------
 
 evalDecl :: TermEnv -> Decl -> IO TermEnv
-evalDecl env (DDecl x expr) = do
+evalDecl env (x, expr) = do
     v <- evalSub env expr
-    return $ extendEnv env x v
+    let env' = extendEnv env x v
+    return $ env'
 
---exec :: Bool ->     
+exec :: Bool -> String -> Repl ()
+exec update source = do
+    st <- get
+    mod <- hoistErr $ parser source
     
+    tyenv' <- hoistErr $ inferTop (tyenv st) mod
+    
+    let st' = st { tmenv = extendEnv (tmenv st) "x" (VInt 1)
+                 , tyenv = tyenv' <> (tyenv st)
+                 }
+
+    when update (put st')
+
+    case Prelude.lookup "it" mod of
+        Nothing -> return ()
+        Just ex -> do
+            val <- liftIO $ evalSub (tmenv st') ex
+            showOutput (show val) st'
+
+showOutput :: String -> IState -> Repl ()
+showOutput arg st = do
+    case Type.lookup "it" (tyenv st) of
+        Just val -> liftIO $ putStrLn $ show val
+        Nothing -> return ()
+    
+cmd :: String -> Repl ()
+cmd source = Main.exec True source
 
 process :: String -> IO ()
 process src = do
@@ -86,7 +118,7 @@ process src = do
   -- putStrLn $ show cmds
   case cmds of
     Left err -> print err
-    Right cmds -> exec cmds >>= return . ppval >>= putStrLn
+    Right cmds -> putStrLn $ show cmds -- exec cmds >>= return . ppval >>= putStrLn
 
 interactive :: IO ()
 interactive = runInputT defaultSettings loop
@@ -97,14 +129,79 @@ interactive = runInputT defaultSettings loop
             Nothing -> outputStrLn "Goodbye."
             Just input -> (liftIO $ process input ) >> loop
 
-{-shell :: Repl a -> IO ()
-shell pre = flip evalStateT initState
-    $ evalRepl "Poly>" cmd options completer pre-}
+-------------------------------------------------------------------------------
+-- Commands
+-------------------------------------------------------------------------------
+
+-- :browse command
+{-browse :: [String] -> Repl ()
+browse _ = do
+  st <- get
+  liftIO $ mapM_ putStrLn $ ppenv (tyctx st)-}
+
+-- :load command
+{-load :: [String] -> Repl ()
+load args = do
+  contents <- liftIO $ L.readFile (unwords args)
+  Main.exec True contents-}
+
+-- :type command
+typeof :: [String] -> Repl ()
+typeof args = do
+  st <- get
+  let arg = unwords args
+  case Type.lookup arg (tyenv st) of
+    Just val -> liftIO $ putStrLn $ ppsignature (arg, val)
+    Nothing -> Main.exec False arg
+
+-- :quit command
+quit :: a -> Repl ()
+quit _ = liftIO $ exitSuccess
+
+-------------------------------------------------------------------------------
+-- Interactive Shell
+-------------------------------------------------------------------------------
+
+-- Prefix tab completer
+defaultMatcher :: MonadIO m => [(String, CompletionFunc m)]
+defaultMatcher = [
+    (":load"  , fileCompleter)
+  -- , (":type"  , values)
+  ]
+
+-- Default tab completer
+comp :: (Monad m, MonadState IState m) => WordCompleter m
+comp n = do
+  let cmds = [":load", ":type", ":browse", ":quit"]
+  TypeEnv ctx <- gets tyenv
+  let defs = Map.keys ctx
+  return $ filter (isPrefixOf n) (cmds ++ defs)
+
+options :: [(String, [String] -> Repl ())]
+{-options = [
+    ("load"   , load)
+  , ("browse" , browse)
+  , ("quit"   , quit)
+  , ("type"   , Main.typeof)
+  ]-}
+
+options = [
+    ("quit"   , quit)
+  , ("type"   , Main.typeof)
+  ]
+
+
+completer :: CompleterStyle (StateT IState IO)
+completer = Prefix (wordCompleter comp) defaultMatcher
+
+shell :: Repl a -> IO ()
+shell pre = flip evalStateT initState 
+    $ evalRepl "Poly>" cmd options Main.completer pre
 
 main :: IO ()
 main = do
     options <- execParser opts
     case (optSrcFile options) of
         Just file -> readFile file >>= process
-        Nothing   -> interactive
-        -- Nothing   -> shell
+        -- Nothing   -> interactive
+        Nothing   -> shell (return ())

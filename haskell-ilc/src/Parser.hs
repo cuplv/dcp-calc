@@ -261,10 +261,10 @@ ePrint = mklexer EPrint $ reserved "print" >> atomExpr
   e <- expr
   return $ DExpr e-}
 
-dExpr = do
+{-dExpr = do
     e <- expr
     optional $ reserved ";;"
-    return $ DExpr e
+    return $ DExpr e-}
 
 dDeclLet = do
     reserved "let"
@@ -272,7 +272,8 @@ dDeclLet = do
     reserved "="
     e <- expr
     optional $ reserved ";;"
-    return $ DDecl x e
+    --  return $ DDecl x e
+    return (x, e)
 
 dDeclFun = do
     reserved "let"
@@ -281,7 +282,8 @@ dDeclFun = do
     reserved "="
     e <- expr
     optional $ reserved ";;"
-    return $ DDecl x (curry e ps)
+    -- return $ DDecl x (curry e ps)
+    return (x, curry e ps)
   where
     curry acc (p:[]) = ELam p acc
     curry acc (p:ps) = curry (ELam p acc) ps
@@ -296,7 +298,8 @@ dDecl = try dDeclLet <|> dDeclFun
 
 cmd = try cMain <|> try cTySig <|> try cExpr <|> try cDef -- ^ Fix-}
 
-decl = try dExpr <|> try dDecl
+-- decl = try dExpr <|> try dDecl
+decl = dDecl
 
 -- | Parser
 
@@ -349,9 +352,6 @@ contents p = do
 
 toplevel :: Parser [Decl]
 toplevel = many1 decl
-
-parserD :: String -> Either ParseError Decl
-parserD s = parse (contents
 
 parser :: String -> Either ParseError [Decl]
 parser s = parse (contents toplevel) "<stdin>" s

@@ -75,13 +75,14 @@ data Binop
 
 data Unop
     = Not
-
     deriving (Eq, Show)
 
-data Decl
+type Decl = (Name, Expr)
+
+{-data Decl
   = DExpr Expr
   | DDecl Name Expr
-  deriving (Eq, Show)
+  deriving (Eq, Show)-}
 
 data Program = Program [Decl] Expr
     deriving (Eq, Show)

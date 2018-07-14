@@ -82,7 +82,6 @@ data TypeError
     | UnboundVariable Name
     | Ambiguous [Constraint]
     | UnificationMismatch [Type] [Type]
-    deriving (Show)
 
 -------------------------------------------------------------------------------
 -- Inference

@@ -3,6 +3,7 @@ module Eval where
 import Control.Concurrent
 import Control.Concurrent.Chan
 import Control.Monad
+import Control.Monad.Identity
 import Data.IORef
 import Data.List
 import qualified Data.Map.Strict as Map
@@ -126,7 +127,7 @@ getBinds p v = go [] p v
       where
         accs  = map (\pair -> case pair of (v, p) -> go acc v p) vp
         vp    = zip vs ps
-
+        
 eval :: TermEnv -> Expr -> IO Value
 eval env e = newEmptyMVar >>= \v ->
              eval' env v e >>
@@ -247,11 +248,11 @@ eval' env m expr = case expr of
 exec :: [Decl] -> IO Value
 exec cmds = go emptyEnv cmds
   where
-    go env ((DExpr e):[] ) = eval env e
+{-    go env ((DExpr e):[] ) = eval env e
     go env ((DExpr e):rest) = eval env e >>
-                              go env rest
-    go env ((DDecl x e):[]) = eval env e
-    go env ((DDecl x e):rest) = eval env e >>= \v ->
+                              go env rest-}
+    go env ((x, e):[]) = eval env e
+    go env ((x, e):rest) = eval env e >>= \v ->
                                let env' = extendEnv env x v
                                in go env' rest
     -- go env ((CTySig _ _):rest) = go env rest

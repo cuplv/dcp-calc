@@ -1,14 +1,16 @@
-module Pretty
-    (
+module Pretty where
+{-    (
       ppexpr
     , ppval
-    ) where
+    ) where-}
 
 import Text.PrettyPrint (Doc, (<>), (<+>))
 import qualified Text.PrettyPrint as PP
 
-import Syntax
 import Eval
+import Infer
+import Syntax
+import Type
 
 parensIf :: Bool -> Doc -> Doc
 parensIf True = PP.parens
@@ -57,3 +59,37 @@ ppexpr = PP.render . ppr 0
 
 ppval :: Value -> String
 ppval = PP.render . ppr 0
+
+instance Show TypeError where
+  show (UnificationFail a b) =
+    concat ["Cannot unify types: \n\t", pptype a, "\nwith \n\t", pptype b]
+  show (InfiniteType (TV a) b) =
+    concat ["Cannot construct the infinite type: ", a, " = ", pptype b]
+  show (Ambiguous cs) =
+    concat ["Cannot not match expected type: '" ++ pptype a ++ "' with actual type: '" ++ pptype b ++ "'\n" | (a,b) <- cs]
+  show (UnboundVariable a) = "Not in scope: " ++ a
+
+
+instance Pretty TVar where
+  ppr _ (TV x) = PP.text x
+
+instance Pretty Type where
+  ppr p (TArr a b) = (parensIf (isArrow a) (ppr p a)) <+> PP.text "->" <+> ppr p b
+    where
+      isArrow TArr{} = True
+      isArrow _ = False
+  ppr p (TVar a) = ppr p a
+  ppr _ (TCon a) = PP.text a
+
+instance Pretty Scheme where
+  ppr p (Forall [] t) = ppr p t
+  ppr p (Forall ts t) = PP.text "forall" <+> PP.hcat (PP.punctuate PP.space (map (ppr p) ts)) <> PP.text "." <+> ppr p t
+
+ppscheme :: Scheme -> String
+ppscheme = PP.render . ppr 0
+
+pptype :: Type -> String
+pptype = PP.render . ppr 0
+
+ppsignature :: (String, Scheme) -> String
+ppsignature (a, b) = a ++ " : " ++ ppscheme b

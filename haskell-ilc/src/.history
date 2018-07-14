@@ -1,0 +1,45 @@
+:type compose
+let compose f g = lam x . f (g x)
+:type compose
+let compose f g = lam x . f g x
+:type compose
+let compose f g = lam x . f (g x)
+:type f
+let f = lam x . lam y . y
+:type f
+let f = lam x . lam y . x
+:type x
+let x = lam x . x
+:type f
+let f g = lam x . g x
+:type f
+let f g = lam x . g f
+:t compose
+let compose f g = lam x . f g x
+:type f
+let f x = x
+:type x
+:type b
+let b = true
+let b = True
+:type x
+:type let x = 1
+let x = 1
+:type let f x = 1
+:type let f x = x 
+:type let x = 1
+:type 1
+:type let x = 1
+let x = 1
+let f x = x + 1
+let x = 2
+let a = 1 in 1
+let a = 1
+1 + 1
+let x = 1 in 1
+let x = 1 in x
+1 + 1
+let y = 1
+let x = 1
+2 + 2
+1 + 1

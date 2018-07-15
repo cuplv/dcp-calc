@@ -173,7 +173,7 @@ infer expr = case expr of
                 (t2, c2) <- inEnv (x, sc) $ local (apply sub) (infer e2)
                 return (t2, c1 ++ c2)
 
-inferTop :: Env -> [(String, Expr)] -> Either TypeError Env
+inferTop :: Env -> [(Name, Expr)] -> Either TypeError Env
 inferTop env [] = Right env
 inferTop env ((name, ex):xs) = case inferExpr env ex of
     Left err -> Left err

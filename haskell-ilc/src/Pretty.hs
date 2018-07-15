@@ -4,8 +4,10 @@ module Pretty where
     , ppval
     ) where-}
 
+import qualified Data.Map as Map
 import Text.PrettyPrint (Doc, (<>), (<+>))
 import qualified Text.PrettyPrint as PP
+
 
 import Eval
 import Infer
@@ -93,3 +95,6 @@ pptype = PP.render . ppr 0
 
 ppsignature :: (String, Scheme) -> String
 ppsignature (a, b) = a ++ " : " ++ ppscheme b
+
+ppenv :: Env -> [String]
+ppenv (TypeEnv env) = map ppsignature $ Map.toList env

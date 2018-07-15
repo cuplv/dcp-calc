@@ -1,3 +1,38 @@
+let compose f g = lam x . f (g x) in compose
+:browse
+let compose f g = lam x . f (g x)
+let x = 1
+2
+1
+let compose f g = lam x . f (g x)
+2
+let x = 1 in x
+let x = 1
+1
+2
+1
+let x = 1
+let x = 1 in x
+let x = 1
+2
+1
+let x = 1 + 1
+1 + 1
+:type f
+:type compose 
+:browse
+let f x = x
+:browse
+:type compose
+let compose f g = lam x . f (g x)
+let x = 1 in x
+:type x
+let x = true
+:type x
+let x = 2
+:type x
+let x = 1
+1 + 1
 :type compose
 let compose f g = lam x . f (g x)
 :type compose

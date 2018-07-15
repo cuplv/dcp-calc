@@ -261,10 +261,10 @@ ePrint = mklexer EPrint $ reserved "print" >> atomExpr
   e <- expr
   return $ DExpr e-}
 
-{-dExpr = do
+dExpr = do
     e <- expr
     optional $ reserved ";;"
-    return $ DExpr e-}
+    return $ ("it", e)
 
 dDeclLet = do
     reserved "let"
@@ -298,8 +298,7 @@ dDecl = try dDeclLet <|> dDeclFun
 
 cmd = try cMain <|> try cTySig <|> try cExpr <|> try cDef -- ^ Fix-}
 
--- decl = try dExpr <|> try dDecl
-decl = dDecl
+decl = try dExpr <|> try dDecl
 
 -- | Parser
 

@@ -8,7 +8,6 @@ module Main where
 import Control.Monad.Trans
 import Control.Monad.Identity
 import Control.Monad.State.Strict
--- import Data.Semigroup ((<>))
 import qualified Data.Text.Lazy as L
 import qualified Data.Text.Lazy.IO as L
 import Data.List (isPrefixOf, foldl')
@@ -83,31 +82,33 @@ evalDecl env (x, expr) = do
     v <- evalSub env expr
     let env' = extendEnv env x v
     return $ env'
-
+    
 exec :: Bool -> String -> Repl ()
 exec update source = do
     st <- get
     mod <- hoistErr $ parser source
     
     tyenv' <- hoistErr $ inferTop (tyenv st) mod
+
+    tmenv' <- liftIO $ foldM (evalDecl) (tmenv st) mod
     
-    let st' = st { tmenv = extendEnv (tmenv st) "x" (VInt 1)
+    let st' = st { tmenv = tmenv'
                  , tyenv = tyenv' <> (tyenv st)
                  }
 
     when update (put st')
-
+    
     case Prelude.lookup "it" mod of
-        Nothing -> return ()
-        Just ex -> do
-            val <- liftIO $ evalSub (tmenv st') ex
-            showOutput (show val) st'
+      Nothing -> return ()
+      Just ex -> do
+        val <- liftIO $ evalSub (tmenv st') ex
+        showOutput (show val) st'
 
 showOutput :: String -> IState -> Repl ()
 showOutput arg st = do
-    case Type.lookup "it" (tyenv st) of
-        Just val -> liftIO $ putStrLn $ show val
-        Nothing -> return ()
+  case Type.lookup "it" (tyenv st)  of
+    Just val -> liftIO $ putStrLn $ ppsignature (arg, val)
+    Nothing -> return ()
     
 cmd :: String -> Repl ()
 cmd source = Main.exec True source
@@ -120,30 +121,30 @@ process src = do
     Left err -> print err
     Right cmds -> putStrLn $ show cmds -- exec cmds >>= return . ppval >>= putStrLn
 
-interactive :: IO ()
+{-interactive :: IO ()
 interactive = runInputT defaultSettings loop
   where
     loop = do
         minput <- getInputLine "\x03BB> "
         case minput of
             Nothing -> outputStrLn "Goodbye."
-            Just input -> (liftIO $ process input ) >> loop
+            Just input -> (liftIO $ process input ) >> loop-}
 
 -------------------------------------------------------------------------------
 -- Commands
 -------------------------------------------------------------------------------
 
 -- :browse command
-{-browse :: [String] -> Repl ()
+browse :: [String] -> Repl ()
 browse _ = do
   st <- get
-  liftIO $ mapM_ putStrLn $ ppenv (tyctx st)-}
+  liftIO $ mapM_ putStrLn $ ppenv (tyenv st)
 
 -- :load command
-{-load :: [String] -> Repl ()
+load :: [String] -> Repl ()
 load args = do
-  contents <- liftIO $ L.readFile (unwords args)
-  Main.exec True contents-}
+  contents <- liftIO $ readFile (unwords args)
+  Main.exec True contents
 
 -- :type command
 typeof :: [String] -> Repl ()
@@ -178,25 +179,19 @@ comp n = do
   return $ filter (isPrefixOf n) (cmds ++ defs)
 
 options :: [(String, [String] -> Repl ())]
-{-options = [
+options = [
     ("load"   , load)
   , ("browse" , browse)
   , ("quit"   , quit)
   , ("type"   , Main.typeof)
-  ]-}
-
-options = [
-    ("quit"   , quit)
-  , ("type"   , Main.typeof)
   ]
-
 
 completer :: CompleterStyle (StateT IState IO)
 completer = Prefix (wordCompleter comp) defaultMatcher
 
 shell :: Repl a -> IO ()
 shell pre = flip evalStateT initState 
-    $ evalRepl "Poly>" cmd options Main.completer pre
+    $ evalRepl "\x03BB> " cmd options Main.completer pre
 
 main :: IO ()
 main = do

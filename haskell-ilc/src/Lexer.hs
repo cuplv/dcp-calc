@@ -1,6 +1,6 @@
 module Lexer where
 
-import Data.Functor.Identity
+import Data.Functor.Identity (Identity)
 import Text.Parsec
 import qualified Text.Parsec.Expr as Ex
 import Text.Parsec.Language (emptyDef)
@@ -78,6 +78,9 @@ langDef = Tok.LanguageDef
 lexer :: Tok.TokenParser ()
 lexer = Tok.makeTokenParser langDef
 
+whitespace :: Parser ()
+whitespace = Tok.whiteSpace lexer
+
 identifier :: Parser Name
 identifier = Tok.identifier lexer
 
@@ -105,6 +108,9 @@ semiSep = Tok.semiSep lexer
 
 comma :: Parser String
 comma = Tok.comma lexer
+
+colon :: Parser String
+colon = Tok.colon lexer
 
 semi :: Parser String
 semi = Tok.semi lexer

@@ -3,22 +3,17 @@ module Parser
       parser
     ) where
 
-import Data.Functor.Identity
-
+import Data.Functor.Identity (Identity)
 import Text.Parsec
 import qualified Text.Parsec.Expr as Ex
-import Text.Parsec.Language (emptyDef)
 import Text.Parsec.String (Parser)
-import qualified Text.Parsec.Token as Tok
 
 import Lexer
 import Syntax
 
--------------------------------------------------------------------------------
--- Parser
--------------------------------------------------------------------------------
-
--- | Types
+--------------------------------------------------------------------------------
+-- Parse types
+--------------------------------------------------------------------------------
 
 {-tInt = reserved "Int" >> return TInt
 
@@ -51,8 +46,10 @@ ty' = tInt
   <|> tList
   <|> tRd
   <|> tWr-}
- 
--- | Patterns
+
+--------------------------------------------------------------------------------
+-- Parse patterns
+--------------------------------------------------------------------------------
 
 pVar = mklexer PVar identifier
 
@@ -71,9 +68,7 @@ pList = mklexer PList $ brackets $ commaSep pat
 
 pCons = do
     hd <- pat'
-    spaces
-    string ":"
-    spaces
+    colon
     tl <- pat
     return (PCons hd tl)
 
@@ -84,6 +79,8 @@ pTuple = mklexer PTuple $ parens $ commaSep2 pat
 pUnit = reserved "()" >> return PUnit
 
 pWildcard = reserved "_" >> return PWildcard
+
+-- TODO: Try using chainl1?
 
 pat = try pCons <|> pat'
 
@@ -98,7 +95,9 @@ pat' = pVar
   <|> pTuple
   <|> pWildcard
 
--- | Expressions
+--------------------------------------------------------------------------------
+-- Parse expressions
+--------------------------------------------------------------------------------
 
 eVar = mklexer EVar identifier
 
@@ -123,7 +122,6 @@ eTuple = mklexer ETuple $ parens $ commaSep2 expr
 
 eUnit = reserved "()" >> return (ELit LUnit)
   
--- | Arithmetic operators, logical operators, relations
 table :: [[Ex.Operator String () Identity Expr]]
 table = [ [binaryOp "*" (EBin Mul) Ex.AssocLeft, binaryOp "/" (EBin Div) Ex.AssocLeft]
         , [binaryOp "%" (EBin Mod) Ex.AssocLeft]
@@ -149,15 +147,15 @@ eIf = do
     e2 <- expr
     return $ EIf b e1 e2
 
-eBranch = do
+branch = do
     reservedOp "|"
     p <- pat
-    g <- option (ELit $ LBool True) eGuard
+    g <- option (ELit $ LBool True) guard
     reservedOp "=>"
     e <- expr
     return (p, g, e)
 
-eGuard = do
+guard = do
     reserved "when"
     e <- expr
     return e
@@ -166,7 +164,7 @@ eMatch = do
     reserved "match"
     e <- expr
     reserved "with"
-    bs <- many1 eBranch
+    bs <- many1 branch
     return $ EMatch e bs
 
 eLet = do
@@ -250,70 +248,11 @@ eSeq = do
     e2 <- expr
     return $ ESeq e1 e2
 
-ePrint = mklexer EPrint $ reserved "print" >> atomExpr    
-
--- | Declarations
-
-{-dMain = do
-  reserved "let"
-  reserved "main"
-  reserved "="
-  e <- expr
-  return $ DExpr e-}
-
-dExpr = do
-    e <- expr
-    optional $ reserved ";;"
-    return $ ("it", e)
-
-dDeclLet = do
-    reserved "let"
-    x <- identifier
-    reserved "="
-    e <- expr
-    optional $ reserved ";;"
-    --  return $ DDecl x e
-    return (x, e)
-
-dDeclFun = do
-    reserved "let"
-    x <- identifier
-    ps <- reverse <$> many1 pat
-    reserved "="
-    e <- expr
-    optional $ reserved ";;"
-    -- return $ DDecl x (curry e ps)
-    return (x, curry e ps)
-  where
-    curry acc (p:[]) = ELam p acc
-    curry acc (p:ps) = curry (ELam p acc) ps
-
-dDecl = try dDeclLet <|> dDeclFun
-  
-{-cTySig = do
-  x <- identifier
-  reserved "::"
-  t <- ty
-  return $ CTySig x t
-
-cmd = try cMain <|> try cTySig <|> try cExpr <|> try cDef -- ^ Fix-}
-
-decl = try dExpr <|> try dDecl
-
--- | Parser
+ePrint = mklexer EPrint $ reserved "print" >> atomExpr
 
 expr = try eSeq <|> expr'
 
 expr' = Ex.buildExpressionParser table term
-
-piExpr = eRd
-     <|> eWr
-     <|> eNu
-     <|> eRepl
-     <|> eFork
-
-lazyExpr = eThunk
-       <|> eForce
 
 atomExpr = eVar
        <|> eImpVar
@@ -327,7 +266,6 @@ atomExpr = eVar
        <|> try eTuple
        <|> parens expr
 
-term :: Parser Expr
 term = try eApp
    <|> atomExpr
    <|> try eAssign
@@ -335,19 +273,61 @@ term = try eApp
    <|> eMatch
    <|> try eFun
    <|> eLet
+   <|> eRd
+   <|> eWr
+   <|> eNu
+   <|> eRepl
+   <|> eFork
    <|> eRef
    <|> eDeref
    <|> eLam
-   <|> lazyExpr
-   <|> piExpr
+   <|> eThunk
+   <|> eForce
    <|> ePrint
 
+--------------------------------------------------------------------------------
+-- Parse declarations
+--------------------------------------------------------------------------------
+
+dExpr = do
+    e <- expr
+    optional $ reserved ";;"
+    return $ ("it", e)
+
+dDeclLet = do
+    reserved "let"
+    x <- identifier
+    reserved "="
+    e <- expr
+    optional $ reserved ";;"
+    return (x, e)
+
+dDeclFun = do
+    reserved "let"
+    x <- identifier
+    ps <- reverse <$> many1 pat
+    reserved "="
+    e <- expr
+    optional $ reserved ";;"
+    return (x, curry e ps)
+  where
+    curry acc (p:[]) = ELam p acc
+    curry acc (p:ps) = curry (ELam p acc) ps
+
+{-tySig = do
+  x <- identifier
+  reserved "::"
+  t <- ty
+  return $ TySig x t-}
+
+decl = try dExpr <|> try dDeclLet <|> dDeclFun
+
+--------------------------------------------------------------------------------
+-- Parser
+--------------------------------------------------------------------------------
+
 contents :: Parser a -> Parser a
-contents p = do
-    Tok.whiteSpace lexer
-    r <- p
-    eof
-    return r
+contents p = mklexer id $ whitespace *> p <* eof
 
 toplevel :: Parser [Decl]
 toplevel = many1 decl

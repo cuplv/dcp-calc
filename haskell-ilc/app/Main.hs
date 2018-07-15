@@ -116,19 +116,9 @@ cmd source = Main.exec True source
 process :: String -> IO ()
 process src = do
   let cmds = parser src
-  -- putStrLn $ show cmds
   case cmds of
     Left err -> print err
-    Right cmds -> putStrLn $ show cmds -- exec cmds >>= return . ppval >>= putStrLn
-
-{-interactive :: IO ()
-interactive = runInputT defaultSettings loop
-  where
-    loop = do
-        minput <- getInputLine "\x03BB> "
-        case minput of
-            Nothing -> outputStrLn "Goodbye."
-            Just input -> (liftIO $ process input ) >> loop-}
+    Right cmds -> Eval.exec cmds >>= return . ppval >>= putStrLn
 
 -------------------------------------------------------------------------------
 -- Commands
@@ -191,7 +181,7 @@ completer = Prefix (wordCompleter comp) defaultMatcher
 
 shell :: Repl a -> IO ()
 shell pre = flip evalStateT initState 
-    $ evalRepl "\x03BB> " cmd options Main.completer pre
+    $ evalRepl "\x03BB: " cmd options Main.completer pre
 
 main :: IO ()
 main = do

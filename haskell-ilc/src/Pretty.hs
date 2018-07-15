@@ -8,7 +8,6 @@ import qualified Data.Map as Map
 import Text.PrettyPrint (Doc, (<>), (<+>))
 import qualified Text.PrettyPrint as PP
 
-
 import Eval
 import Infer
 import Syntax
@@ -85,7 +84,7 @@ instance Pretty Type where
 
 instance Pretty Scheme where
   ppr p (Forall [] t) = ppr p t
-  ppr p (Forall ts t) = PP.text "forall" <+> PP.hcat (PP.punctuate PP.space (map (ppr p) ts)) <> PP.text "." <+> ppr p t
+  ppr p (Forall ts t) = PP.text "\x2200" <+> PP.hcat (PP.punctuate PP.space (map (ppr p) ts)) <+> PP.text "." <+> ppr p t
 
 ppscheme :: Scheme -> String
 ppscheme = PP.render . ppr 0
@@ -94,7 +93,7 @@ pptype :: Type -> String
 pptype = PP.render . ppr 0
 
 ppsignature :: (String, Scheme) -> String
-ppsignature (a, b) = a ++ " : " ++ ppscheme b
+ppsignature (a, b) = a ++ " :: " ++ ppscheme b
 
-ppenv :: Env -> [String]
+ppenv :: TypeEnv -> [String]
 ppenv (TypeEnv env) = map ppsignature $ Map.toList env

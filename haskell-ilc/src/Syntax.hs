@@ -16,7 +16,7 @@ data Expr
     | EBin Binop Expr Expr
     | EUn Unop Expr
     | EIf Expr Expr Expr
-    | EMatch Expr [(Pattern, Expr, Expr)] -- Guard into Maybe?
+    | EMatch Expr [(Pattern, Expr, Expr)] -- TODO: Guard into Maybe?
     | ELet Pattern Expr Expr
     | EFun Pattern Expr Expr
     | EAssign Name Expr
@@ -79,18 +79,5 @@ data Unop
 
 type Decl = (Name, Expr)
 
-{-data Decl
-  = DExpr Expr
-  | DDecl Name Expr
-  deriving (Eq, Show)-}
-
 data Program = Program [Decl] Expr
     deriving (Eq, Show)
-
-{-data Command
-    = CExpr Expr
-    | CDef Name Expr
-    -- | CTySig Name Type
-    deriving (Eq, Show)-}
-
-

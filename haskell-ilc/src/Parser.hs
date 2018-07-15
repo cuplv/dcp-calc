@@ -174,10 +174,7 @@ eLet = do
     e1 <- expr
     reserved "in"
     e2 <- expr
-    return $ curry e2 ps e1
-  where
-    curry acc (p:[]) e = ELet p e acc
-    curry acc (p:ps) e = curry (ELet p e acc) ps e
+    return $ foldr (\p -> ELet p e1) e2 ps
 
 eFun = do
     reserved "let"
@@ -187,10 +184,7 @@ eFun = do
     e1 <- expr
     reserved "in"
     e2 <- expr
-    return $ EFun p1 (curry e1 args) e2
-  where
-    curry acc (x:[]) = ELam x acc
-    curry acc (x:xs) = curry (ELam x acc) xs
+    return $ EFun p1 (foldr ELam e1 args) e2
 
 eAssign = do
     reserved "let"
@@ -213,10 +207,7 @@ eLam = do
 eApp = do
     f <- atomExpr
     args <- many1 atomExpr
-    return $ curry f args
-  where
-    curry acc (x:[]) = EApp acc x
-    curry acc (x:xs) = curry (EApp acc x) xs
+    return $ foldl EApp f args
 
 eRd = mklexer ERd $ reserved "rd" >> expr
 
@@ -305,14 +296,11 @@ dDeclLet = do
 dDeclFun = do
     reserved "let"
     x <- identifier
-    ps <- reverse <$> many1 pat
+    ps <- many1 pat
     reserved "="
     e <- expr
     optional $ reserved ";;"
-    return (x, curry e ps)
-  where
-    curry acc (p:[]) = ELam p acc
-    curry acc (p:ps) = curry (ELam p acc) ps
+    return (x, foldr ELam e ps)
 
 {-tySig = do
   x <- identifier

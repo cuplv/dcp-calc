@@ -45,8 +45,8 @@ instance Show (IORef a) where
 
 type TermEnv = Map.Map Name Value
 
-emptyEnv :: TermEnv
-emptyEnv = Map.empty
+emptyTmEnv :: TermEnv
+emptyTmEnv = Map.empty
 
 extendEnv :: TermEnv -> Name -> Value -> TermEnv
 extendEnv env x v = Map.insert x v env
@@ -246,7 +246,7 @@ eval' env m expr = case expr of
 
 -- TODO: Types    
 exec :: [Decl] -> IO Value
-exec cmds = go emptyEnv cmds
+exec cmds = go emptyTmEnv cmds
   where
 {-    go env ((DExpr e):[] ) = eval env e
     go env ((DExpr e):rest) = eval env e >>

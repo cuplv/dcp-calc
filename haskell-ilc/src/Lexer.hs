@@ -136,4 +136,5 @@ prefixOp s f = Ex.Prefix (reservedOp s >> return f)
 binaryOp :: String -> (a -> a -> a) -> Ex.Assoc -> Ex.Operator String () Identity a
 binaryOp s f = Ex.Infix (reservedOp s >> return f)
 
+mklexer :: (a -> b) -> Parser a -> Parser b
 mklexer e p = p >>= \x -> return (e x)

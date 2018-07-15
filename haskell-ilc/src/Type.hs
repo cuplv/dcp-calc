@@ -23,24 +23,24 @@ typeInt, typeBool :: Type
 typeInt  = TCon "Int"
 typeBool = TCon "Bool"
 
-data Env = TypeEnv { types :: Map.Map Name Scheme }
+data TypeEnv = TypeEnv { types :: Map.Map Name Scheme }
     deriving (Eq, Show)
 
-empty :: Env
-empty = TypeEnv Map.empty
+emptyTyEnv :: TypeEnv
+emptyTyEnv = TypeEnv Map.empty
 
-remove :: Env -> Name -> Env
+remove :: TypeEnv -> Name -> TypeEnv
 remove (TypeEnv env) var = TypeEnv (Map.delete var env)
 
-extend :: Env -> (Name, Scheme) -> Env
+extend :: TypeEnv -> (Name, Scheme) -> TypeEnv
 extend env (x, s) = env { types = Map.insert x s (types env) }
 
-lookup :: Name -> Env -> Maybe Scheme
+lookup :: Name -> TypeEnv -> Maybe Scheme
 lookup key (TypeEnv tys) = Map.lookup key tys
 
-merge :: Env -> Env -> Env
+merge :: TypeEnv -> TypeEnv -> TypeEnv
 merge (TypeEnv a) (TypeEnv b) = TypeEnv (Map.union a b)
 
-instance Monoid Env where
-    mempty = empty
+instance Monoid TypeEnv where
+    mempty = emptyTyEnv
     mappend = merge

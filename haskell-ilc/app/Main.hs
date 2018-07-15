@@ -6,18 +6,13 @@
 module Main where
 
 import Control.Monad.Trans
-import Control.Monad.Identity
 import Control.Monad.State.Strict
-import qualified Data.Text.Lazy as L
-import qualified Data.Text.Lazy.IO as L
-import Data.List (isPrefixOf, foldl')
-import Data.Monoid
+import Data.List (isPrefixOf)
 import qualified Data.Map as Map
+import Data.Monoid
 import Options.Applicative
-import System.Console.Haskeline
+import System.Console.Repline hiding (Options)
 import System.Exit
-import System.Environment
-import System.Console.Repline
 
 import Eval
 import Infer
@@ -26,11 +21,11 @@ import Pretty
 import Syntax
 import Type
 
--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 -- Command line parser
--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 
-data CLOptions = CLOptions
+data Options = Options
     { optSrcFile :: Maybe FilePath
     , optAst     :: Bool
     }
@@ -42,29 +37,29 @@ inputFile = optional $ argument str
 
 ast :: Parser Bool
 ast = switch
-  (  long "ast"
-  <> help "Print abstract syntax tree" )
+    (  long "ast"
+    <> help "Print abstract syntax tree" )
 
-optParser :: Parser CLOptions
-optParser = CLOptions <$> inputFile <*> ast
+optParser :: Parser Options
+optParser = Options <$> inputFile <*> ast
 
-opts :: ParserInfo CLOptions
+opts :: ParserInfo Options
 opts = info (optParser <**> helper)
     ( fullDesc
     <> progDesc "Interactive Lambda Calculus (ILC) interpreter"
     <> header "ILC" )
 
--------------------------------------------------------------------------------
--- Types
--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+-- Environments
+--------------------------------------------------------------------------------
 
 data IState = IState
-    { tyenv :: Type.Env
+    { tyenv :: TypeEnv
     , tmenv :: TermEnv
     }
 
 initState :: IState
-initState = IState Type.empty emptyEnv -- TODO
+initState = IState emptyTyEnv emptyTmEnv
 
 type Repl a = HaskelineT (StateT IState IO) a
 hoistErr :: Show e => Either e a -> Repl a
@@ -73,19 +68,17 @@ hoistErr (Left err) = do
     liftIO $ print err
     abort
 
--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 -- Execution
--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 
 evalDecl :: TermEnv -> Decl -> IO TermEnv
-evalDecl env (x, expr) = do
-    v <- evalSub env expr
-    let env' = extendEnv env x v
-    return $ env'
+evalDecl env (x, expr) = evalSub env expr >>= return . extendEnv env x
     
-exec :: Bool -> String -> Repl ()
-exec update source = do
+execi :: Bool -> String -> Repl ()
+execi update source = do
     st <- get
+    
     mod <- hoistErr $ parser source
     
     tyenv' <- hoistErr $ inferTop (tyenv st) mod
@@ -99,26 +92,26 @@ exec update source = do
     when update (put st')
     
     case Prelude.lookup "it" mod of
-      Nothing -> return ()
-      Just ex -> do
-        val <- liftIO $ evalSub (tmenv st') ex
-        showOutput (show val) st'
+        Nothing -> return ()
+        Just ex -> do
+            val <- liftIO $ evalSub (tmenv st') ex
+            showOutput (show val) st'
 
 showOutput :: String -> IState -> Repl ()
 showOutput arg st = do
-  case Type.lookup "it" (tyenv st)  of
-    Just val -> liftIO $ putStrLn $ ppsignature (arg, val)
-    Nothing -> return ()
+    case Type.lookup "it" (tyenv st)  of
+        Just val -> liftIO $ putStrLn $ ppsignature (arg, val)
+        Nothing -> return ()
     
 cmd :: String -> Repl ()
-cmd source = Main.exec True source
+cmd source = execi True source
 
 process :: String -> IO ()
 process src = do
-  let cmds = parser src
-  case cmds of
-    Left err -> print err
-    Right cmds -> Eval.exec cmds >>= return . ppval >>= putStrLn
+    let cmds = parser src
+    case cmds of
+        Left err -> print err
+        Right cmds -> Eval.exec cmds >>= return . ppval >>= putStrLn
 
 -------------------------------------------------------------------------------
 -- Commands
@@ -127,23 +120,23 @@ process src = do
 -- :browse command
 browse :: [String] -> Repl ()
 browse _ = do
-  st <- get
-  liftIO $ mapM_ putStrLn $ ppenv (tyenv st)
+    st <- get
+    liftIO $ mapM_ putStrLn $ ppenv (tyenv st)
 
 -- :load command
 load :: [String] -> Repl ()
 load args = do
-  contents <- liftIO $ readFile (unwords args)
-  Main.exec True contents
+    contents <- liftIO $ readFile (unwords args)
+    execi True contents
 
 -- :type command
 typeof :: [String] -> Repl ()
 typeof args = do
-  st <- get
-  let arg = unwords args
-  case Type.lookup arg (tyenv st) of
-    Just val -> liftIO $ putStrLn $ ppsignature (arg, val)
-    Nothing -> Main.exec False arg
+    st <- get
+    let arg = unwords args
+    case Type.lookup arg (tyenv st) of
+        Just val -> liftIO $ putStrLn $ ppsignature (arg, val)
+        Nothing -> execi False arg
 
 -- :quit command
 quit :: a -> Repl ()
@@ -155,26 +148,23 @@ quit _ = liftIO $ exitSuccess
 
 -- Prefix tab completer
 defaultMatcher :: MonadIO m => [(String, CompletionFunc m)]
-defaultMatcher = [
-    (":load"  , fileCompleter)
-  -- , (":type"  , values)
-  ]
+defaultMatcher = [(":load"  , fileCompleter)]
 
 -- Default tab completer
 comp :: (Monad m, MonadState IState m) => WordCompleter m
 comp n = do
-  let cmds = [":load", ":type", ":browse", ":quit"]
-  TypeEnv ctx <- gets tyenv
-  let defs = Map.keys ctx
-  return $ filter (isPrefixOf n) (cmds ++ defs)
+    let cmds = [":load", ":type", ":browse", ":quit"]
+    TypeEnv ctx <- gets tyenv
+    let defs = Map.keys ctx
+    return $ filter (isPrefixOf n) (cmds ++ defs)
 
 options :: [(String, [String] -> Repl ())]
-options = [
-    ("load"   , load)
-  , ("browse" , browse)
-  , ("quit"   , quit)
-  , ("type"   , Main.typeof)
-  ]
+options =
+    [ ("load"   , load)
+    , ("browse" , browse)
+    , ("quit"   , quit)
+    , ("type"   , typeof)
+    ]
 
 completer :: CompleterStyle (StateT IState IO)
 completer = Prefix (wordCompleter comp) defaultMatcher
@@ -188,5 +178,4 @@ main = do
     options <- execParser opts
     case (optSrcFile options) of
         Just file -> readFile file >>= process
-        -- Nothing   -> interactive
         Nothing   -> shell (return ())

@@ -22,7 +22,7 @@ import Type
 
 -- | Inference monad
 type Infer a = (ReaderT
-                  Env
+                  TypeEnv
                   (StateT
                   InferState
                   (Except
@@ -72,7 +72,7 @@ instance Substitutable a => Substitutable [a] where
     apply = fmap . apply
     ftv = foldr (Set.union . ftv) Set.empty
 
-instance Substitutable Env where
+instance Substitutable TypeEnv where
     apply s (TypeEnv env) = TypeEnv $ Map.map (apply s) env
     ftv (TypeEnv env) = ftv $ Map.elems env
 
@@ -88,11 +88,11 @@ data TypeError
 -------------------------------------------------------------------------------
 
 -- | Run the inference monad
-runInfer :: Env -> Infer (Type, [Constraint]) -> Either TypeError (Type, [Constraint])
+runInfer :: TypeEnv -> Infer (Type, [Constraint]) -> Either TypeError (Type, [Constraint])
 runInfer env m = runExcept $ evalStateT (runReaderT m env) initInfer
 
 -- | Solve for toplevel type of an expression in a give environment
-inferExpr :: Env -> Expr -> Either TypeError Scheme
+inferExpr :: TypeEnv -> Expr -> Either TypeError Scheme
 inferExpr env ex = case runInfer env (infer ex) of
     Left err       -> Left err
     Right (ty, cs) -> case runSolve cs of
@@ -100,7 +100,7 @@ inferExpr env ex = case runInfer env (infer ex) of
         Right subst -> Right $ closeOver $ apply subst ty
 
 -- | Return internal constraints used in solving for type of expression
-constraintsExpr :: Env -> Expr -> Either TypeError ([Constraint], Subst, Type, Scheme)
+constraintsExpr :: TypeEnv -> Expr -> Either TypeError ([Constraint], Subst, Type, Scheme)
 constraintsExpr env ex = case runInfer env (infer ex) of
     Left       err -> Left err
     Right (ty, cs) -> case runSolve cs of
@@ -109,7 +109,7 @@ constraintsExpr env ex = case runInfer env (infer ex) of
           where sc = closeOver $ apply subst ty
 
 closeOver :: Type-> Scheme
-closeOver = normalize . generalize Type.empty
+closeOver = normalize . generalize emptyTyEnv
 
 inEnv :: (Name, Scheme) -> Infer a -> Infer a
 inEnv (x, sc) m = do
@@ -139,7 +139,7 @@ instantiate (Forall as t) = do
     let s = Subst $ Map.fromList $ zip as as'
     return $ apply s t
 
-generalize :: Env -> Type-> Scheme -- ^ T-Gen
+generalize :: TypeEnv -> Type-> Scheme -- ^ T-Gen
 generalize env t = Forall as t
     where as = Set.toList $ ftv t `Set.difference` ftv env
 
@@ -173,7 +173,7 @@ infer expr = case expr of
                 (t2, c2) <- inEnv (x, sc) $ local (apply sub) (infer e2)
                 return (t2, c1 ++ c2)
 
-inferTop :: Env -> [(Name, Expr)] -> Either TypeError Env
+inferTop :: TypeEnv -> [(Name, Expr)] -> Either TypeError TypeEnv
 inferTop env [] = Right env
 inferTop env ((name, ex):xs) = case inferExpr env ex of
     Left err -> Left err

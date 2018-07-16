@@ -178,13 +178,13 @@ eLet = do
 
 eFun = do
     reserved "let"
-    p1 <- pat
+    x <- identifier
     args <- reverse <$> many1 pat
     reservedOp "="
     e1 <- expr
     reserved "in"
     e2 <- expr
-    return $ EFun p1 (foldr ELam e1 args) e2
+    return $ EFun x (foldr ELam e1 args) e2
 
 eAssign = do
     reserved "let"

@@ -18,7 +18,7 @@ data Expr
     | EIf Expr Expr Expr
     | EMatch Expr [(Pattern, Expr, Expr)] -- TODO: Guard into Maybe?
     | ELet Pattern Expr Expr
-    | EFun Pattern Expr Expr
+    | EFun Name Expr Expr
     | ELam Pattern Expr
     | EApp Expr Expr
     | ERd Expr

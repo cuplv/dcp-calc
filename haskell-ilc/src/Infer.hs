@@ -177,6 +177,37 @@ binops Neq = do
 unops :: Unop -> Type
 unops Not = tyBool  `TArr` tyBool
 
+-- TODO: Cannot infer type of xs in let x:xs = ...
+getBinds :: Pattern -> Expr -> [(Name, Expr)]
+getBinds p e = go [] p e
+  where
+    go acc (PVar x) e = (x, e) : acc
+    go acc (PTuple ps) (ETuple es) = gos acc ps es
+    go acc (PList ps) (EList es) = gos acc ps es
+    go acc (PSet ps) (ESet es) = gos acc ps es
+    go acc (PCons p ps) (EList (e:es)) = foldl1 (++) [acc1, acc2, acc]
+      where
+        acc1 = getBinds p e
+        acc2 = getBinds ps (EList es)
+    go acc _ _ = acc
+
+    gos acc ps es | length ps == length es = accs
+                  | otherwise              = error "pattern match fail"
+      where
+        accs  = concatMap (\(p, e) -> go acc p e) pe
+        pe    = zip ps es
+
+inferLet :: Name -> Expr -> Expr -> Infer (Type, [Constraint])
+inferLet x e1 e2 = do
+    env <- ask
+    (t1, c1) <- infer e1
+    case runSolve c1 of
+        Left err -> throwError err
+        Right sub -> do
+            let sc = generalize (apply sub env) (apply sub t1)
+            (t2, c2) <- inEnv (x, sc) $ local (apply sub) (infer e2)
+            return (t2, c1 ++ c2)
+
 infer :: Expr -> Infer (Type, [Constraint])
 infer expr = case expr of
     EVar x -> do
@@ -191,7 +222,7 @@ infer expr = case expr of
     ELit (LTag _) -> return (tyTag, [])
     ELit LUnit -> return (tyUnit, [])
 
-    -- TODO: Refactorable?
+    -- TODO: Refactor?
     ETuple es -> do
         tcs <- mapM infer es
         let ts = foldr ((:) . fst) [] tcs
@@ -241,14 +272,7 @@ infer expr = case expr of
         (t3, c3) <- infer e3
         return (t2, c1 ++ c2 ++ c3 ++ [(t1, tyBool), (t2, t3)])
 
-    -- TODO
-    {-EMatch e bs -> do
-        (t, c) <- infer e-}
-        -- (e, type of patterns)
-        -- guards should be of type bool
-        -- branch expressions should have same type
 
-    -- TODO: Other patterns
     ELet (PVar x) e1 e2 -> do
         env <- ask
         (t1, c1) <- infer e1
@@ -259,7 +283,36 @@ infer expr = case expr of
                 (t2, c2) <- inEnv (x, sc) $ local (apply sub) (infer e2)
                 return (t2, c1 ++ c2)
 
-    EFun (PVar x) e1 e2 -> do
+    ELet (PCons (PVar x) (PVar xs)) e1 e2 -> do
+        env <- ask
+        (t1, c1) <- infer e1
+        case runSolve c1 of
+            Left err -> throwError err
+            Right sub -> do
+                ty <- fresh
+                let scxs = generalize (apply sub env) (apply sub t1)
+                (t2, c2) <- inEnv (x, Forall [] ty) $
+                            inEnv (xs, scxs) $
+                            local (apply sub) (infer e2)
+                return (t2, c1 ++ c2 ++ [(t1, TList ty)])
+
+    ELet (PCons (PVar x) (PList [])) e1 e2 -> do
+        env <- ask
+        (t1, c1) <- infer e1
+        case runSolve c1 of
+            Left err -> throwError err
+            Right sub -> do
+                ty <- fresh
+                (t2, c2) <- inEnv (x, Forall [] ty) $
+                            local (apply sub) (infer e2)
+                return (t2, c1 ++ c2 ++ [(t1, TList ty)])
+
+    {-ELet p e1 e2 -> do
+        let binds = getBinds p e1
+        let eLet = foldr (\(x, e) -> ELet (PVar x) e) e2 binds
+        infer eLet-}
+
+    EFun x e1 e2 -> do
         env <- ask
         (t1, c1) <- infer e1
         case runSolve c1 of
@@ -269,15 +322,21 @@ infer expr = case expr of
                 (t2, c2) <- inEnv (x, sc) $ local (apply sub) (infer e2)
                 return (t2, c1 ++ c2)
 
-    -- TODO: Other patterns
     ELam (PVar x) e -> do
-        tv <- fresh
-        (t, c) <- inEnv (x, Forall [] tv) (infer e)
-        return (tv `TArr` t, c)
+        ty <- fresh
+        (t, c) <- inEnv (x, Forall [] ty) (infer e)
+        return (ty `TArr` t, c)
 
     ELam PUnit e -> do
         (t, c) <- (infer e)
         return (tyUnit `TArr` t, c)
+
+    ELam PWildcard e -> do
+        ty <- fresh
+        (t, c) <- (infer e)
+        return (ty `TArr` t, c)
+        
+    -- TODO: Need other patterns for ELam
         
     EApp e1 e2 -> do
         (t1, c1) <- infer e1

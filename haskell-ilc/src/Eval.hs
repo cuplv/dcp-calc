@@ -105,7 +105,8 @@ evalPatMatch env ((p, g, e):bs) v =
 
 letBinds p v = fromMaybe (error "let pattern matching failed") $
                getBinds p v
-               
+
+-- TODO: cons pattern match not failing on let x:xs = "foo" in x               
 getBinds :: Pattern -> Value -> Maybe [(Name, Value)]
 getBinds p v = go [] p v
   where
@@ -129,6 +130,7 @@ getBinds p v = go [] p v
     go acc (PTuple ps) (VTuple vs) = gos acc ps vs
     go acc PUnit VUnit = Just acc
     go acc PWildcard _ = Just acc
+    -- TODO: Refactor using concatMap?
     gos acc vs ps | length vs == length ps = foldl (<:>) (Just []) accs
                   | otherwise              = Nothing
       where
@@ -187,12 +189,9 @@ eval' env m expr = case expr of
                         env'  = updateEnv env binds
                     in evalSub env' e2 >>= putMVar m
                     
-    EFun p e1 e2 ->
+    EFun x e1 e2 ->
         evalSub env e1 >>= \v1 ->
-        let env'  = updateEnv env binds
-            binds = letBinds p f
-            f     = case (p, v1) of
-                    (PVar x, VClosure arg env e) -> VClosure arg (extendEnv env x f) e
+        let env' = extendEnv env x v1
         in evalSub env' e2 >>= putMVar m
 
     -- TODO: Applying operation twice
@@ -208,7 +207,7 @@ eval' env m expr = case expr of
       where
         getRef (VRef r) = return r
 
-    -- TODO: Handle unit argument.
+    -- TODO: Handle unit, wildcard arguments
     ELam p e -> putMVar m $ VClosure (f p) env e
       where
         f (PVar x) = Just x
@@ -219,9 +218,11 @@ eval' env m expr = case expr of
                   evalSub env e2 >>= \v2 ->
                   evalApp v1 v2 >>= putMVar m
       where
-        evalApp (VClosure x env e) v = let env' = extendEnv env x' v
-                                           x'   = fromMaybe (error "") x
-                                       in evalSub env' e
+        evalApp (VClosure x env e) v =
+            case x of
+                Just x' -> let env' = extendEnv env x' v
+                           in evalSub env' e
+                Nothing -> evalSub env e
 
     ENu x e -> newChan >>= \c ->
                let env' = extendEnv env x $ VChannel x c
@@ -258,9 +259,6 @@ eval' env m expr = case expr of
 exec :: [Decl] -> IO Value
 exec cmds = go emptyTmEnv cmds
   where
-{-    go env ((DExpr e):[] ) = eval env e
-    go env ((DExpr e):rest) = eval env e >>
-                              go env rest-}
     go env ((x, e):[]) = eval env e
     go env ((x, e):rest) = eval env e >>= \v ->
                                let env' = extendEnv env x v

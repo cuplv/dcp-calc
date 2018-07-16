@@ -13,6 +13,7 @@ import Data.Monoid
 import Options.Applicative
 import System.Console.Repline hiding (Options)
 import System.Exit
+import System.IO.Silently (silence)
 
 import Eval
 import Infer
@@ -73,7 +74,7 @@ hoistErr (Left err) = do
 --------------------------------------------------------------------------------
 
 evalDecl :: TermEnv -> Decl -> IO TermEnv
-evalDecl env (x, expr) = evalSub env expr >>= return . extendEnv env x
+evalDecl env (x, expr) = silence (evalSub env expr) >>= return . extendEnv env x
     
 execi :: Bool -> String -> Repl ()
 execi update source = do

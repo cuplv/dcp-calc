@@ -275,6 +275,10 @@ infer expr = case expr of
         tv <- fresh
         return (tv, c ++ [(TRef tv, t)])
 
+    EPrint e -> do
+       (t, c) <- infer e
+       return (tyUnit, c)
+
 inferTop :: TypeEnv -> [(Name, Expr)] -> Either TypeError TypeEnv
 inferTop env [] = Right env
 inferTop env ((name, ex):xs) = case inferExpr env ex of

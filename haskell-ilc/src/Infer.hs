@@ -197,16 +197,58 @@ getBinds p e = go [] p e
         accs  = concatMap (\(p, e) -> go acc p e) pe
         pe    = zip ps es
 
-inferLet :: Name -> Expr -> Expr -> Infer (Type, [Constraint])
-inferLet x e1 e2 = do
-    env <- ask
-    (t1, c1) <- infer e1
-    case runSolve c1 of
-        Left err -> throwError err
-        Right sub -> do
-            let sc = generalize (apply sub env) (apply sub t1)
-            (t2, c2) <- inEnv (x, sc) $ local (apply sub) (infer e2)
-            return (t2, c1 ++ c2)
+
+inferPat :: Pattern -> Expr -> Infer (Type, [Constraint], [(Name, Type)])
+inferPat p e = case (p, e) of
+    (PVar x, e) -> do
+        ty <- fresh
+        (t, c) <- infer e
+        return (t, (t, ty) : c, [(x, ty)])
+
+    -- TODO: refactor
+    (PTuple ps, ETuple es) -> do
+        when (length ps /= length es) (error "pattern match failed")
+        (t, c) <- infer $ ETuple es
+        tces <- mapM (\(p, e) -> inferPat p e) $ zip ps es
+        let ts = map first tces
+            cs = concatMap second tces
+            es = concatMap third tces
+        return (t, c ++ cs ++ [(TProd ts, t)], es)
+      where first (x, _, _) = x
+            second (_, x, _) = x
+            third (_, _, x) = x
+        
+    (PTuple ps, e) -> do
+        tys <- mapM (const fresh) ps
+        let env = concatMap (\(p, t) -> case p of
+                      PVar x' -> [(x', t)]
+                      _       -> []       ) $ zip ps tys
+        (t, c) <- infer e
+        return (t, (TProd tys, t) : c, env)
+        
+    (PList ps, EList es) -> do
+        when (length ps /= length es) (error "pattern match failed")
+        (t, c) <- infer $ EList es
+        tces <- mapM (\(p, e) -> inferPat p e) $ zip ps es
+        let ts = map first tces
+            cs = concatMap second tces
+            es = concatMap third tces
+        t' <- if null ts then fresh
+                  else return $ head ts
+        return (t, c ++ cs ++ [(TList t', t)], es)
+      where first (x, _, _) = x
+            second (_, x, _) = x
+            third (_, _, x) = x
+        
+    (PList ps, e) -> do
+        tys <- mapM (const fresh) ps
+        let env = concatMap (\(p, t) -> case p of
+                      PVar x' -> [(x', t)]
+                      _       -> []       ) $ zip ps tys
+        (t, c) <- infer e
+        t' <- if null tys then fresh
+                  else return $ head tys
+        return (t, (TList $ t', t) : c, env)
 
 infer :: Expr -> Infer (Type, [Constraint])
 infer expr = case expr of
@@ -272,45 +314,17 @@ infer expr = case expr of
         (t3, c3) <- infer e3
         return (t2, c1 ++ c2 ++ c3 ++ [(t1, tyBool), (t2, t3)])
 
-
-    ELet (PVar x) e1 e2 -> do
+    ELet p e1 e2 -> do
         env <- ask
-        (t1, c1) <- infer e1
+        (t1, c1, env') <- inferPat p e1
         case runSolve c1 of
             Left err -> throwError err
             Right sub -> do
-                let sc = generalize (apply sub env) (apply sub t1)
-                (t2, c2) <- inEnv (x, sc) $ local (apply sub) (infer e2)
+                let sc t = generalize (apply sub env) (apply sub t)
+                (t2, c2) <- foldr (\(x, t) -> inEnv (x, sc t))
+                                  (local (apply sub) (infer e2))
+                                  env'
                 return (t2, c1 ++ c2)
-
-    ELet (PCons (PVar x) (PVar xs)) e1 e2 -> do
-        env <- ask
-        (t1, c1) <- infer e1
-        case runSolve c1 of
-            Left err -> throwError err
-            Right sub -> do
-                ty <- fresh
-                let scxs = generalize (apply sub env) (apply sub t1)
-                (t2, c2) <- inEnv (x, Forall [] ty) $
-                            inEnv (xs, scxs) $
-                            local (apply sub) (infer e2)
-                return (t2, c1 ++ c2 ++ [(t1, TList ty)])
-
-    ELet (PCons (PVar x) (PList [])) e1 e2 -> do
-        env <- ask
-        (t1, c1) <- infer e1
-        case runSolve c1 of
-            Left err -> throwError err
-            Right sub -> do
-                ty <- fresh
-                (t2, c2) <- inEnv (x, Forall [] ty) $
-                            local (apply sub) (infer e2)
-                return (t2, c1 ++ c2 ++ [(t1, TList ty)])
-
-    {-ELet p e1 e2 -> do
-        let binds = getBinds p e1
-        let eLet = foldr (\(x, e) -> ELet (PVar x) e) e2 binds
-        infer eLet-}
 
     EFun x e1 e2 -> do
         env <- ask

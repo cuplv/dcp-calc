@@ -12,6 +12,7 @@ data Type
     = TVar TVar
     | TCon String
     | TArr Type Type
+    | TRef Type
     deriving (Show, Eq, Ord)
 
 infixr `TArr`
@@ -19,9 +20,13 @@ infixr `TArr`
 data Scheme = Forall [TVar] Type
     deriving (Show, Eq, Ord)
 
-typeInt, typeBool :: Type
-typeInt  = TCon "Int"
-typeBool = TCon "Bool"
+tyInt, tyBool, tyString, tyTag, tyUnit :: Type
+tyInt  = TCon "Int"
+tyBool = TCon "Bool"
+tyString = TCon "String"
+tyTag = TCon "Tag"
+tyUnit = TCon "Unit"
+tyChan = TCon "Chan"
 
 data TypeEnv = TypeEnv { types :: Map.Map Name Scheme }
     deriving (Eq, Show)

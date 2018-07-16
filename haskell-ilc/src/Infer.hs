@@ -54,10 +54,12 @@ instance Substitutable Type where
     apply _ (TCon a) = TCon a
     apply (Subst s) t@(TVar a) = Map.findWithDefault t a s
     apply s (t1 `TArr` t2) = apply s t1 `TArr` apply s t2
+    apply s (TRef t) = TRef (apply s t)
 
-    ftv TCon{} = Set.empty  -- What do the braces mean?
     ftv (TVar a) = Set.singleton a
+    ftv TCon{} = Set.empty
     ftv (t1 `TArr` t2) = ftv t1 `Set.union` ftv t2
+    ftv (TRef t) = ftv t
 
 instance Substitutable Scheme where
     apply (Subst s) (Forall as t) = Forall as $ apply s' t
@@ -143,26 +145,62 @@ generalize :: TypeEnv -> Type-> Scheme -- ^ T-Gen
 generalize env t = Forall as t
     where as = Set.toList $ ftv t `Set.difference` ftv env
 
+binops :: Binop -> Type
+binops Add = tyInt  `TArr` (tyInt  `TArr` tyInt)
+binops Sub = tyInt  `TArr` (tyInt  `TArr` tyInt)
+binops Mul = tyInt  `TArr` (tyInt  `TArr` tyInt)
+binops Div = tyInt  `TArr` (tyInt  `TArr` tyInt)
+binops Mod = tyInt  `TArr` (tyInt  `TArr` tyInt)
+binops And = tyBool `TArr` (tyBool `TArr` tyBool)
+binops Or  = tyBool `TArr` (tyBool `TArr` tyBool)
+binops Lt  = tyInt  `TArr` (tyInt  `TArr` tyBool)
+binops Gt  = tyInt  `TArr` (tyInt  `TArr` tyBool)
+binops Leq = tyInt  `TArr` (tyInt  `TArr` tyBool)
+binops Geq = tyInt  `TArr` (tyInt  `TArr` tyBool)
+-- TODO: Make polymorphic
+binops Eql = tyInt  `TArr` (tyInt  `TArr` tyBool)
+binops Neq = tyInt  `TArr` (tyInt  `TArr` tyBool)
+
+unops :: Unop -> Type
+unops Not = tyBool  `TArr` tyBool
+
 infer :: Expr -> Infer (Type, [Constraint])
 infer expr = case expr of
-    ELit (LInt _) -> return (typeInt, [])
-    ELit (LBool _) -> return (typeBool, [])
-    
     EVar x -> do
         t <- lookupEnv x
         return (t, [])
-
-    ELam (PVar x) e -> do
-        tv <- fresh
-        (t, c) <- inEnv (x, Forall [] tv) (infer e)
-        return (tv `TArr` t, c)
         
-    EApp e1 e2 -> do
+    ELit (LInt _) -> return (tyInt, [])
+    ELit (LBool _) -> return (tyBool, [])
+    ELit (LString _) -> return (tyString, [])
+    ELit (LTag _) -> return (tyTag, [])
+    ELit LUnit -> return (tyUnit, [])
+    
+    EBin op e1 e2 -> do
         (t1, c1) <- infer e1
         (t2, c2) <- infer e2
         tv <- fresh
-        return (tv, c1 ++ c2 ++ [(t1, t2 `TArr` tv)])
-        
+        let u1 = t1 `TArr` (t2 `TArr` tv)
+            u2 = binops op
+        return (tv, c1 ++ c2 ++ [(u1, u2)])
+
+    EUn op e -> do
+        (t, c) <- infer e
+        tv <- fresh
+        let u1 = t `TArr` tv
+            u2 = unops op
+        return (tv, c ++ [(u1, u2)])
+
+    EIf e1 e2 e3 -> do
+        (t1, c1) <- infer e1
+        (t2, c2) <- infer e2
+        (t3, c3) <- infer e3
+        return (t2, c1 ++ c2 ++ c3 ++ [(t1, tyBool), (t2, t3)])
+
+    -- TODO
+    -- EMatch e bs ->
+
+    -- TODO: Other patterns
     ELet (PVar x) e1 e2 -> do
         env <- ask
         (t1, c1) <- infer e1
@@ -172,6 +210,70 @@ infer expr = case expr of
                 let sc = generalize (apply sub env) (apply sub t1)
                 (t2, c2) <- inEnv (x, sc) $ local (apply sub) (infer e2)
                 return (t2, c1 ++ c2)
+
+    EFun (PVar x) e1 e2 -> do
+        env <- ask
+        (t1, c1) <- infer e1
+        case runSolve c1 of
+            Left err -> throwError err
+            Right sub -> do
+                let sc = generalize (apply sub env) (apply sub t1)
+                (t2, c2) <- inEnv (x, sc) $ local (apply sub) (infer e2)
+                return (t2, c1 ++ c2)
+
+    ERd e -> do
+        (t, c) <- infer e
+        return (tyUnit, c ++ [(t, tyChan)])
+    
+    EWr e1 e2 -> do
+        (t1, c1) <- infer e1
+        (t2, c2) <- infer e2
+        return (tyUnit, c1 ++ c2 ++ [(t2, tyChan)])
+        
+    ENu x e -> do
+        env <- ask
+        let sc = generalize env tyChan
+        (t, c) <- inEnv (x, sc) $ local (apply emptySubst) (infer e)
+        return (t, c)
+
+    ERepl e -> do
+        (t, c) <- infer e
+        return (tyUnit, c)
+    
+    EFork e -> do
+        (t, c) <- infer e
+        return (tyUnit, c)
+
+    EAssign x e -> do
+        t1 <- lookupEnv x
+        (t2, c2) <- infer e
+        return (tyUnit, c2 ++ [(t1, TRef t2)])
+    
+    ELam (PVar x) e -> do
+        tv <- fresh
+        (t, c) <- inEnv (x, Forall [] tv) (infer e)
+        return (tv `TArr` t, c)
+
+    ELam PUnit e -> do
+        (t, c) <- (infer e)
+        return (tyUnit `TArr` t, c)
+        
+    EApp e1 e2 -> do
+        (t1, c1) <- infer e1
+        (t2, c2) <- infer e2
+        tv <- fresh
+        return (tv, c1 ++ c2 ++ [(t1, t2 `TArr` tv)])
+
+    -- TODO: Unop?
+    ERef e -> do
+        (t, c) <- infer e
+        tv <- fresh
+        return (tv, c ++ [(tv, TRef t)])
+
+    EDeref e -> do
+        (t, c) <- infer e
+        tv <- fresh
+        return (tv, c ++ [(TRef tv, t)])
 
 inferTop :: TypeEnv -> [(Name, Expr)] -> Either TypeError TypeEnv
 inferTop env [] = Right env
@@ -187,8 +289,10 @@ normalize (Forall _ body) = Forall (map snd ord) (normtype body)
     fv (TVar a) = [a]
     fv (TArr a b) = fv a ++ fv b
     fv (TCon _) = []
+    fv (TRef a) = fv a
 
     normtype (TArr a b) = TArr (normtype a) (normtype b)
+    normtype (TRef a)   = TRef (normtype a)
     normtype (TCon a)   = TCon a
     normtype (TVar a)   =
         case Prelude.lookup a ord of
@@ -219,9 +323,10 @@ unifyMany t1 t2 = throwError $ UnificationMismatch t1 t2
 
 unifies :: Type-> Type-> Solve Subst
 unifies t1 t2 | t1 == t2 = return emptySubst
-unifies (TVar v)t  = v `bind` t
+unifies (TVar v) t = v `bind` t
 unifies t (TVar v) = v `bind` t
 unifies (TArr t1 t2) (TArr t3 t4) = unifyMany [t1, t2] [t3, t4]
+unifies (TRef t1) (TRef t2) = unifies t1 t2
 unifies t1 t2 = throwError $ UnificationFail t1 t2
 
 solver :: Unifier -> Solve Subst

@@ -188,6 +188,7 @@ eval' env m expr = case expr of
                     (PVar x, VClosure arg env e) -> VClosure arg (extendEnv env x f) e
         in evalSub env' e2 >>= putMVar m
 
+    -- TODO: Applying operation twice
     EAssign x e -> getRef (env Map.! x) >>= \r ->
                    evalSub env e >>=
                    writeIORef r >> putMVar m VUnit

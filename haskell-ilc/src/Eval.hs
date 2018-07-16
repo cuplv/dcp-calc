@@ -83,6 +83,11 @@ evalRel op = evalBinOp $ f op
   where
     f op (VInt n1, VInt n2) = return $ VBool (op n1 n2)
 
+-- TODO: Refactor?
+evalRelPoly op = evalBinOp $ f op
+  where
+    f op (n1, n2) = return $ VBool (op n1 n2)
+
 evalList env m con es = mapM (evalSub env) es >>= return . con >>= putMVar m
 
 evalPatMatch :: TermEnv -> [(Pattern, Expr, Expr)] -> Value -> IO Value
@@ -161,8 +166,8 @@ eval' env m expr = case expr of
     EBin Gt e1 e2 -> evalRel (>) env m e1 e2
     EBin Leq e1 e2 -> evalRel (<=) env m e1 e2
     EBin Geq e1 e2 -> evalRel (>=) env m e1 e2
-    EBin Eql e1 e2 -> evalRel (==) env m e1 e2
-    EBin Neq e1 e2 -> evalRel (/=) env m e1 e2
+    EBin Eql e1 e2 -> evalRelPoly (==) env m e1 e2
+    EBin Neq e1 e2 -> evalRelPoly (/=) env m e1 e2
 
     EUn Not e -> evalSub env e >>= neg >>= putMVar m
       where

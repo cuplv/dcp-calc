@@ -153,21 +153,26 @@ generalize :: TypeEnv -> Type-> Scheme -- ^ T-Gen
 generalize env t = Forall as t
     where as = Set.toList $ ftv t `Set.difference` ftv env
 
-binops :: Binop -> Type
-binops Add = tyInt  `TArr` (tyInt  `TArr` tyInt)
-binops Sub = tyInt  `TArr` (tyInt  `TArr` tyInt)
-binops Mul = tyInt  `TArr` (tyInt  `TArr` tyInt)
-binops Div = tyInt  `TArr` (tyInt  `TArr` tyInt)
-binops Mod = tyInt  `TArr` (tyInt  `TArr` tyInt)
-binops And = tyBool `TArr` (tyBool `TArr` tyBool)
-binops Or  = tyBool `TArr` (tyBool `TArr` tyBool)
-binops Lt  = tyInt  `TArr` (tyInt  `TArr` tyBool)
-binops Gt  = tyInt  `TArr` (tyInt  `TArr` tyBool)
-binops Leq = tyInt  `TArr` (tyInt  `TArr` tyBool)
-binops Geq = tyInt  `TArr` (tyInt  `TArr` tyBool)
--- TODO: Make polymorphic
-binops Eql = tyInt  `TArr` (tyInt  `TArr` tyBool)
-binops Neq = tyInt  `TArr` (tyInt  `TArr` tyBool)
+binops :: Binop -> Infer Type
+binops Add = return $ tyInt  `TArr` (tyInt  `TArr` tyInt)
+binops Sub = return $ tyInt  `TArr` (tyInt  `TArr` tyInt)
+binops Mul = return $ tyInt  `TArr` (tyInt  `TArr` tyInt)
+binops Div = return $ tyInt  `TArr` (tyInt  `TArr` tyInt)
+binops Mod = return $ tyInt  `TArr` (tyInt  `TArr` tyInt)
+binops And = return $ tyBool `TArr` (tyBool `TArr` tyBool)
+binops Or  = return $ tyBool `TArr` (tyBool `TArr` tyBool)
+binops Lt  = return $ tyInt  `TArr` (tyInt  `TArr` tyBool)
+binops Gt  = return $ tyInt  `TArr` (tyInt  `TArr` tyBool)
+binops Leq = return $ tyInt  `TArr` (tyInt  `TArr` tyBool)
+binops Geq = return $ tyInt  `TArr` (tyInt  `TArr` tyBool)
+binops Eql = do
+    t1 <- fresh
+    t2 <- fresh
+    return $ t1  `TArr` (t2  `TArr` tyBool)
+binops Neq = do
+    t1 <- fresh
+    t2 <- fresh
+    return $ t1  `TArr` (t2  `TArr` tyBool)
 
 unops :: Unop -> Type
 unops Not = tyBool  `TArr` tyBool
@@ -186,6 +191,7 @@ infer expr = case expr of
     ELit (LTag _) -> return (tyTag, [])
     ELit LUnit -> return (tyUnit, [])
 
+    -- TODO: Refactorable?
     ETuple es -> do
         tcs <- mapM infer es
         let ts = foldr ((:) . fst) [] tcs
@@ -219,7 +225,7 @@ infer expr = case expr of
         (t2, c2) <- infer e2
         tv <- fresh
         let u1 = t1 `TArr` (t2 `TArr` tv)
-            u2 = binops op
+        u2 <- binops op
         return (tv, c1 ++ c2 ++ [(u1, u2)])
 
     EUn op e -> do
@@ -236,7 +242,11 @@ infer expr = case expr of
         return (t2, c1 ++ c2 ++ c3 ++ [(t1, tyBool), (t2, t3)])
 
     -- TODO
-    -- EMatch e bs ->
+    {-EMatch e bs -> do
+        (t, c) <- infer e-}
+        -- (e, type of patterns)
+        -- guards should be of type bool
+        -- branch expressions should have same type
 
     -- TODO: Other patterns
     ELet (PVar x) e1 e2 -> do
@@ -259,6 +269,7 @@ infer expr = case expr of
                 (t2, c2) <- inEnv (x, sc) $ local (apply sub) (infer e2)
                 return (t2, c1 ++ c2)
 
+    -- TODO: Other patterns
     ELam (PVar x) e -> do
         tv <- fresh
         (t, c) <- inEnv (x, Forall [] tv) (infer e)
@@ -274,7 +285,7 @@ infer expr = case expr of
         tv <- fresh
         return (tv, c1 ++ c2 ++ [(t1, t2 `TArr` tv)])
 
-    -- TODO: Cannot infer type of rd e
+    -- TODO: Cannot infer type of rd e, need annotations?
     ERd e -> do
         (t, c) <- infer e
         ty <- fresh
@@ -305,7 +316,7 @@ infer expr = case expr of
         (t2, c2) <- infer e2
         return (t2, c1 ++ c2)
 
-    -- TODO: Unop?
+    -- TODO: Additional function constraints?
     ERef e -> do
         (t, c) <- infer e
         tv <- fresh

@@ -12,7 +12,11 @@ data Type
     = TVar TVar
     | TCon String
     | TArr Type Type
+    | TList Type
+    | TProd [Type]
+    | TSet Type
     | TRef Type
+    | TThunk Type
     deriving (Show, Eq, Ord)
 
 infixr `TArr`

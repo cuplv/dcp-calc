@@ -73,8 +73,9 @@ hoistErr (Left err) = do
 -- Execution
 --------------------------------------------------------------------------------
 
+-- TODO: Blocks on rd c if not function
 evalDecl :: TermEnv -> Decl -> IO TermEnv
-evalDecl env (x, expr) = silence (evalSub env expr) >>= return . extendEnv env x
+evalDecl env (x, expr) = silence $ evalSub env expr >>= return . extendEnv env x
     
 execi :: Bool -> String -> Repl ()
 execi update source = do

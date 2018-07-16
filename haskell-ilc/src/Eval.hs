@@ -26,17 +26,19 @@ data Value
     | VRef (IORef Value)
     deriving (Eq)
 
+-- TODO: Use pp
 instance Show Value where
     show (VInt n) = show n
-    show (VBool b) = show b
+    show (VBool b) | b         = "true"
+                   | otherwise = "false"
     show (VString s) = show s
     show (VTag t) = show t
     show (VList vs) = show vs
     show (VSet vs) = show vs
     show (VTuple vs) = show vs
     show VUnit = show ()
-    show VClosure {} = "closure"
-    show VThunk {} = "thunk"
+    show VClosure {} = "<closure>"
+    show VThunk {} = "<thunk>"
     show (VChannel x _) = x
     show (VRef x) = show x
 
@@ -206,6 +208,8 @@ eval' env m expr = case expr of
       where
         f (PVar x) = Just x
         f _        = Nothing
+
+    -- TODO: Unit argument error
     EApp e1 e2 -> evalSub env e1 >>= \v1 ->
                   evalSub env e2 >>= \v2 ->
                   evalApp v1 v2 >>= putMVar m

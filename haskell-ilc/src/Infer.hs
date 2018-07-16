@@ -54,12 +54,20 @@ instance Substitutable Type where
     apply _ (TCon a) = TCon a
     apply (Subst s) t@(TVar a) = Map.findWithDefault t a s
     apply s (t1 `TArr` t2) = apply s t1 `TArr` apply s t2
+    apply s (TList t) = TList (apply s t)
+    apply s (TProd ts) = TProd (apply s ts)
+    apply s (TSet t) = TSet (apply s t)
     apply s (TRef t) = TRef (apply s t)
+    apply s (TThunk t) = TThunk (apply s t)
 
     ftv (TVar a) = Set.singleton a
     ftv TCon{} = Set.empty
     ftv (t1 `TArr` t2) = ftv t1 `Set.union` ftv t2
+    ftv (TList t) = ftv t
+    ftv (TProd ts) = ftv ts
+    ftv (TSet t) = ftv t
     ftv (TRef t) = ftv t
+    ftv (TThunk t) = ftv t
 
 instance Substitutable Scheme where
     apply (Subst s) (Forall as t) = Forall as $ apply s' t
@@ -169,12 +177,42 @@ infer expr = case expr of
     EVar x -> do
         t <- lookupEnv x
         return (t, [])
+
+    -- EImpVar x
         
     ELit (LInt _) -> return (tyInt, [])
     ELit (LBool _) -> return (tyBool, [])
     ELit (LString _) -> return (tyString, [])
     ELit (LTag _) -> return (tyTag, [])
     ELit LUnit -> return (tyUnit, [])
+
+    ETuple es -> do
+        tcs <- mapM infer es
+        let ts = foldr ((:) . fst) [] tcs
+            cs = foldr ((++) . snd) [] tcs
+        return (TProd ts, cs)
+        
+    EList [] -> do
+        ty <- fresh
+        return (TList ty, [])
+        
+    EList es -> do
+        tcs <- mapM infer es
+        let tyFst = fst $ head tcs
+            cs    = foldr ((++) . snd) [] tcs
+            cs'   = map (\x -> (tyFst, fst x)) tcs
+        return (TList tyFst, cs ++ cs')
+
+    ESet [] -> do
+        ty <- fresh
+        return (TSet ty, [])
+        
+    ESet es -> do
+        tcs <- mapM infer es
+        let tyFst = fst $ head tcs
+            cs    = foldr ((++) . snd) [] tcs
+            cs'   = map (\x -> (tyFst, fst x)) tcs
+        return (TSet tyFst, cs ++ cs')
     
     EBin op e1 e2 -> do
         (t1, c1) <- infer e1
@@ -221,9 +259,26 @@ infer expr = case expr of
                 (t2, c2) <- inEnv (x, sc) $ local (apply sub) (infer e2)
                 return (t2, c1 ++ c2)
 
+    ELam (PVar x) e -> do
+        tv <- fresh
+        (t, c) <- inEnv (x, Forall [] tv) (infer e)
+        return (tv `TArr` t, c)
+
+    ELam PUnit e -> do
+        (t, c) <- (infer e)
+        return (tyUnit `TArr` t, c)
+        
+    EApp e1 e2 -> do
+        (t1, c1) <- infer e1
+        (t2, c2) <- infer e2
+        tv <- fresh
+        return (tv, c1 ++ c2 ++ [(t1, t2 `TArr` tv)])
+
+    -- TODO: Cannot infer type of rd e
     ERd e -> do
         (t, c) <- infer e
-        return (tyUnit, c ++ [(t, tyChan)])
+        ty <- fresh
+        return (ty, c ++ [(t, tyChan)])
     
     EWr e1 e2 -> do
         (t1, c1) <- infer e1
@@ -244,25 +299,11 @@ infer expr = case expr of
         (t, c) <- infer e
         return (tyUnit, c)
 
-    EAssign x e -> do
-        t1 <- lookupEnv x
-        (t2, c2) <- infer e
-        return (tyUnit, c2 ++ [(t1, TRef t2)])
-    
-    ELam (PVar x) e -> do
-        tv <- fresh
-        (t, c) <- inEnv (x, Forall [] tv) (infer e)
-        return (tv `TArr` t, c)
-
-    ELam PUnit e -> do
-        (t, c) <- (infer e)
-        return (tyUnit `TArr` t, c)
-        
-    EApp e1 e2 -> do
+    -- TODO: Warning if t1 is not of type tyUnit
+    ESeq e1 e2 -> do
         (t1, c1) <- infer e1
         (t2, c2) <- infer e2
-        tv <- fresh
-        return (tv, c1 ++ c2 ++ [(t1, t2 `TArr` tv)])
+        return (t2, c1 ++ c2)
 
     -- TODO: Unop?
     ERef e -> do
@@ -274,6 +315,21 @@ infer expr = case expr of
         (t, c) <- infer e
         tv <- fresh
         return (tv, c ++ [(TRef tv, t)])
+
+    EAssign x e -> do
+        t1 <- lookupEnv x
+        (t2, c2) <- infer e
+        return (tyUnit, c2 ++ [(t1, TRef t2)])
+
+    EThunk e -> do
+        (t, c) <- infer e
+        tv <- fresh
+        return (tv, c ++ [(tv, TThunk t)])
+
+    EForce e -> do
+        (t, c) <- infer e
+        tv <- fresh
+        return (tv, c ++ [(TThunk tv, t)])
 
     EPrint e -> do
        (t, c) <- infer e
@@ -293,15 +349,26 @@ normalize (Forall _ body) = Forall (map snd ord) (normtype body)
     fv (TVar a) = [a]
     fv (TArr a b) = fv a ++ fv b
     fv (TCon _) = []
+    fv (TList a) = fv a
+    -- TODO: Refactor?
+    fv (TProd as) = foldr ((++) . fv) [] as
+    fv (TSet a) = fv a
     fv (TRef a) = fv a
-
-    normtype (TArr a b) = TArr (normtype a) (normtype b)
-    normtype (TRef a)   = TRef (normtype a)
-    normtype (TCon a)   = TCon a
+    fv (TThunk a) = fv a
+    
     normtype (TVar a)   =
         case Prelude.lookup a ord of
             Just x -> TVar x
             Nothing -> error "type variable not in signature"
+    normtype (TCon a)   = TCon a
+    normtype (TArr a b) = TArr (normtype a) (normtype b)
+    normtype (TList a)   = TList (normtype a)
+    normtype (TProd as)   = TProd (map normtype as)
+    normtype (TSet a)   = TSet (normtype a)
+    normtype (TRef a)   = TRef (normtype a)
+    normtype (TThunk a)   = TThunk (normtype a)
+
+
 
 -------------------------------------------------------------------------------
 -- Constraint Solver
@@ -330,7 +397,11 @@ unifies t1 t2 | t1 == t2 = return emptySubst
 unifies (TVar v) t = v `bind` t
 unifies t (TVar v) = v `bind` t
 unifies (TArr t1 t2) (TArr t3 t4) = unifyMany [t1, t2] [t3, t4]
+unifies (TList t1) (TList t2) = unifies t1 t2
+unifies (TProd ts1) (TProd ts2) = unifyMany ts1 ts2
+unifies (TSet t1) (TSet t2) = unifies t1 t2
 unifies (TRef t1) (TRef t2) = unifies t1 t2
+unifies (TThunk t1) (TThunk t2) = unifies t1 t2
 unifies t1 t2 = throwError $ UnificationFail t1 t2
 
 solver :: Unifier -> Solve Subst

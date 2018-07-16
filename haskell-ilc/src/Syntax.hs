@@ -19,7 +19,6 @@ data Expr
     | EMatch Expr [(Pattern, Expr, Expr)] -- TODO: Guard into Maybe?
     | ELet Pattern Expr Expr
     | EFun Pattern Expr Expr
-    | EAssign Name Expr
     | ELam Pattern Expr
     | EApp Expr Expr
     | ERd Expr
@@ -30,6 +29,7 @@ data Expr
     | ESeq Expr Expr
     | ERef Expr
     | EDeref Expr
+    | EAssign Name Expr
     | EThunk Expr
     | EForce Expr
     | EPrint Expr

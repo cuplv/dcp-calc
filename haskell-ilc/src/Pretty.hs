@@ -81,7 +81,11 @@ instance Pretty Type where
     where
       isArrow TArr {} = True
       isArrow _ = False
+  ppr p (TList a) = PP.brackets $ ppr p a
+  ppr p (TProd as) = PP.parens $ ppList p as
+  ppr p (TSet a) = PP.braces $ ppr p a
   ppr p (TRef a) = PP.text "Ref" <+> ppr p a
+  ppr p (TThunk a) = PP.text "Thunk" <+> ppr p a
 
 instance Pretty Scheme where
   ppr p (Forall [] t) = ppr p t

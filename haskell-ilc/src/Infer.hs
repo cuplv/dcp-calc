@@ -8,6 +8,7 @@ import Control.Monad.Except
 import Control.Monad.Identity
 import Control.Monad.Reader
 import Control.Monad.State
+import Data.Maybe
 import Data.Monoid
 import Data.List (nub)
 import qualified Data.Map as Map
@@ -197,6 +198,18 @@ getBinds p e = go [] p e
         accs  = concatMap (\(p, e) -> go acc p e) pe
         pe    = zip ps es
 
+getPVars :: Pattern -> [Name]
+getPVars p = go [] p
+  where
+    go acc (PVar x) = x : acc
+    go acc (PTuple ps) = concatMap (getPVars) ps ++ acc
+    go acc (PList ps) = concatMap (getPVars) ps ++ acc
+    go acc (PSet ps) = concatMap (getPVars) ps ++ acc
+    go acc (PCons p ps) = foldl1 (++) [acc1, acc2, acc]
+      where
+        acc1 = getPVars p
+        acc2 = getPVars ps
+    go acc _ = acc
 
 inferPat :: Pattern -> Expr -> Infer (Type, [Constraint], [(Name, Type)])
 inferPat p e = case (p, e) of
@@ -249,6 +262,55 @@ inferPat p e = case (p, e) of
         t' <- if null tys then fresh
                   else return $ head tys
         return (t, (TList $ t', t) : c, env)
+
+    (PSet ps, ESet es) -> do
+        when (length ps /= length es) (error "pattern match failed")
+        (t, c) <- infer $ ESet es
+        tces <- mapM (\(p, e) -> inferPat p e) $ zip ps es
+        let ts = map first tces
+            cs = concatMap second tces
+            es = concatMap third tces
+        t' <- if null ts then fresh
+                  else return $ head ts
+        return (t, c ++ cs ++ [(TSet t', t)], es)
+      where first (x, _, _) = x
+            second (_, x, _) = x
+            third (_, _, x) = x
+        
+    (PSet ps, e) -> do
+        tys <- mapM (const fresh) ps
+        let env = concatMap (\(p, t) -> case p of
+                      PVar x' -> [(x', t)]
+                      _       -> []       ) $ zip ps tys
+        (t, c) <- infer e
+        t' <- if null tys then fresh
+                  else return $ head tys
+        return (t, (TSet $ t', t) : c, env)
+
+    (PCons p ps, e'@(EList (e:es))) -> do
+        (t1, c1) <- infer e'
+        (t2, c2, e2) <- inferPat p e
+        (t3, c3, e3) <- inferPat ps $ EList es
+        return (t1, c1 ++ c2 ++ c3 ++ [(t1, t3), (TList t2, t1)], e2 ++ e3)
+
+    -- TODO: Other patterns
+    (p@(PCons _ _), e) -> do
+        (t, c) <- infer e
+        let ps = flatten [] p
+        let vars = concatMap (\x -> case x of
+                              PVar x' -> [x']
+                              _       -> []) (init ps)
+        tys <- mapM (const fresh) vars
+        tylast <- fresh
+        let env          = zip vars tys
+            cs           = concatMap (\ty -> [(TList ty, t)]) tys
+            (cs', env')  = case (last ps) of
+                PVar x -> ((tylast, t):cs, (x, tylast):env)
+                _      -> (cs, env)
+        return (t, c ++ cs', env')
+
+flatten acc (PCons p1 p2@(PCons _ _)) = p1 : (flatten [] p2)
+flatten acc (PCons p1 p2) = p1 : p2 : acc
 
 infer :: Expr -> Infer (Type, [Constraint])
 infer expr = case expr of

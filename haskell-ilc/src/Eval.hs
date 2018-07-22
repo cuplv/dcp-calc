@@ -130,6 +130,7 @@ getBinds p v = go [] p v
     go acc (PTuple ps) (VTuple vs) = gos acc ps vs
     go acc PUnit VUnit = Just acc
     go acc PWildcard _ = Just acc
+    
     -- TODO: Refactor using concatMap?
     gos acc vs ps | length vs == length ps = foldl (<:>) (Just []) accs
                   | otherwise              = Nothing

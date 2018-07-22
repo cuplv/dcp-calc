@@ -211,6 +211,10 @@ getPVars p = go [] p
         acc2 = getPVars ps
     go acc _ = acc
 
+concatTCEs = foldr f ([], [], [])
+  where
+    f (t, c, e) (t', c', e') = (t : t', c ++ c', e ++ e')
+
 inferPat :: Pattern -> Expr -> Infer (Type, [Constraint], [(Name, Type)])
 inferPat p e = case (p, e) of
     (PVar x, e) -> do
@@ -218,19 +222,30 @@ inferPat p e = case (p, e) of
         (t, c) <- infer e
         return (t, (t, ty) : c, [(x, ty)])
 
-    -- TODO: refactor
+    (PInt _, e) -> do
+      (t, c) <- infer e
+      return (t, (t, tyInt) : c, [])
+
+    (PBool _, e) -> do
+      (t, c) <- infer e
+      return (t, (t, tyBool) : c, [])
+
+    (PString _, e) -> do
+      (t, c) <- infer e
+      return (t, (t, tyString) : c, [])
+      
+    (PTag _, e) -> do
+      (t, c) <- infer e
+      return (t, (t, tyTag) : c, [])
+
     (PTuple ps, ETuple es) -> do
         when (length ps /= length es) (error "pattern match failed")
         (t, c) <- infer $ ETuple es
         tces <- mapM (\(p, e) -> inferPat p e) $ zip ps es
-        let ts = map first tces
-            cs = concatMap second tces
-            es = concatMap third tces
+        let (ts, cs, es) = concatTCEs tces
         return (t, c ++ cs ++ [(TProd ts, t)], es)
-      where first (x, _, _) = x
-            second (_, x, _) = x
-            third (_, _, x) = x
-        
+
+    -- TODO
     (PTuple ps, e) -> do
         tys <- mapM (const fresh) ps
         let env = concatMap (\(p, t) -> case p of
@@ -243,16 +258,13 @@ inferPat p e = case (p, e) of
         when (length ps /= length es) (error "pattern match failed")
         (t, c) <- infer $ EList es
         tces <- mapM (\(p, e) -> inferPat p e) $ zip ps es
-        let ts = map first tces
-            cs = concatMap second tces
-            es = concatMap third tces
+        let (ts, cs, es) = concatTCEs tces
+        -- TODO: Check ts?
         t' <- if null ts then fresh
                   else return $ head ts
         return (t, c ++ cs ++ [(TList t', t)], es)
-      where first (x, _, _) = x
-            second (_, x, _) = x
-            third (_, _, x) = x
-        
+
+    -- TODO
     (PList ps, e) -> do
         tys <- mapM (const fresh) ps
         let env = concatMap (\(p, t) -> case p of
@@ -267,15 +279,10 @@ inferPat p e = case (p, e) of
         when (length ps /= length es) (error "pattern match failed")
         (t, c) <- infer $ ESet es
         tces <- mapM (\(p, e) -> inferPat p e) $ zip ps es
-        let ts = map first tces
-            cs = concatMap second tces
-            es = concatMap third tces
+        let (ts, cs, es) = concatTCEs tces
         t' <- if null ts then fresh
                   else return $ head ts
         return (t, c ++ cs ++ [(TSet t', t)], es)
-      where first (x, _, _) = x
-            second (_, x, _) = x
-            third (_, _, x) = x
         
     (PSet ps, e) -> do
         tys <- mapM (const fresh) ps
@@ -287,10 +294,10 @@ inferPat p e = case (p, e) of
                   else return $ head tys
         return (t, (TSet $ t', t) : c, env)
 
-    (PCons p ps, e'@(EList (e:es))) -> do
-        (t1, c1) <- infer e'
-        (t2, c2, e2) <- inferPat p e
-        (t3, c3, e3) <- inferPat ps $ EList es
+    (PCons p ps, e@(EList (hd:tl))) -> do
+        (t1, c1) <- infer e
+        (t2, c2, e2) <- inferPat p hd
+        (t3, c3, e3) <- inferPat ps $ EList tl
         return (t1, c1 ++ c2 ++ c3 ++ [(t1, t3), (TList t2, t1)], e2 ++ e3)
 
     -- TODO: Other patterns
@@ -308,6 +315,14 @@ inferPat p e = case (p, e) of
                 PVar x -> ((tylast, t):cs, (x, tylast):env)
                 _      -> (cs, env)
         return (t, c ++ cs', env')
+
+    (PUnit, e) -> do
+      (t, c) <- infer e
+      return (t, c ++ [(t, tyUnit)], [])
+
+    (PWildcard, e) -> do
+      (t, c) <- infer e
+      return (t, c, [])
 
 flatten acc (PCons p1 p2@(PCons _ _)) = p1 : (flatten [] p2)
 flatten acc (PCons p1 p2) = p1 : p2 : acc

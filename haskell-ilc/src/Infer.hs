@@ -215,6 +215,10 @@ concatTCEs = foldr f ([], [], [])
   where
     f (t, c, e) (t', c', e') = (t : t', c ++ c', e ++ e')
 
+concatTCs = foldr f ([], [])
+  where
+    f (t, c) (t', c') = (t : t', c ++ c')
+
 inferPat :: Pattern -> Expr -> Infer (Type, [Constraint], [(Name, Type)])
 inferPat p e = case (p, e) of
     (PVar x, e) -> do
@@ -255,7 +259,6 @@ inferPat p e = case (p, e) of
         return (t, (TProd tys, t) : c, env)
         
     (PList ps, EList es) -> do
-        when (length ps /= length es) (error "pattern match failed")
         (t, c) <- infer $ EList es
         tces <- mapM (\(p, e) -> inferPat p e) $ zip ps es
         let (ts, cs, es) = concatTCEs tces
@@ -300,7 +303,6 @@ inferPat p e = case (p, e) of
         (t3, c3, e3) <- inferPat ps $ EList tl
         return (t1, c1 ++ c2 ++ c3 ++ [(t1, t3), (TList t2, t1)], e2 ++ e3)
 
-    -- TODO: Other patterns
     (p@(PCons _ _), e) -> do
         (t, c) <- infer e
         let ps = flatten [] p
@@ -323,6 +325,22 @@ inferPat p e = case (p, e) of
     (PWildcard, e) -> do
       (t, c) <- infer e
       return (t, c, [])
+
+inferBranch :: Expr -> (Pattern, Expr, Expr) -> Infer (Type, [Constraint])
+inferBranch expr (pat, guard, branch) = do
+    env <- ask
+    (t1, c1, env') <- inferPat pat expr
+    case runSolve c1 of
+        Left err -> throwError err
+        Right sub -> do
+            let sc t = generalize (apply sub env) (apply sub t)
+            (t2, c2) <- foldr (\(x, t) -> inEnv (x, sc t))
+                              (local (apply sub) (infer guard))
+                              env'
+            (t3, c3) <- foldr (\(x, t) -> inEnv (x, sc t))
+                              (local (apply sub) (infer branch))
+                              env'
+            return (t3, c1 ++ c2 ++ c3 ++ [(t2, tyBool)])
 
 flatten acc (PCons p1 p2@(PCons _ _)) = p1 : (flatten [] p2)
 flatten acc (PCons p1 p2) = p1 : p2 : acc
@@ -402,6 +420,13 @@ infer expr = case expr of
                                   (local (apply sub) (infer e2))
                                   env'
                 return (t2, c1 ++ c2)
+
+    EMatch e bs -> do
+        tcs <- mapM (inferBranch e) bs
+        let (ts, cs) = concatTCs tcs
+            ty       = head ts
+            cs'      = zip (init ts) (repeat ty)
+        return (ty, cs ++ cs')
 
     EFun x e1 e2 -> do
         env <- ask

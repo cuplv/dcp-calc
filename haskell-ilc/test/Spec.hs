@@ -15,7 +15,7 @@ main :: IO ()
 main = defaultMain tests
 
 tests :: TestTree
-tests = testGroup "Tests" [parserTests, pmTests]
+tests = testGroup "Tests" [parserTests, pmTests, execTests]
 
 parserTests :: TestTree
 parserTests =
@@ -28,147 +28,152 @@ makeParserTests = map f parserExamples
 parserExamples =
     [ ( "lambda"
       , "lam x . x + x"
-      , Right [ CExpr (ELam (PVar "x")
-                            (EPlus (EVar "x")
-                                   (EVar "x")))
+      , Right [ ("it", (ELam (PVar "x")
+                             (EBin Add (EVar "x")
+                                       (EVar "x"))))
               ]
       )
     , ( "allocate channel then write"
       , "nu c . wr 1 -> c"
-      , Right [ CExpr (ENu "c"
-                           (EWr (EInt 1)
-                                (EVar "c")))
+      , Right [ ("it", (ENu "c" (EWr (ELit $ LInt 1)
+                                (EVar "c"))))
               ]
       )
     , ( "let binding"
       , "let x = 100 in x * 1"
-      , Right [ CExpr (ELet (PVar "x")
-                            (EInt 100)
-                            (ETimes (EVar "x")
-                                     (EInt 1)))
+      , Right [ ("it", (ELet (PVar "x")
+                             (ELit $ LInt 100)
+                             (EBin Mul (EVar "x")
+                                       (ELit $ LInt 1))))
               ]
       )
     , ( "let binding w/ tuple matching"
       , "let (x, y) = (1, 2) in x + y"
-      , Right [ CExpr (ELet (PTuple [PVar "x", PVar "y"])
-                            (ETuple [EInt 1, EInt 2])
-                            (EPlus (EVar "x")
-                                   (EVar "y")))
+      , Right [ ("it", (ELet (PTuple [PVar "x", PVar "y"])
+                             (ETuple [ELit $ LInt 1, ELit $ LInt 2])
+                             (EBin Add (EVar "x")
+                                       (EVar "y"))))
               ]
       )
     , ( "let binding w/ unit and function application"
       , "let () = \"whatever\" in double 2"
-      , Right [ CExpr (ELet (PUnit)
-                            (EString "whatever")
-                            (EApp (EVar "double")
-                                  (EInt 2)))
+      , Right [ ("it", (ELet (PUnit)
+                             (ELit $ LString "whatever")
+                             (EApp (EVar "double")
+                                   (ELit $ LInt 2))))
               ]
       )
     , ( "sequencing let bindings"
       , "let x = 1 in x; let y = 1 in y"
-      , Right [ CExpr (ELet (PVar "x")
-                            (EInt 1)
-                            (ESeq (EVar "x")
-                                  (ELet (PVar "y")
-                                        (EInt 1)
-                                        (EVar "y"))))
+      , Right [ ("it", (ELet (PVar "x")
+                             (ELit $ LInt 1)
+                             (ESeq (EVar "x")
+                                   (ELet (PVar "y")
+                                         (ELit $ LInt 1)
+                                         (EVar "y")))))
               ]
       )
     , ( "nested let bindings"
       , "let x = 1 in let y = 2 in x + y"
-      , Right [ CExpr (ELet (PVar "x")
-                            (EInt 1)
-                            (ELet (PVar "y")
-                                  (EInt 2)
-                                  (EPlus (EVar "x")
-                                         (EVar "y"))))
+      , Right [ ("it", (ELet (PVar "x")
+                             (ELit $ LInt 1)
+                             (ELet (PVar "y")
+                                   (ELit $ LInt 2)
+                                   (EBin Add (EVar "x")
+                                             (EVar "y")))))
               ]
       )
     , ( "let commands"
       , "let x = 1 let y = 2 let z = x + y"
-      , Right [ CDef "x"
-                     (EInt 1)
-              , CDef "y"
-                     (EInt 2)
-              , CDef "z"
-                     (EPlus (EVar "x")
-                            (EVar "y"))
+      , Right [ ("x", ELit $ LInt 1)
+              , ("y", ELit $ LInt 2)
+              , ("z", EBin Add (EVar "x")
+                               (EVar "y"))
               ]
       )
     , ( "let command, let binding, expr command"
       , "let z = let x = 1 in 2 * x let y = 1;; \"foo\""
-      , Right [ CDef "z"
-                     (ELet (PVar "x")
-                           (EInt 1)
-                           (ETimes (EInt 2)
-                                   (EVar "x")))
-              , CDef "y"
-                     (EInt 1)
-              , CExpr (EString "foo")
+      , Right [ ("z", ELet (PVar "x")
+                           (ELit $ LInt 1)
+                           (EBin Mul (ELit $ LInt 2)
+                                     (EVar "x")))
+              , ("y", ELit $ LInt 1)
+              , ("it", (ELit $ LString "foo"))
               ]
       )
     , ( "expr commands and sequencing"
       , "1 ; 2 ;; 3 ; 4"
-      , Right [ CExpr (ESeq (EInt 1)
-                            (EInt 2))
-              , CExpr (ESeq (EInt 3)
-                            (EInt 4))
+      , Right [ ("it", (ESeq (ELit $ LInt 1)
+                             (ELit $ LInt 2)))
+              , ("it", (ESeq (ELit $ LInt 3)
+                             (ELit $ LInt 4)))
               ]
       )
     , ( "pattern matching"
       , "match b with | 0 => \"zero\" | 1 => \"one\""
-      , Right [ CExpr (EMatch (EVar "b")
-                              ([ (PInt 0, EBool True, EString "zero")
-                               , (PInt 1, EBool True, EString "one")
-                               ]))
+      , Right [ ("it", (EMatch (EVar "b")
+                               ([ (PInt 0
+                                  , ELit $ LBool True
+                                  , ELit $ LString "zero")
+                                , (PInt 1
+                                  , ELit $ LBool True
+                                  , ELit $ LString "one")
+                                ])))
               ]
       )
     , ( "let binding w/ assign"
       , "let x = 1 ; let y := 1 in x + y"
-      , Right [ CExpr (ELet (PVar "x")
-                            (ESeq (EInt 1)
-                                  (EAssign (PVar "y")
-                                           (EInt 1)))
-                            (EPlus (EVar "x")
-                                   (EVar "y")))
+      , Right [ ("it", (ELet (PVar "x")
+                             (ESeq (ELit $ LInt 1)
+                                   (EAssign "y"
+                                            (ELit $ LInt 1)))
+                             (EBin Add (EVar "x")
+                                       (EVar "y"))))
               ]
       )
     , ( "ref and deref"
       , "let a = ref 1 ;; let b := @ a"
-      , Right [ CDef "a"
-                     (ERef (EInt 1))
-              , CExpr (EAssign (PVar "b")
+      , Right [ ("a", ERef (ELit $ LInt 1))
+              , ("it", EAssign "b"
                                (EDeref (EVar "a")))
               ]
       )
     , ( "let binding w/ sequencing and assign"
       , "let a = 1 ; let b := 1 in b"
-      , Right [ CExpr (ELet (PVar "a")
-                            (ESeq (EInt 1)
-                                  (EAssign (PVar "b")
-                                           (EInt 1)))
-                            (EVar "b"))
+      , Right [ ("it", (ELet (PVar "a")
+                             (ESeq (ELit $ LInt 1)
+                                   (EAssign "b"
+                                            (ELit $ LInt 1)))
+                             (EVar "b")))
               ]
       )
     , ( "cons pattern matching"
       , "match a with | [] => 0 | x:xs => 1"
-      , Right [ CExpr (EMatch (EVar "a")
-                              ([ (PList [], EBool True, EInt 0)
-                               , (PCons (PVar "x")
-                                        (PVar "xs"), EBool True, EInt 1)
-                               ]))
+      , Right [ ("it", (EMatch (EVar "a")
+                               ([ ( PList []
+                                  , ELit $ LBool True
+                                  , ELit $ LInt 0)
+                                , ( PCons (PVar "x")
+                                          (PVar "xs")
+                                  , ELit $ LBool True
+                                  , ELit $ LInt 1)
+                                ])))
               ]
       )
     , ( "pattern matching with guards"
       , "match b with | 0 when 0 < 1 => 0 | 1 when true => 1"
-      , Right [ CExpr (EMatch (EVar "b")
-                              ([ (PInt 0, ELt (EInt 0)
-                                              (EInt 1), EInt 0)
-                               , (PInt 1, EBool True, EInt 1)
-                               ]))
+      , Right [ ("it", (EMatch (EVar "b")
+                               ([ ( PInt 0
+                                  , EBin Lt (ELit $ LInt 0)
+                                            (ELit $ LInt 1)
+                                  , ELit $ LInt 0)
+                                , ( PInt 1
+                                  , ELit $ LBool True
+                                  , ELit $ LInt 1)
+                                ])))
               ]
       )
-    , ( "plus function w/ type signature"
+    {-, ( "plus function w/ type signature"
       , "plus :: Int -> Int -> Int let plus = lam x . lam y . x + y"
       ,  Right [ CTySig "plus" (TArrow TInt (TArrow TInt TInt))
                , CDef "plus"
@@ -180,26 +185,52 @@ parserExamples =
     , ( "GetBit function signature w/ Wr mode"
       , "GetBit :: Int -> Wr Int"
       , Right [ CTySig "GetBit" (TArrow TInt (TWr TInt)) ]
-      )
+      )-}
     , ( "GetBit"
       , "let GetBit = lam x . nu c . |> (rd c) ; |> (wr 0 -> c) ; |> (wr 1 -> c) GetBit 1"
-      , Right [ CDef "GetBit"
-                     (ELam (PVar "x")
-                           (ENu "c"
-                                (ESeq (EFork (ERd (EVar "c")))
-                                      (ESeq (EFork (EWr (EInt 0)
-                                                        (EVar "c")))
-                                            (EFork (EWr (EInt 1)
-                                                        (EVar "c")))))))
-              , CExpr (EApp (EVar "GetBit")
-                            (EInt 1))
+      , Right [ ( "GetBit"
+                , (ELam (PVar "x")
+                        (ENu "c" (ESeq (EFork (ERd (EVar "c")))
+                                       (ESeq (EFork (EWr (ELit $ LInt 0)
+                                                         (EVar "c")))
+                                             (EFork (EWr (ELit $ LInt 1)
+                                                         (EVar "c"))))))))
+              , ("it", EApp (EVar "GetBit")
+                            (ELit $ LInt 1))
               ]
       )
-    , ( "product and list types"
+    {-, ( "product and list types"
       , "myzip :: [Int] -> [Bool] -> [(Int, Bool)]"
       , Right [ CTySig "myzip" (TArrow (TList TInt)
                                        (TArrow (TList TBool)
                                                (TList (TProd [TInt, TBool]))))
+              ]
+      )-}
+    , ( "factorial"
+      , "let f n = if n == 0 then 1 else n * f (n - 1)"
+      , Right [ ( "f"
+                , ELam (PVar "n")
+                       (EIf (EBin Eql (EVar "n") (ELit $ LInt 0))
+                            (ELit $ LInt 1)
+                            (EBin Mul (EVar "n")
+                                      (EApp (EVar "f")
+                                            (EBin Sub (EVar "n")
+                                                      (ELit $ LInt 1))))))
+              ]
+      )
+    , ( "factorial2"
+      , "let f n = if n == 0 then 1 else n * f (n - 1) in f 6"
+      , Right [ ( "it"
+                , EFun "f"
+                       (ELam (PVar "n")
+                            (EIf (EBin Eql (EVar "n") (ELit $ LInt 0))
+                                 (ELit $ LInt 1)
+                                 (EBin Mul (EVar "n")
+                                           (EApp (EVar "f")
+                                                 (EBin Sub (EVar "n")
+                                                           (ELit $ LInt 1))))))
+                       (EApp (EVar "f")
+                             (ELit $ LInt 6)))
               ]
       )
     ]
@@ -265,23 +296,39 @@ pmExamples =
       )
     ]
 
-{-execTests :: TestTree
+{-tyCheckTests :: TestTree
+tyCheckTests =
+    testGroup "Type check tests" $ makeTyCheckTests
+
+makeTyCheckTests = map f tyCheckExamples
+  where f (str, src, ast) = testCase (printf "parse %s" str) $
+                            assertEqual "" (parser src) (ast)
+                           
+tyCheckExamples =-}
+
+execTests :: TestTree
 execTests =
     testGroup "Execution tests" $ mkExecTests
 
+testOutEqual src out = do
+    case parser src of
+        Left err   -> print err
+        Right cmds -> do v <- exec cmds
+                         assertEqual "" v out
+    
+
 mkExecTests = map f execExamples
   where f (str, src, out) = testCase (printf "execute %s" str) $
-                            assertEqual "" (run <$> parser src) out
+                            testOutEqual src out
 
--- TODO: Move these to files                            
 execExamples =
     [ ( "factorial"
       , "let f n = if n == 0 then 1 else n * f (n - 1) in f 6"
-      , Right $ Just $ VInt 720
+      , VInt 720
       )
     , ( "factorial w/ pattern matching"
       , "let f n = match n with | 0 => 1 | _ => n * f (n - 1) in f 6"
-      , Right $ Just $ VInt 720
+      , VInt 720
       )
     , ( "slow fib"
       , "  let fib n = if n < 1 \
@@ -290,14 +337,13 @@ execExamples =
          \                  then 1 \
          \                  else fib (n - 2) + fib (n - 1) \
          \ in fib 5"
-      , Right $ Just $ VInt 5
+      , VInt 5
       )
     , ( "slow fib w/ pattern matching for the lols"
       , "let fib n = match n with \
          \           | n when n < 1 => 0 \
          \           | n when n < 3 => 1 \
          \           | n => fib (n - 2) + fib (n - 1) in fib 6"
-      , Right $ Just $ VInt 8
+      , VInt 8
       )
     ]
--}

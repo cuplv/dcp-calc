@@ -1,0 +1,5 @@
+let fib n = match n with
+            | n when n < 1 => 0
+            | n when n < 3 => 1
+            | n            => fib (n - 2) + fib (n - 1)
+in fib 6

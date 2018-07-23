@@ -91,6 +91,7 @@ evalRelPoly op = evalBinOp $ f op
 evalList env m con es = mapM (evalSub env) es >>= return . con >>= putMVar m
 
 evalPatMatch :: TermEnv -> [(Pattern, Expr, Expr)] -> Value -> IO Value
+evalPatMatch env [] v = error "pattern match failed"
 evalPatMatch env ((p, g, e):bs) v =
     case (getBinds p v) of
         Just binds -> let env' = updateEnv env binds
@@ -192,7 +193,9 @@ eval' env m expr = case expr of
                     
     EFun x e1 e2 ->
         evalSub env e1 >>= \v1 ->
-        let env' = extendEnv env x v1
+        let env'  = extendEnv env x f
+            f     = case v1 of
+                        VClosure arg env e -> VClosure arg (extendEnv env x f) e
         in evalSub env' e2 >>= putMVar m
 
     -- TODO: Applying operation twice

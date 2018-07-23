@@ -1,0 +1,4 @@
+let f n = match n with
+          | 0 => 1
+          | _ => n * f (n - 1)
+in f 6

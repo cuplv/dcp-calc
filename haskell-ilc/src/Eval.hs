@@ -82,6 +82,7 @@ evalBool op = evalBinOp $ f op
 evalRel op = evalBinOp $ f op
   where
     f op (VInt n1, VInt n2) = return $ VBool (op n1 n2)
+    f op (v1, v2) = error $ show v1 ++ show v2
 
 -- TODO: Refactor?
 evalRelPoly op = evalBinOp $ f op
@@ -92,14 +93,14 @@ evalList env m con es = mapM (evalSub env) es >>= return . con >>= putMVar m
 
 evalPatMatch :: TermEnv -> [(Pattern, Expr, Expr)] -> Value -> IO Value
 evalPatMatch env [] v = error "pattern match failed"
-evalPatMatch env ((p, g, e):bs) v =
-    case (getBinds p v) of
+evalPatMatch env ((p, g, e):bs) val =
+    case (getBinds p val) of
         Just binds -> let env' = updateEnv env binds
                       in evalSub env' g >>= \v ->
                       case v of
                           VBool True  -> evalSub env' e
-                          VBool False -> evalPatMatch env bs v
-        Nothing    -> evalPatMatch env bs v
+                          VBool False -> evalPatMatch env bs val
+        Nothing    -> evalPatMatch env bs val
 
 (<:>) :: Applicative f => f [a] -> f [a] -> f [a]
 (<:>) a b = (++) <$> a <*> b

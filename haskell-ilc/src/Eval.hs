@@ -192,13 +192,6 @@ eval' env m expr = case expr of
                     let binds = letBinds p v1
                         env'  = updateEnv env binds
                     in evalSub env' e2 >>= putMVar m
-                    
-    EFun x e1 e2 ->
-        evalSub env e1 >>= \v1 ->
-        let env'  = extendEnv env x f
-            f     = case v1 of
-                        VClosure arg env e -> VClosure arg (extendEnv env x f) e
-        in evalSub env' e2 >>= putMVar m
 
     -- TODO: Applying operation twice
     EAssign x e -> getRef (env Map.! x) >>= \r ->

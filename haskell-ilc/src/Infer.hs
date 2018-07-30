@@ -428,18 +428,6 @@ infer expr = case expr of
             cs'      = zip (tail ts) (repeat ty)
         return (ty, cs ++ cs')
 
-    EFun x e1 e2 -> do
-        env <- ask
-        ty <- fresh
-        let sc = generalize env ty
-        (t1, c1) <- inEnv (x, sc) $ local (apply emptySubst) (infer e1)
-        case runSolve c1 of
-            Left err -> throwError err
-            Right sub -> do
-                let sc = generalize (apply sub env) (apply sub t1)
-                (t2, c2) <- inEnv (x, sc) $ local (apply sub) (infer e2)
-                return (t2, c1 ++ c2)
-
     ELam (PVar x) e -> do
         ty <- fresh
         (t, c) <- inEnv (x, Forall [] ty) (infer e)

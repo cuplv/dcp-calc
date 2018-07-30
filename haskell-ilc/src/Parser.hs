@@ -176,17 +176,7 @@ eLet = do
     e2 <- expr
     return $ foldr (\p -> ELet p e1) e2 ps
 
-eFun = do
-    reserved "let"
-    x <- identifier
-    args <- many1 pat
-    reservedOp "="
-    e1 <- expr
-    reserved "in"
-    e2 <- expr
-    return $ EFun x (foldr ELam e1 args) e2
-
-eFunRec = do
+eLetRec = do
     reserved "letrec"
     p <- pat
     args <- many1 pat
@@ -279,8 +269,7 @@ term = try eApp
    <|> try eAssign
    <|> eIf
    <|> eMatch
-   <|> try eFunRec
-   <|> try eFun
+   <|> try eLetRec
    <|> eLet
    <|> eRd
    <|> eWr
@@ -320,7 +309,6 @@ dDeclLetRec = do
     optional $ reserved ";;"
     return (x, EFix $ foldr ELam e ((PVar x):ps))
 
--- TODO: Fix
 dDeclFun = do
     reserved "let"
     x <- identifier

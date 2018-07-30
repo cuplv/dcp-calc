@@ -175,19 +175,6 @@ parserExamples =
                                 ])))
               ]
       )
-    {-, ( "plus function w/ type signature"
-      , "plus :: Int -> Int -> Int let plus = lam x . lam y . x + y"
-      ,  Right [ CTySig "plus" (TArrow TInt (TArrow TInt TInt))
-               , CDef "plus"
-                      (ELam (PVar "x")
-                            (ELam (PVar "y")
-                                  (EPlus (EVar "x") (EVar "y"))))
-              ]
-      )
-    , ( "GetBit function signature w/ Wr mode"
-      , "GetBit :: Int -> Wr Int"
-      , Right [ CTySig "GetBit" (TArrow TInt (TWr TInt)) ]
-      )-}
     , ( "GetBit"
       , "let GetBit = lam x . nu c . |> (rd c) ; |> (wr 0 -> c) ; |> (wr 1 -> c) GetBit 1"
       , Right [ ( "GetBit"
@@ -201,62 +188,25 @@ parserExamples =
                             (ELit $ LInt 1))
               ]
       )
-    {-, ( "product and list types"
-      , "myzip :: [Int] -> [Bool] -> [(Int, Bool)]"
-      , Right [ CTySig "myzip" (TArrow (TList TInt)
-                                       (TArrow (TList TBool)
-                                               (TList (TProd [TInt, TBool]))))
-              ]
-      )-}
-    , ( "factorial"
-      , "let f n = if n == 0 then 1 else n * f (n - 1)"
-      , Right [ ( "f"
-                , ELam (PVar "n")
-                       (EIf (EBin Eql (EVar "n") (ELit $ LInt 0))
-                            (ELit $ LInt 1)
-                            (EBin Mul (EVar "n")
-                                      (EApp (EVar "f")
-                                            (EBin Sub (EVar "n")
-                                                      (ELit $ LInt 1))))))
-              ]
-      )
-    , ( "factorial2"
-      , "let f n = if n == 0 then 1 else n * f (n - 1) in f 6"
-      , Right [ ( "it"
-                , EFun "f"
-                       (ELam (PVar "n")
-                            (EIf (EBin Eql (EVar "n") (ELit $ LInt 0))
-                                 (ELit $ LInt 1)
-                                 (EBin Mul (EVar "n")
-                                           (EApp (EVar "f")
-                                                 (EBin Sub (EVar "n")
-                                                           (ELit $ LInt 1))))))
-                       (EApp (EVar "f")
-                             (ELit $ LInt 6)))
-              ]
-      )
     , ( "map"
-      , "let map f lst = match lst with | [] => [] | x:xs => (f x) : (map f xs) in map id [1]"
-      , Right [ ( "it"
-                , EFun "map"
+      , "letrec map f lst = match lst with | [] => [] | x:xs => (f x) : (map f xs)"
+      , Right [ ( "map"
+                , EFix (ELam (PVar "map")
                        (ELam (PVar "f")
-                             (ELam (PVar "lst")
-                                   (EMatch (EVar "lst")
-                                           [ ( PList []
-                                             , ELit $ LBool True
-                                             , EList [])
-                                           , ( PCons (PVar "x")
-                                                     (PVar "xs")
-                                             , ELit $ LBool True
-                                             , ECons (EApp (EVar "f")
-                                                           (EVar "x"))
-                                                     (EApp (EApp (EVar "map")
-                                                                 (EVar "f"))
-                                                           (EVar "xs")))
-                                           ])))
-                       (EApp (EApp (EVar "map")
-                                   (EVar "id"))
-                             (EList [ELit $ LInt 1])))
+                                  (ELam (PVar "lst")
+                                        (EMatch (EVar "lst")
+                                                [ ( PList []
+                                                  , ELit $ LBool True
+                                                  , EList [])
+                                                , ( PCons (PVar "x")
+                                                          (PVar "xs")
+                                                  , ELit $ LBool True
+                                                  , ECons (EApp (EVar "f")
+                                                                (EVar "x"))
+                                                          (EApp (EApp (EVar "map")
+                                                                      (EVar "f"))
+                                                                (EVar "xs")))
+                                                ])))))
               ])
     ]
 
@@ -339,15 +289,15 @@ mkExecTests = map f execExamples
 -- TODO: Move to files
 execExamples =
     [ ( "factorial"
-      , "let f n = if n == 0 then 1 else n * f (n - 1) in f 6"
+      , "letrec f n = if n == 0 then 1 else n * f (n - 1) in f 6"
       , VInt 720
       )
     , ( "factorial w/ pattern matching"
-      , "let f n = match n with | 0 => 1 | _ => n * f (n - 1) in f 6"
+      , "letrec f n = match n with | 0 => 1 | _ => n * f (n - 1) in f 6"
       , VInt 720
       )
     , ( "slow fib"
-      , "  let fib n = if n < 1 \
+      , "  letrec fib n = if n < 1 \
          \             then 0 \
          \             else if n < 3 \
          \                  then 1 \
@@ -356,7 +306,7 @@ execExamples =
       , VInt 5
       )
     , ( "slow fib w/ pattern matching"
-      , "let fib n = match n with \
+      , "letrec fib n = match n with \
          \           | n when n < 1 => 0 \
          \           | n when n < 3 => 1 \
          \           | n => fib (n - 2) + fib (n - 1) in fib 6"

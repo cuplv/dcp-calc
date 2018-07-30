@@ -344,15 +344,16 @@ tyCheckTests :: TestTree
 tyCheckTests =
     testGroup "Type check tests" $ makeTyCheckTests
 
-inferEx src = case (parser src) of
-    Left err          -> error "bad test"
-    Right [(_, expr)] -> case (inferExpr emptyTyEnv expr) of
-                             Left err -> error "bad test"
-                             Right ty -> ty
+
 
 makeTyCheckTests = map f tyCheckExamples
   where f (str, src, ty) = testCase (printf "type check %s" str) $
                            assertEqual "" (inferEx src) ty
+        inferEx src = case (parser src) of
+            Left err          -> error "bad test"
+            Right [(_, expr)] -> case (inferExpr emptyTyEnv expr) of
+                                     Left err -> error "bad test"
+                                     Right ty -> ty
                            
 tyCheckExamples =
     [ ( "compose"

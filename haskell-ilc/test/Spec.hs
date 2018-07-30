@@ -7,15 +7,17 @@ import Test.Tasty.Hspec
 import Test.Tasty.QuickCheck as QC
 import Test.Tasty.SmallCheck as SC
 
-import Syntax
-import Parser
 import Eval
+import Infer
+import Parser
+import Syntax
+import Type
 
 main :: IO ()
 main = defaultMain tests
 
 tests :: TestTree
-tests = testGroup "Tests" [parserTests, pmTests, execTests]
+tests = testGroup "Tests" [parserTests, pmTests, execTests, tyCheckTests]
 
 parserTests :: TestTree
 parserTests =
@@ -241,7 +243,7 @@ pmTests =
 
 mkpmTests = map f pmExamples
   where f (str, v, p, env) = testCase (printf "pattern match %s" str) $
-                             assertEqual "" (getBinds p v) env
+                             assertEqual "" (Eval.getBinds p v) env
                              
 pmExamples =
     [ ( "tuple w/ vars"
@@ -296,16 +298,6 @@ pmExamples =
       )
     ]
 
-{-tyCheckTests :: TestTree
-tyCheckTests =
-    testGroup "Type check tests" $ makeTyCheckTests
-
-makeTyCheckTests = map f tyCheckExamples
-  where f (str, src, ast) = testCase (printf "parse %s" str) $
-                            assertEqual "" (parser src) (ast)
-                           
-tyCheckExamples =-}
-
 execTests :: TestTree
 execTests =
     testGroup "Execution tests" $ mkExecTests
@@ -315,12 +307,12 @@ testOutEqual src out = do
         Left err   -> print err
         Right cmds -> do v <- exec cmds
                          assertEqual "" v out
-    
 
 mkExecTests = map f execExamples
   where f (str, src, out) = testCase (printf "execute %s" str) $
                             testOutEqual src out
 
+-- TODO: Move to files
 execExamples =
     [ ( "factorial"
       , "let f n = if n == 0 then 1 else n * f (n - 1) in f 6"
@@ -339,11 +331,36 @@ execExamples =
          \ in fib 5"
       , VInt 5
       )
-    , ( "slow fib w/ pattern matching for the lols"
+    , ( "slow fib w/ pattern matching"
       , "let fib n = match n with \
          \           | n when n < 1 => 0 \
          \           | n when n < 3 => 1 \
          \           | n => fib (n - 2) + fib (n - 1) in fib 6"
       , VInt 8
       )
+    ]
+
+tyCheckTests :: TestTree
+tyCheckTests =
+    testGroup "Type check tests" $ makeTyCheckTests
+
+inferEx src = case (parser src) of
+    Left err          -> error "bad test"
+    Right [(_, expr)] -> case (inferExpr emptyTyEnv expr) of
+                             Left err -> error "bad test"
+                             Right ty -> ty
+
+makeTyCheckTests = map f tyCheckExamples
+  where f (str, src, ty) = testCase (printf "type check %s" str) $
+                           assertEqual "" (inferEx src) ty
+                           
+tyCheckExamples =
+    [ ( "compose"
+      , "let compose f g = lam x . f (g x)"
+      , Forall [TV "a",TV "b",TV "c"]
+               (TArr (TArr (TVar (TV "a")) (TVar (TV "b")))
+                           (TArr (TArr (TVar (TV "c"))
+                                       (TVar (TV "a")))
+                                 (TArr (TVar (TV "c"))
+                                       (TVar (TV "b"))))))
     ]

@@ -1,109 +1,79 @@
 {- ILC Standard Prelude -}
-let map f lst =
+
+letrec map f lst =
+    match lst with
+    | []   => []
+    | x:xs => (f x) : (map f xs)
+
+letrec filter f lst =
+    match lst with
+    | []            => []
+    | x:xs when f x => x : (filter f xs)
+    | _:xs          => filter f xs
+
+letrec foldl f acc lst =
+    match lst with
+    | []   => acc
+    | x:xs => foldl f (f acc x) xs
+
+{-letrec foldl1 f lst =
+    match lst with
+    | []   => "error: empty list"
+    | x:xs => foldl f x xs-}
+
+letrec scanl f s lst =
+  s : (match lst with
+       | []    => []
+       | x:xs => scanl f (f s x) xs)
+
+letrec scanl1 f lst =
+    match lst with
+    | []   => []
+    | x:xs => scanl f x xs
+
+letrec foldr f lst acc =
+    match lst with
+    | []   => acc
+    | x:xs => f x (foldr f xs acc)
+
+{-letrec foldr1 f lst =
   match lst with
-  | [] => []
-  | x:xs => (f x) : (map f xs)
-in
-let plus1 x = x + 1
-in map plus1 [1, 2, 3]
+  | [] => "error: empty list"
+  | x:xxs => foldr f xs s-}
+  
+{- TODO: scanr, scanr1 -}
+
+letrec all f lst =
+    match lst with
+    | []            => true
+    | x:xs when f x => all f xs
+    | _             => false
+
+letrec any f lst =
+    match lst with
+    | []            => false
+    | x:xs when f x => true
+    | _:xs          => any f xs
+
+letrec nth n lst =
+    match (n, lst) with
+    {-| (_, []) => "not found"-}
+    | (1, x:xs)  => x
+    | (n', x:xs) => nth (n'-1) xs
+
+letrec take n lst =
+    match lst with
+    {-| [] => "error"-}
+    | x:xs when n == 1 => [x]
+    | x:xs             => x : (take (n-1) xs)
+
+letrec drop n lst =
+    match lst with
+    | []               => []
+    | x:xs when n <= 0 => x:xs {- TODO -}
+    | x:xs when        => drop (n-1) xs
   
 {-  
-  end
-in 
-let filter = lam f, lst .
-  match lst with
-  | [] => []
-  | x::xs => if f x
-                then x :: (filter f xs)
-                else filter f xs
-  end
-in
-let foldl = lam f, acc, lst .
-  match lst with
-  | [] => acc
-  | x::xs => foldl f (f acc x) xs
-  end
-in
-let foldl1 = lam f, lst .
-  match lst with
-  | [] => "error: empty list"
-  | x::xs => foldl f x xs
-  end
-in
-let scanl = lam f, s, lst .
-  s :: match lst with
-       | [] => []
-       | x::xs => scanl f (f s x) xs
-       end
-in
-let scanl1 = lam f, lst .
-  match lst with
-  | [] => []
-  | x::xs => scanl f x xs
-  end
-in
-let foldr = lam f, lst, acc .
-  match lst with
-  | [] => acc
-  | x::xs => f x (foldr f xs acc)
-  end
-in
-let foldr1 = lam f, lst .
-  match lst with
-  | [] => "error: empty list"
-  | x::xs => foldr f xs s
-  end
-in
-(* TODO: scanr, scanr1 *)
-let all = lam f, lst .
-  match lst with
-  | [] => true
-  | x :: xs => if f x then all f xs
-               else false
-  end
-in
-let any = lam f, lst .
-  match lst with
-  | [] => false
-  | x :: xs => if f x then true
-               else any f xs
-  end
-in
-let and = lam lst .
-  match lst with
-  | [] => true
-  | x::xs => if x then and xs
-             else false
-  end
-in
-let or = lam lst .
-  match lst with
-  | [] => false
-  | x::xs => if x then true
-          else or xs
-  end
-in
-let nth = lam n, lst .
-  match (n, lst) with
-  | (_, []) => "not found" (* TODO: Error handling *)
-  | (1, x::xs) => x
-  | (n', x::xs) => nth (n'-1) xs
-  end
-in
-let take = lam n, lst .
-  match lst with
-  | [] => "error"
-  | x::xs => if n == 1 then [x]
-             else x :: (take (n-1) xs)
-  end
-in
-let drop = lam n, lst .
-  match lst with
-  | [] => []
-  | x::xs => if n <= 0 then x::xs
-             else drop (n-1) xs
-  end
-in
 let splitAt = lam n, lst .
   (take n lst, drop n lst)
 in

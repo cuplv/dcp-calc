@@ -10,6 +10,7 @@ import Test.Tasty.SmallCheck as SC
 import Eval
 import Infer
 import Parser
+import Pretty
 import Syntax
 import Type
 
@@ -325,25 +326,13 @@ makeTyCheckTests = map f tyCheckExamples
             Left err          -> error "bad test"
             Right [(_, expr)] -> case (inferExpr emptyTyEnv expr) of
                                      Left err -> error "bad test"
-                                     Right ty -> ty
-                           
+                                     Right sc -> ppscheme sc
+
 tyCheckExamples =
     [ ( "compose"
       , "let compose f g = lam x . f (g x)"
-      , Forall [TV "a",TV "b",TV "c"]
-               (TArr (TArr (TVar (TV "a")) (TVar (TV "b")))
-                           (TArr (TArr (TVar (TV "c"))
-                                       (TVar (TV "a")))
-                                 (TArr (TVar (TV "c"))
-                                       (TVar (TV "b"))))))
-    , ( "head"
-      , "let hd lst = match lst with | x:xs => x"
-      , Forall [TV "a"]
-               (TArr (TList (TVar (TV "a")))
-                     (TVar (TV "a"))))
-    , ( "tail"
-      , "let tl lst = match lst with | x:xs => xs"
-      , Forall [TV "a"]
-               (TArr (TList (TVar (TV "a")))
-                     (TList (TVar (TV "a")))))
+      , "\8704 a b c . (a -> b) -> (c -> a) -> c -> b")
+    , ( "map"
+      , "letrec map f lst = match lst with | [] => [] | x:xs => (f x) : (map f xs)"
+      , "\8704 a b . (a -> b) -> [a] -> [b]")
     ]

@@ -70,7 +70,7 @@ pCons = do
     hd <- pat'
     colon
     tl <- pat
-    return (PCons hd tl)
+    return $ PCons hd tl
 
 pSet = mklexer PSet $ braces $ commaSep pat
 
@@ -179,12 +179,22 @@ eLet = do
 eFun = do
     reserved "let"
     x <- identifier
-    args <- reverse <$> many1 pat
+    args <- many1 pat
     reservedOp "="
     e1 <- expr
     reserved "in"
     e2 <- expr
     return $ EFun x (foldr ELam e1 args) e2
+
+eFunRec = do
+    reserved "letrec"
+    p <- pat
+    args <- many1 pat
+    reservedOp "="
+    e1 <- expr
+    reserved "in"
+    e2 <- expr
+    return $ ELet p (EFix $ foldr ELam e1 (p:args)) e2
 
 eAssign = do
     reserved "let"
@@ -241,6 +251,12 @@ eSeq = do
 
 ePrint = mklexer EPrint $ reserved "print" >> atomExpr
 
+eCons = do
+    x <- atomExpr
+    colon
+    xs <- atomExpr
+    return $ ECons x xs
+
 expr = try eSeq <|> expr'
 
 expr' = Ex.buildExpressionParser table term
@@ -258,10 +274,12 @@ atomExpr = eVar
        <|> parens expr
 
 term = try eApp
+   <|> try eCons
    <|> atomExpr
    <|> try eAssign
    <|> eIf
    <|> eMatch
+   <|> try eFunRec
    <|> try eFun
    <|> eLet
    <|> eRd
@@ -293,6 +311,16 @@ dDeclLet = do
     optional $ reserved ";;"
     return (x, e)
 
+dDeclLetRec = do
+    reserved "letrec"
+    x <- identifier
+    ps <- many1 pat
+    reserved "="
+    e <- expr
+    optional $ reserved ";;"
+    return (x, EFix $ foldr ELam e ((PVar x):ps))
+
+-- TODO: Fix
 dDeclFun = do
     reserved "let"
     x <- identifier
@@ -308,7 +336,7 @@ dDeclFun = do
   t <- ty
   return $ TySig x t-}
 
-decl = try dExpr <|> try dDeclLet <|> dDeclFun
+decl = try dExpr <|> try dDeclLetRec <|> try dDeclLet <|> dDeclFun
 
 --------------------------------------------------------------------------------
 -- Parser

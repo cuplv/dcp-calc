@@ -132,6 +132,7 @@ getBinds p v = go [] p v
     go acc (PTuple ps) (VTuple vs) = gos acc ps vs
     go acc PUnit VUnit = Just acc
     go acc PWildcard _ = Just acc
+    go acc p v = error ("pattern match failed on" ++ show p ++ show v)
     
     -- TODO: Refactor using concatMap?
     gos acc vs ps | length vs == length ps = foldl (<:>) (Just []) accs
@@ -218,6 +219,10 @@ eval' env m expr = case expr of
         f (PVar x) = Just x
         f _        = Nothing
 
+    EFix e -> evalSub env e' >>= putMVar m
+      where
+        e' = (ELam (PVar "_x") (EApp (EApp e (EFix e)) (EVar "_x")))
+
     -- TODO: Unit argument error
     EApp e1 e2 -> evalSub env e1 >>= \v1 ->
                   evalSub env e2 >>= \v2 ->
@@ -227,7 +232,7 @@ eval' env m expr = case expr of
             case x of
                 Just x' -> let env' = extendEnv env x' v
                            in evalSub env' e
-                Nothing -> evalSub env e
+                Nothing -> error "" -- evalSub env e
 
     ENu x e -> newChan >>= \c ->
                let env' = extendEnv env x $ VChannel x c
@@ -259,6 +264,12 @@ eval' env m expr = case expr of
     ESeq e1 e2 -> evalSub env e1 >> evalSub env e2 >>= putMVar m
 
     EPrint e -> evalSub env e >>= putStrLn . show >> putMVar m VUnit
+
+    ECons e1 e2 -> evalSub env e1 >>= \v1 ->
+                   evalSub env e2 >>= \v2 ->
+                   let lst = case (v1, v2) of
+                                 (x, VList xs) -> VList $ x:xs
+                   in putMVar m lst
 
 -- TODO: Types    
 exec :: [Decl] -> IO Value

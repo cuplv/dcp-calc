@@ -20,6 +20,7 @@ data Expr
     | ELet Pattern Expr Expr
     | EFun Name Expr Expr
     | ELam Pattern Expr
+    | EFix Expr
     | EApp Expr Expr
     | ERd Expr
     | EWr Expr Expr
@@ -33,6 +34,7 @@ data Expr
     | EThunk Expr
     | EForce Expr
     | EPrint Expr
+    | ECons Expr Expr
     deriving (Eq, Show)
 
 data Pattern

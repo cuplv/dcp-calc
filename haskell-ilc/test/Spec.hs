@@ -235,7 +235,31 @@ parserExamples =
                              (ELit $ LInt 6)))
               ]
       )
+    , ( "map"
+      , "let map f lst = match lst with | [] => [] | x:xs => (f x) : (map f xs) in map id [1]"
+      , Right [ ( "it"
+                , EFun "map"
+                       (ELam (PVar "f")
+                             (ELam (PVar "lst")
+                                   (EMatch (EVar "lst")
+                                           [ ( PList []
+                                             , ELit $ LBool True
+                                             , EList [])
+                                           , ( PCons (PVar "x")
+                                                     (PVar "xs")
+                                             , ELit $ LBool True
+                                             , ECons (EApp (EVar "f")
+                                                           (EVar "x"))
+                                                     (EApp (EApp (EVar "map")
+                                                                 (EVar "f"))
+                                                           (EVar "xs")))
+                                           ])))
+                       (EApp (EApp (EVar "map")
+                                   (EVar "id"))
+                             (EList [ELit $ LInt 1])))
+              ])
     ]
+
 
 pmTests :: TestTree
 pmTests =
@@ -344,8 +368,6 @@ tyCheckTests :: TestTree
 tyCheckTests =
     testGroup "Type check tests" $ makeTyCheckTests
 
-
-
 makeTyCheckTests = map f tyCheckExamples
   where f (str, src, ty) = testCase (printf "type check %s" str) $
                            assertEqual "" (inferEx src) ty
@@ -364,4 +386,14 @@ tyCheckExamples =
                                        (TVar (TV "a")))
                                  (TArr (TVar (TV "c"))
                                        (TVar (TV "b"))))))
+    , ( "head"
+      , "let hd lst = match lst with | x:xs => x"
+      , Forall [TV "a"]
+               (TArr (TList (TVar (TV "a")))
+                     (TVar (TV "a"))))
+    , ( "tail"
+      , "let tl lst = match lst with | x:xs => xs"
+      , Forall [TV "a"]
+               (TArr (TList (TVar (TV "a")))
+                     (TList (TVar (TV "a")))))
     ]

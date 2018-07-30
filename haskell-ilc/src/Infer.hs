@@ -304,19 +304,19 @@ inferPat p e = case (p, e) of
         return (t1, c1 ++ c2 ++ c3 ++ [(t1, t3), (TList t2, t1)], e2 ++ e3)
 
     (p@(PCons _ _), e) -> do
-        (t, c) <- infer e
+        (tye, c) <- infer e
         let ps = flatten [] p
-        let vars = concatMap (\x -> case x of
+        let varinit = concatMap (\x -> case x of
                               PVar x' -> [x']
                               _       -> []) (init ps)
-        tys <- mapM (const fresh) vars
+        tyinit <- mapM (const fresh) varinit
         tylast <- fresh
-        let env          = zip vars tys
-            cs           = concatMap (\ty -> [(TList ty, t)]) tys
+        let env          = zip varinit tyinit
+            cs           = concatMap (\x -> [(TList x, tye)]) tyinit
             (cs', env')  = case (last ps) of
-                PVar x -> ((tylast, t):cs, (x, tylast):env)
+                PVar x -> ((tylast, tye):cs, (x, tylast):env)
                 _      -> (cs, env)
-        return (t, c ++ cs', env')
+        return (tylast, c ++ cs', env')
 
     (PUnit, e) -> do
       (t, c) <- infer e
@@ -425,12 +425,14 @@ infer expr = case expr of
         tcs <- mapM (inferBranch e) bs
         let (ts, cs) = concatTCs tcs
             ty       = head ts
-            cs'      = zip (init ts) (repeat ty)
+            cs'      = zip (tail ts) (repeat ty)
         return (ty, cs ++ cs')
 
     EFun x e1 e2 -> do
         env <- ask
-        (t1, c1) <- infer e1
+        ty <- fresh
+        let sc = generalize env ty
+        (t1, c1) <- inEnv (x, sc) $ local (apply emptySubst) (infer e1)
         case runSolve c1 of
             Left err -> throwError err
             Right sub -> do
@@ -451,6 +453,11 @@ infer expr = case expr of
         ty <- fresh
         (t, c) <- (infer e)
         return (ty `TArr` t, c)
+        
+    EFix e1 -> do
+      (t1, c1) <- infer e1
+      tv <- fresh
+      return (tv, c1 ++ [(tv `TArr` tv, t1)])
         
     -- TODO: Need other patterns for ELam
         
@@ -521,6 +528,11 @@ infer expr = case expr of
        (t, c) <- infer e
        return (tyUnit, c)
 
+    ECons e1 e2  -> do
+       (t1, c1) <- infer e1
+       (t2, c2) <- infer e2
+       return (t2, c1 ++ c2 ++ [(TList t1, t2)])
+
 inferTop :: TypeEnv -> [(Name, Expr)] -> Either TypeError TypeEnv
 inferTop env [] = Right env
 inferTop env ((name, ex):xs) = case inferExpr env ex of
@@ -553,9 +565,7 @@ normalize (Forall _ body) = Forall (map snd ord) (normtype body)
     normtype (TSet a)   = TSet (normtype a)
     normtype (TRef a)   = TRef (normtype a)
     normtype (TThunk a)   = TThunk (normtype a)
-
-
-
+    
 -------------------------------------------------------------------------------
 -- Constraint Solver
 -------------------------------------------------------------------------------

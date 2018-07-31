@@ -521,6 +521,11 @@ infer expr = case expr of
        (t2, c2) <- infer e2
        return (t2, c1 ++ c2 ++ [(TList t1, t2)])
 
+    EError e  -> do
+       ty <- fresh
+       (t, c) <- infer e
+       return (ty, c ++ [(t, tyString)])
+
 inferTop :: TypeEnv -> [(Name, Expr)] -> Either TypeError TypeEnv
 inferTop env [] = Right env
 inferTop env ((name, ex):xs) = case inferExpr env ex of

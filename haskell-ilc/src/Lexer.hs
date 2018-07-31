@@ -43,6 +43,7 @@ langDef = Tok.LanguageDef
                           , "ref"
                           , "when"
                           , "print"
+                          , "error"
                           , "Int"
                           , "Bool"
                           , "String"

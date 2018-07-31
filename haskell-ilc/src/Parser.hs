@@ -242,6 +242,8 @@ eSeq = do
 
 ePrint = mklexer EPrint $ reserved "print" >> atomExpr
 
+eError = mklexer EError $ reserved "error" >> atomExpr
+
 expr = try eSeq <|> expr'
 
 expr' = Ex.buildExpressionParser table term
@@ -276,6 +278,7 @@ term = try eApp
    <|> eThunk
    <|> eForce
    <|> ePrint
+   <|> eError
 
 --------------------------------------------------------------------------------
 -- Parse declarations

@@ -2,12 +2,14 @@ module Eval where
 
 import Control.Concurrent
 import Control.Concurrent.Chan
+import Control.Exception
 import Control.Monad
 import Control.Monad.Identity
 import Data.IORef
 import Data.List
 import qualified Data.Map.Strict as Map
 import Data.Maybe
+import Data.Typeable
 
 import Syntax
 
@@ -25,6 +27,15 @@ data Value
     | VChannel Name (Chan Value)
     | VRef (IORef Value)
     deriving (Eq)
+
+data EvalError
+    = EvalError String
+    deriving (Typeable)
+
+instance Show EvalError where
+    show (EvalError s) = "Exception: " ++ s
+    
+instance Exception EvalError
 
 -- TODO: Use pp
 instance Show Value where
@@ -263,6 +274,9 @@ eval' env m expr = case expr of
                    let lst = case (v1, v2) of
                                  (x, VList xs) -> VList $ x:xs
                    in putMVar m lst
+                   
+    EError e -> evalSub env e >>= getString >>= throwIO . EvalError
+      where getString (VString s) = return s
 
 -- TODO: Types    
 exec :: [Decl] -> IO Value

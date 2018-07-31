@@ -16,7 +16,7 @@ data Expr
     | EBin Binop Expr Expr
     | EUn Unop Expr
     | EIf Expr Expr Expr
-    | EMatch Expr [(Pattern, Expr, Expr)] -- TODO: Guard into Maybe?
+    | EMatch Expr [(Pattern, Expr, Expr)]
     | ELet Pattern Expr Expr
     | ELam Pattern Expr
     | EFix Expr
@@ -34,6 +34,7 @@ data Expr
     | EForce Expr
     | EPrint Expr
     | ECons Expr Expr
+    | EError Expr
     deriving (Eq, Show)
 
 data Pattern
@@ -80,5 +81,5 @@ data Unop
 
 type Decl = (Name, Expr)
 
-data Program = Program [Decl] Expr
+data Program = Program [Decl] Expr  -- TODO: Main
     deriving (Eq, Show)

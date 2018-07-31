@@ -1,7 +1,7 @@
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
-
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE TypeSynonymInstances #-}
 module Infer where
 
 import Control.Monad.Except
@@ -31,7 +31,7 @@ type Infer a = (ReaderT
                   a)
 
 -- | Inference state
-data InferState = InferState { count :: Int }
+newtype InferState = InferState { count :: Int }
 
 -- | Initial inference state
 initInfer :: InferState
@@ -124,7 +124,7 @@ closeOver = normalize . generalize emptyTyEnv
 
 inEnv :: (Name, Scheme) -> Infer a -> Infer a
 inEnv (x, sc) m = do
-    let scope e = (remove e x) `extend` (x, sc)
+    let scope e = remove e x `extend` (x, sc)
     local scope m
 
 lookupEnv :: Name -> Infer Type
@@ -132,8 +132,7 @@ lookupEnv x = do
     (TypeEnv env) <- ask
     case Map.lookup x env of
         Nothing -> throwError $ UnboundVariable x
-        Just s  -> do t <- instantiate s
-                      return t
+        Just s  -> instantiate s
 
 letters :: [String]
 letters = [1..] >>= flip replicateM ['a'..'z']
@@ -168,11 +167,10 @@ rbinops Lt  = return $ tyInt  `TArr` (tyInt  `TArr` tyBool)
 rbinops Gt  = return $ tyInt  `TArr` (tyInt  `TArr` tyBool)
 rbinops Leq = return $ tyInt  `TArr` (tyInt  `TArr` tyBool)
 rbinops Geq = return $ tyInt  `TArr` (tyInt  `TArr` tyBool)
-rbinops Eql = do
-    t1 <- fresh
-    t2 <- fresh
-    return $ t1  `TArr` (t2  `TArr` tyBool)
-rbinops Neq = do
+rbinops Eql = eqbinop
+rbinops Neq = eqbinop
+
+eqbinop = do
     t1 <- fresh
     t2 <- fresh
     return $ t1  `TArr` (t2  `TArr` tyBool)
@@ -182,7 +180,7 @@ bunops Not = tyBool  `TArr` tyBool
 
 -- TODO: Cannot infer type of xs in let x:xs = ...
 getBinds :: Pattern -> Expr -> [(Name, Expr)]
-getBinds p e = go [] p e
+getBinds = go []
   where
     go acc (PVar x) e = (x, e) : acc
     go acc (PTuple ps) (ETuple es) = gos acc ps es
@@ -197,16 +195,16 @@ getBinds p e = go [] p e
     gos acc ps es | length ps == length es = accs
                   | otherwise              = error "pattern match fail"
       where
-        accs  = concatMap (\(p, e) -> go acc p e) pe
+        accs  = concatMap (uncurry (go acc)) pe
         pe    = zip ps es
 
 getPVars :: Pattern -> [Name]
-getPVars p = go [] p
+getPVars = go []
   where
     go acc (PVar x) = x : acc
-    go acc (PTuple ps) = concatMap (getPVars) ps ++ acc
-    go acc (PList ps) = concatMap (getPVars) ps ++ acc
-    go acc (PSet ps) = concatMap (getPVars) ps ++ acc
+    go acc (PTuple ps) = concatMap getPVars ps ++ acc
+    go acc (PList ps) = concatMap getPVars ps ++ acc
+    go acc (PSet ps) = concatMap getPVars ps ++ acc
     go acc (PCons p ps) = foldl1 (++) [acc1, acc2, acc]
       where
         acc1 = getPVars p
@@ -247,11 +245,11 @@ inferPat p e = case (p, e) of
     (PTuple ps, ETuple es) -> do
         when (length ps /= length es) (error "pattern match failed")
         (t, c) <- infer $ ETuple es
-        tces <- mapM (\(p, e) -> inferPat p e) $ zip ps es
+        tces <- zipWithM inferPat ps es
         let (ts, cs, es) = concatTCEs tces
         return (t, c ++ cs ++ [(TProd ts, t)], es)
 
-    -- TODO
+    -- TODO: combine with PList
     (PTuple ps, e) -> do
         tys <- mapM (const fresh) ps
         let env = concatMap (\(p, t) -> case p of
@@ -262,7 +260,7 @@ inferPat p e = case (p, e) of
         
     (PList ps, EList es) -> do
         (t, c) <- infer $ EList es
-        tces <- mapM (\(p, e) -> inferPat p e) $ zip ps es
+        tces <- zipWithM inferPat ps es
         let (ts, cs, es) = concatTCEs tces
         -- TODO: Check ts?
         t' <- if null ts then fresh
@@ -278,12 +276,12 @@ inferPat p e = case (p, e) of
         (t, c) <- infer e
         t' <- if null tys then fresh
                   else return $ head tys
-        return (t, (TList $ t', t) : c, env)
+        return (t, (TList t', t) : c, env)
 
     (PSet ps, ESet es) -> do
         when (length ps /= length es) (error "pattern match failed")
         (t, c) <- infer $ ESet es
-        tces <- mapM (\(p, e) -> inferPat p e) $ zip ps es
+        tces <- zipWithM inferPat ps es
         let (ts, cs, es) = concatTCEs tces
         t' <- if null ts then fresh
                   else return $ head ts
@@ -297,7 +295,7 @@ inferPat p e = case (p, e) of
         (t, c) <- infer e
         t' <- if null tys then fresh
                   else return $ head tys
-        return (t, (TSet $ t', t) : c, env)
+        return (t, (TSet t', t) : c, env)
 
     (PCons p ps, e@(EList (hd:tl))) -> do
         (t1, c1) <- infer e
@@ -308,9 +306,9 @@ inferPat p e = case (p, e) of
     (p@(PCons _ _), e) -> do
         (tye, c) <- infer e
         let ps = flatten [] p
-        let varinit = concatMap (\x -> case x of
-                              PVar x' -> [x']
-                              _       -> []) (init ps)
+        let varinit = concatMap (\case
+                                    PVar x' -> [x']
+                                    _       -> []) (init ps)
         tyinit <- mapM (const fresh) varinit
         tylast <- fresh
         let env          = zip varinit tyinit
@@ -365,7 +363,7 @@ infer expr = case expr of
     ETuple es -> do
         tcs <- mapM infer es
         let ts = foldr ((:) . fst) [] tcs
-            cs = foldr ((++) . snd) [] tcs
+            cs = concatMap snd tcs
         return (TProd ts, cs)
         
     EList [] -> do
@@ -375,7 +373,7 @@ infer expr = case expr of
     EList es -> do
         tcs <- mapM infer es
         let tyFst = fst $ head tcs
-            cs    = foldr ((++) . snd) [] tcs
+            cs    = concatMap snd tcs
             cs'   = map (\x -> (tyFst, fst x)) tcs
         return (TList tyFst, cs ++ cs')
 
@@ -386,7 +384,7 @@ infer expr = case expr of
     ESet es -> do
         tcs <- mapM infer es
         let tyFst = fst $ head tcs
-            cs    = foldr ((++) . snd) [] tcs
+            cs    = concatMap snd tcs
             cs'   = map (\x -> (tyFst, fst x)) tcs
         return (TSet tyFst, cs ++ cs')
     
@@ -460,12 +458,12 @@ infer expr = case expr of
         return (ty `TArr` t, c)
 
     ELam PUnit e -> do
-        (t, c) <- (infer e)
+        (t, c) <- infer e
         return (tyUnit `TArr` t, c)
 
     ELam PWildcard e -> do
         ty <- fresh
-        (t, c) <- (infer e)
+        (t, c) <- infer e
         return (ty `TArr` t, c)
         
     EFix e1 -> do
@@ -568,7 +566,7 @@ normalize (Forall _ body) = Forall (map snd ord) (normtype body)
     fv (TCon _) = []
     fv (TList a) = fv a
     -- TODO: Refactor?
-    fv (TProd as) = foldr ((++) . fv) [] as
+    fv (TProd as) = concatMap fv as
     fv (TSet a) = fv a
     fv (TRef a) = fv a
     fv (TThunk a) = fv a

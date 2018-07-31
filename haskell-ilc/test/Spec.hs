@@ -22,68 +22,68 @@ tests = testGroup "Tests" [parserTests, pmTests, execTests, tyCheckTests]
 
 parserTests :: TestTree
 parserTests =
-    testGroup "Parser tests" $ makeParserTests
+    testGroup "Parser tests" makeParserTests
 
 makeParserTests = map f parserExamples
   where f (str, src, ast) = testCase (printf "parse %s" str) $
-                            assertEqual "" (parser src) (ast)
+                            assertEqual "" (parser src) ast
                            
 parserExamples =
     [ ( "lambda"
       , "lam x . x + x"
-      , Right [ ("it", (ELam (PVar "x")
-                             (EBinArith Add (EVar "x")
-                                            (EVar "x"))))
+      , Right [ ("it", ELam (PVar "x")
+                            (EBinArith Add (EVar "x")
+                                           (EVar "x")))
               ]
       )
     , ( "allocate channel then write"
       , "nu c . wr 1 -> c"
-      , Right [ ("it", (ENu "c" (EWr (ELit $ LInt 1)
-                                (EVar "c"))))
+      , Right [ ("it", ENu "c" (EWr (ELit $ LInt 1)
+                               (EVar "c")))
               ]
       )
     , ( "let binding"
       , "let x = 100 in x * 1"
-      , Right [ ("it", (ELet (PVar "x")
-                             (ELit $ LInt 100)
-                             (EBinArith Mul (EVar "x")
-                                            (ELit $ LInt 1))))
+      , Right [ ("it", ELet (PVar "x")
+                            (ELit $ LInt 100)
+                            (EBinArith Mul (EVar "x")
+                                           (ELit $ LInt 1)))
               ]
       )
     , ( "let binding w/ tuple matching"
       , "let (x, y) = (1, 2) in x + y"
-      , Right [ ("it", (ELet (PTuple [PVar "x", PVar "y"])
-                             (ETuple [ELit $ LInt 1, ELit $ LInt 2])
-                             (EBinArith Add (EVar "x")
-                                            (EVar "y"))))
+      , Right [ ("it", ELet (PTuple [PVar "x", PVar "y"])
+                            (ETuple [ELit $ LInt 1, ELit $ LInt 2])
+                            (EBinArith Add (EVar "x")
+                                           (EVar "y")))
               ]
       )
     , ( "let binding w/ unit and function application"
       , "let () = \"whatever\" in double 2"
-      , Right [ ("it", (ELet (PUnit)
-                             (ELit $ LString "whatever")
-                             (EApp (EVar "double")
-                                   (ELit $ LInt 2))))
+      , Right [ ("it", ELet PUnit
+                            (ELit $ LString "whatever")
+                            (EApp (EVar "double")
+                                  (ELit $ LInt 2)))
               ]
       )
     , ( "sequencing let bindings"
       , "let x = 1 in x; let y = 1 in y"
-      , Right [ ("it", (ELet (PVar "x")
-                             (ELit $ LInt 1)
-                             (ESeq (EVar "x")
-                                   (ELet (PVar "y")
-                                         (ELit $ LInt 1)
-                                         (EVar "y")))))
+      , Right [ ("it", ELet (PVar "x")
+                            (ELit $ LInt 1)
+                            (ESeq (EVar "x")
+                                  (ELet (PVar "y")
+                                        (ELit $ LInt 1)
+                                        (EVar "y"))))
               ]
       )
     , ( "nested let bindings"
       , "let x = 1 in let y = 2 in x + y"
-      , Right [ ("it", (ELet (PVar "x")
-                             (ELit $ LInt 1)
-                             (ELet (PVar "y")
-                                   (ELit $ LInt 2)
-                                   (EBinArith Add (EVar "x")
-                                                  (EVar "y")))))
+      , Right [ ("it", ELet (PVar "x")
+                            (ELit $ LInt 1)
+                            (ELet (PVar "y")
+                                  (ELit $ LInt 2)
+                                  (EBinArith Add (EVar "x")
+                                                 (EVar "y"))))
               ]
       )
     , ( "let commands"
@@ -101,37 +101,37 @@ parserExamples =
                            (EBinArith Mul (ELit $ LInt 2)
                                           (EVar "x")))
               , ("y", ELit $ LInt 1)
-              , ("it", (ELit $ LString "foo"))
+              , ("it", ELit $ LString "foo")
               ]
       )
     , ( "expr commands and sequencing"
       , "1 ; 2 ;; 3 ; 4"
-      , Right [ ("it", (ESeq (ELit $ LInt 1)
-                             (ELit $ LInt 2)))
-              , ("it", (ESeq (ELit $ LInt 3)
-                             (ELit $ LInt 4)))
+      , Right [ ("it", ESeq (ELit $ LInt 1)
+                            (ELit $ LInt 2))
+              , ("it", ESeq (ELit $ LInt 3)
+                            (ELit $ LInt 4))
               ]
       )
     , ( "pattern matching"
       , "match b with | 0 => \"zero\" | 1 => \"one\""
-      , Right [ ("it", (EMatch (EVar "b")
-                               ([ (PInt 0
-                                  , ELit $ LBool True
-                                  , ELit $ LString "zero")
-                                , (PInt 1
-                                  , ELit $ LBool True
-                                  , ELit $ LString "one")
-                                ])))
+      , Right [ ("it", EMatch (EVar "b")
+                              [ (PInt 0
+                                , ELit $ LBool True
+                                , ELit $ LString "zero")
+                              , (PInt 1
+                                , ELit $ LBool True
+                                , ELit $ LString "one")
+                              ])
               ]
       )
     , ( "let binding w/ assign"
       , "let x = 1 ; let y := 1 in x + y"
-      , Right [ ("it", (ELet (PVar "x")
-                             (ESeq (ELit $ LInt 1)
-                                   (EAssign "y"
-                                            (ELit $ LInt 1)))
-                             (EBinArith Add (EVar "x")
-                                            (EVar "y"))))
+      , Right [ ("it", ELet (PVar "x")
+                            (ESeq (ELit $ LInt 1)
+                                  (EAssign "y"
+                                           (ELit $ LInt 1)))
+                            (EBinArith Add (EVar "x")
+                                           (EVar "y")))
               ]
       )
     , ( "ref and deref"
@@ -143,48 +143,48 @@ parserExamples =
       )
     , ( "let binding w/ sequencing and assign"
       , "let a = 1 ; let b := 1 in b"
-      , Right [ ("it", (ELet (PVar "a")
-                             (ESeq (ELit $ LInt 1)
-                                   (EAssign "b"
-                                            (ELit $ LInt 1)))
-                             (EVar "b")))
+      , Right [ ("it", ELet (PVar "a")
+                            (ESeq (ELit $ LInt 1)
+                                  (EAssign "b"
+                                           (ELit $ LInt 1)))
+                            (EVar "b"))
               ]
       )
     , ( "cons pattern matching"
       , "match a with | [] => 0 | x:xs => 1"
-      , Right [ ("it", (EMatch (EVar "a")
-                               ([ ( PList []
-                                  , ELit $ LBool True
-                                  , ELit $ LInt 0)
-                                , ( PCons (PVar "x")
-                                          (PVar "xs")
-                                  , ELit $ LBool True
-                                  , ELit $ LInt 1)
-                                ])))
+      , Right [ ("it", EMatch (EVar "a")
+                              [ ( PList []
+                                , ELit $ LBool True
+                                , ELit $ LInt 0)
+                              , ( PCons (PVar "x")
+                                        (PVar "xs")
+                                , ELit $ LBool True
+                                , ELit $ LInt 1)
+                              ])
               ]
       )
     , ( "pattern matching with guards"
       , "match b with | 0 when 0 < 1 => 0 | 1 when true => 1"
-      , Right [ ("it", (EMatch (EVar "b")
-                               ([ ( PInt 0
-                                  , EBinRel Lt (ELit $ LInt 0)
-                                               (ELit $ LInt 1)
-                                  , ELit $ LInt 0)
-                                , ( PInt 1
-                                  , ELit $ LBool True
-                                  , ELit $ LInt 1)
-                                ])))
+      , Right [ ("it", EMatch (EVar "b")
+                               [ ( PInt 0
+                                 , EBinRel Lt (ELit $ LInt 0)
+                                              (ELit $ LInt 1)
+                                 , ELit $ LInt 0)
+                               , ( PInt 1
+                                 , ELit $ LBool True
+                                 , ELit $ LInt 1)
+                               ])
               ]
       )
     , ( "GetBit"
       , "let GetBit = lam x . nu c . |> (rd c) ; |> (wr 0 -> c) ; |> (wr 1 -> c) GetBit 1"
       , Right [ ( "GetBit"
-                , (ELam (PVar "x")
-                        (ENu "c" (ESeq (EFork (ERd (EVar "c")))
-                                       (ESeq (EFork (EWr (ELit $ LInt 0)
-                                                         (EVar "c")))
-                                             (EFork (EWr (ELit $ LInt 1)
-                                                         (EVar "c"))))))))
+                , ELam (PVar "x")
+                       (ENu "c" (ESeq (EFork (ERd (EVar "c")))
+                                      (ESeq (EFork (EWr (ELit $ LInt 0)
+                                                        (EVar "c")))
+                                            (EFork (EWr (ELit $ LInt 1)
+                                                        (EVar "c")))))))
               , ("it", EApp (EVar "GetBit")
                             (ELit $ LInt 1))
               ]
@@ -214,7 +214,7 @@ parserExamples =
 
 pmTests :: TestTree
 pmTests =
-    testGroup "Pattern match tests" $ mkpmTests
+    testGroup "Pattern match tests" mkpmTests
 
 mkpmTests = map f pmExamples
   where f (str, v, p, env) = testCase (printf "pattern match %s" str) $
@@ -275,9 +275,9 @@ pmExamples =
 
 execTests :: TestTree
 execTests =
-    testGroup "Execution tests" $ mkExecTests
+    testGroup "Execution tests" mkExecTests
 
-testOutEqual src out = do
+testOutEqual src out =
     case parser src of
         Left err   -> print err
         Right cmds -> do v <- exec cmds
@@ -317,14 +317,14 @@ execExamples =
 
 tyCheckTests :: TestTree
 tyCheckTests =
-    testGroup "Type check tests" $ makeTyCheckTests
+    testGroup "Type check tests" makeTyCheckTests
 
 makeTyCheckTests = map f tyCheckExamples
   where f (str, src, ty) = testCase (printf "type check %s" str) $
                            assertEqual "" (inferEx src) ty
-        inferEx src = case (parser src) of
+        inferEx src = case parser src of
             Left err          -> error "bad test"
-            Right [(_, expr)] -> case (inferExpr emptyTyEnv expr) of
+            Right [(_, expr)] -> case inferExpr emptyTyEnv expr of
                                      Left err -> error "bad test"
                                      Right sc -> ppscheme sc
 

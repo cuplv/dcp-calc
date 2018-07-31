@@ -77,7 +77,7 @@ instance Pretty TVar where
 instance Pretty Type where
   ppr p (TVar a) = ppr p a
   ppr _ (TCon a) = PP.text a
-  ppr p (TArr a b) = (parensIf (isArrow a) (ppr p a)) <+> PP.text "->" <+> ppr p b
+  ppr p (TArr a b) = parensIf (isArrow a) (ppr p a) <+> PP.text "->" <+> ppr p b
     where
       isArrow TArr {} = True
       isArrow _ = False

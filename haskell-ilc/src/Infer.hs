@@ -313,7 +313,7 @@ inferPat p e = case (p, e) of
         tylast <- fresh
         let env          = zip varinit tyinit
             cs           = concatMap (\x -> [(TList x, tye)]) tyinit
-            (cs', env')  = case (last ps) of
+            (cs', env')  = case last ps of
                 PVar x -> ((tylast, tye):cs, (x, tylast):env)
                 _      -> (cs, env)
         return (tylast, c ++ cs', env')
@@ -342,7 +342,7 @@ inferBranch expr (pat, guard, branch) = do
                               env'
             return (t3, c1 ++ c2 ++ c3 ++ [(t2, tyBool)])
 
-flatten acc (PCons p1 p2@(PCons _ _)) = p1 : (flatten [] p2)
+flatten acc (PCons p1 p2@(PCons _ _)) = p1 : flatten [] p2
 flatten acc (PCons p1 p2) = p1 : p2 : acc
 
 infer :: Expr -> Infer (Type, [Constraint])

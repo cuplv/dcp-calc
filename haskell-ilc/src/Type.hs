@@ -32,7 +32,7 @@ tyTag = TCon "Tag"
 tyUnit = TCon "Unit"
 tyChan = TCon "Chan" -- TODO: Typed channels
 
-data TypeEnv = TypeEnv { types :: Map.Map Name Scheme }
+newtype TypeEnv = TypeEnv { types :: Map.Map Name Scheme }
     deriving (Eq, Show)
 
 emptyTyEnv :: TypeEnv

@@ -1,5 +1,15 @@
 {- ILC Standard Prelude -}
 
+let head lst =
+    match lst with
+    | [] => error "head: empty list"
+    | x:xs => x
+
+let tail lst =
+    match lst with
+    | [] => error "tail: empty list"
+    | x:xs => xs
+
 letrec map f lst =
     match lst with
     | []   => []

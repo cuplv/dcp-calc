@@ -1,3 +1,4 @@
+{-# LANGUAGE LambdaCase #-}
 module Eval where
 
 import Control.Concurrent
@@ -28,7 +29,7 @@ data Value
     | VRef (IORef Value)
     deriving (Eq)
 
-data EvalError
+newtype EvalError
     = EvalError String
     deriving (Typeable)
 
@@ -65,14 +66,14 @@ extendEnv :: TermEnv -> Name -> Value -> TermEnv
 extendEnv env x v = Map.insert x v env
 
 updateEnv :: TermEnv -> [(Name, Value)] -> TermEnv
-updateEnv env env' = foldl f env env'
+updateEnv = foldl f
   where
     f env (x, v) = Map.insert x v env
 
 evalSub :: TermEnv -> Expr -> IO Value
 evalSub env e = newEmptyMVar >>= \m ->
                 eval' env m e >>
-                takeMVar m >>= return
+                takeMVar m
                 
 evalSubs :: TermEnv -> Expr -> Expr -> IO (Value, Value)
 evalSubs env e1 e2 = evalSub env e1 >>= \v1 ->
@@ -100,15 +101,15 @@ evalRelPoly op = evalBinOp $ f op
   where
     f op (n1, n2) = return $ VBool (op n1 n2)
 
-evalList env m con es = mapM (evalSub env) es >>= return . con >>= putMVar m
+evalList env m con es = (con <$> mapM (evalSub env) es) >>= putMVar m
 
 evalPatMatch :: TermEnv -> [(Pattern, Expr, Expr)] -> Value -> IO Value
 evalPatMatch env [] v = error "pattern match failed"
 evalPatMatch env ((p, g, e):bs) val =
-    case (getBinds p val) of
+    case getBinds p val of
         Just binds -> let env' = updateEnv env binds
-                      in evalSub env' g >>= \v ->
-                      case v of
+                      in evalSub env' g >>=
+                      \case
                           VBool True  -> evalSub env' e
                           VBool False -> evalPatMatch env bs val
         Nothing    -> evalPatMatch env bs val
@@ -121,7 +122,7 @@ letBinds p v = fromMaybe (error "let pattern matching failed") $
 
 -- TODO: cons pattern match not failing on let x:xs = "foo" in x               
 getBinds :: Pattern -> Value -> Maybe [(Name, Value)]
-getBinds p v = go [] p v
+getBinds = go []
   where
     go acc (PVar x) v= Just ((x, v) : acc)
     go acc (PInt n) (VInt n') | n == n'   = Just acc
@@ -149,7 +150,7 @@ getBinds p v = go [] p v
     gos acc vs ps | length vs == length ps = foldl (<:>) (Just []) accs
                   | otherwise              = Nothing
       where
-        accs  = map (\pair -> case pair of (v, p) -> go acc v p) vp
+        accs  = map (\case (v, p) -> go acc v p) vp
         vp    = zip vs ps
         
 eval :: TermEnv -> Expr -> IO Value
@@ -165,124 +166,100 @@ eval' env m expr = case expr of
     ELit (LBool b) -> putMVar m $ VBool b
     ELit (LString s) -> putMVar m $ VString s
     ELit (LTag t) -> putMVar m $ VTag t
-    ELit LUnit -> putMVar m $ VUnit
-    
+    ELit LUnit -> putMVar m VUnit
     ETuple es -> evalList env m VTuple es
     EList es -> evalList env m VList es
     ESet es -> evalList env m VSet $ nub es  -- TODO: Use Set
-
-    -- TODO: Refactor
-    EBin Add e1 e2 -> evalArith (+) env m e1 e2
-    EBin Sub e1 e2 -> evalArith (-) env m e1 e2
-    EBin Mul e1 e2 -> evalArith (*) env m e1 e2
-    EBin Div e1 e2 -> evalArith quot env m e1 e2
-    EBin Mod e1 e2 -> evalArith mod env m e1 e2
-    EBin And e1 e2 -> evalBool (&&) env m e1 e2
-    EBin Or e1 e2 -> evalBool (||) env m e1 e2
-    EBin Lt e1 e2 -> evalRel (<) env m e1 e2
-    EBin Gt e1 e2 -> evalRel (>) env m e1 e2
-    EBin Leq e1 e2 -> evalRel (<=) env m e1 e2
-    EBin Geq e1 e2 -> evalRel (>=) env m e1 e2
-    EBin Eql e1 e2 -> evalRelPoly (==) env m e1 e2
-    EBin Neq e1 e2 -> evalRelPoly (/=) env m e1 e2
-
-    EUn Not e -> evalSub env e >>= neg >>= putMVar m
-      where
-        neg (VBool b) = return $ VBool $ not b
-    
-    EIf e1 e2 e3 -> evalSub env e1 >>= evalBranch >>= putMVar m
-      where
-        evalBranch (VBool True)  = evalSub env e2
-        evalBranch (VBool False) = evalSub env e3
-        
-    EMatch e bs -> evalSub env e >>=
-                   evalPatMatch env bs >>=
-                   putMVar m
-                   
-    ELet p e1 e2 -> evalSub env e1 >>= \v1 ->
-                    let binds = letBinds p v1
-                        env'  = updateEnv env binds
-                    in evalSub env' e2 >>= putMVar m
-
-    -- TODO: Applying operation twice
-    EAssign x e -> getRef (env Map.! x) >>= \r ->
-                   evalSub env e >>=
-                   writeIORef r >> putMVar m VUnit
-      where
-        getRef (VRef r) = return r
-
-    ERef e -> evalSub env e >>= newIORef >>= return . VRef >>= putMVar m
-
-    EDeref e -> evalSub env e >>= getRef >>= readIORef >>= putMVar m
-      where
-        getRef (VRef r) = return r
-
     -- TODO: Handle unit, wildcard arguments
     ELam p e -> putMVar m $ VClosure (f p) env e
       where
         f (PVar x) = Just x
         f _        = Nothing
-
-    EFix e -> evalSub env e' >>= putMVar m
-      where
-        e' = (ELam (PVar "_x") (EApp (EApp e (EFix e)) (EVar "_x")))
-
     -- TODO: Unit argument error
     EApp e1 e2 -> evalSub env e1 >>= \v1 ->
-                  evalSub env e2 >>= \v2 ->
-                  evalApp v1 v2 >>= putMVar m
+                  evalSub env e2 >>=
+                  evalApp v1     >>= putMVar m
       where
         evalApp (VClosure x env e) v =
             case x of
                 Just x' -> let env' = extendEnv env x' v
                            in evalSub env' e
                 Nothing -> error "" -- evalSub env e
-
+    EFix e -> evalSub env e' >>= putMVar m
+      where
+        e' = ELam (PVar "_x") (EApp (EApp e (EFix e)) (EVar "_x"))
+    ELet p e1 e2 -> evalSub env e1 >>= \v1 ->
+                    let binds = letBinds p v1
+                        env'  = updateEnv env binds
+                    in evalSub env' e2 >>= putMVar m
+    EIf e1 e2 e3 -> evalSub env e1 >>= evalBranch >>= putMVar m
+      where
+        evalBranch (VBool True)  = evalSub env e2
+        evalBranch (VBool False) = evalSub env e3
+    EMatch e bs -> evalSub env e >>=
+                   evalPatMatch env bs >>=
+                   putMVar m
     ENu x e -> newChan >>= \c ->
                let env' = extendEnv env x $ VChannel x c
                in evalSub env' e >>= putMVar m
-
     ERd e -> evalSub env e >>= getChan >>= readChan >>= putMVar m
       where
         getChan (VChannel _ c) = return c
-
     EWr e1 e2 -> evalSub env e2 >>= getChan >>= \c ->
                  evalSub env e1 >>= writeChan c >> putMVar m VUnit
       where
         getChan (VChannel _ c) = return c
-
     EFork e -> newEmptyMVar >>= \m' ->
                forkIO (eval' env m' e) >>
                putMVar m VUnit
-
     ERepl e -> newEmptyMVar >>= \m' ->
                forkIO (forever $ eval' env m' e) >>
                putMVar m VUnit
-
-    EThunk e -> putMVar m $ VThunk env e
-
-    EForce e -> evalSub env e >>= force >>= putMVar m
+    ERef e -> (VRef <$> (evalSub env e >>= newIORef)) >>= putMVar m
+    EDeref e -> evalSub env e >>= getRef >>= readIORef >>= putMVar m
+      where
+        getRef (VRef r) = return r
+    EAssign x e -> getRef (env Map.! x) >>= \r ->
+                   evalSub env e >>=
+                   writeIORef r >> putMVar m VUnit
+      where
+        getRef (VRef r) = return r
+    ESeq e1 e2 -> evalSub env e1 >> evalSub env e2 >>= putMVar m
+    -- TODO: Refactor
+    EBinArith Add e1 e2 -> evalArith (+) env m e1 e2
+    EBinArith Sub e1 e2 -> evalArith (-) env m e1 e2
+    EBinArith Mul e1 e2 -> evalArith (*) env m e1 e2
+    EBinArith Div e1 e2 -> evalArith quot env m e1 e2
+    EBinArith Mod e1 e2 -> evalArith mod env m e1 e2
+    EBinBool And e1 e2 -> evalBool (&&) env m e1 e2
+    EBinBool Or e1 e2 -> evalBool (||) env m e1 e2
+    EBinRel Lt e1 e2 -> evalRel (<) env m e1 e2
+    EBinRel Gt e1 e2 -> evalRel (>) env m e1 e2
+    EBinRel Leq e1 e2 -> evalRel (<=) env m e1 e2
+    EBinRel Geq e1 e2 -> evalRel (>=) env m e1 e2
+    EBinRel Eql e1 e2 -> evalRelPoly (==) env m e1 e2
+    EBinRel Neq e1 e2 -> evalRelPoly (/=) env m e1 e2
+    EBin Cons e1 e2 -> evalSub env e1 >>= \v1 ->
+                       evalSub env e2 >>= \v2 ->
+                       let lst = case (v1, v2) of
+                                     (x, VList xs) -> VList $ x:xs
+                       in putMVar m lst
+    EUnBool Not e -> evalSub env e >>= neg >>= putMVar m
+      where
+        neg (VBool b) = return $ VBool $ not b
+    EUn Thunk e -> putMVar m $ VThunk env e
+    EUn Force e -> evalSub env e >>= force >>= putMVar m
       where
         force (VThunk env e) = evalSub env e
-
-    ESeq e1 e2 -> evalSub env e1 >> evalSub env e2 >>= putMVar m
-
-    EPrint e -> evalSub env e >>= putStrLn . show >> putMVar m VUnit
-
-    ECons e1 e2 -> evalSub env e1 >>= \v1 ->
-                   evalSub env e2 >>= \v2 ->
-                   let lst = case (v1, v2) of
-                                 (x, VList xs) -> VList $ x:xs
-                   in putMVar m lst
-                   
-    EError e -> evalSub env e >>= getString >>= throwIO . EvalError
+    EUn Print e -> evalSub env e >>= print >> putMVar m VUnit
+    EUn Error e -> evalSub env e >>= getString >>= throwIO . EvalError
       where getString (VString s) = return s
 
 -- TODO: Types    
 exec :: [Decl] -> IO Value
-exec cmds = go emptyTmEnv cmds
+exec = go emptyTmEnv
   where
-    go env ((x, e):[]) = eval env e
+    go env [(x, e)] = eval env e
     go env ((x, e):rest) = eval env e >>= \v ->
                                let env' = extendEnv env x v
                                in go env' rest

@@ -30,7 +30,7 @@ tyBool = TCon "Bool"
 tyString = TCon "String"
 tyTag = TCon "Tag"
 tyUnit = TCon "Unit"
-tyChan = TCon "Chan"
+tyChan = TCon "Chan" -- TODO: Typed channels
 
 data TypeEnv = TypeEnv { types :: Map.Map Name Scheme }
     deriving (Eq, Show)

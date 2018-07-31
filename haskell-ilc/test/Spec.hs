@@ -32,8 +32,8 @@ parserExamples =
     [ ( "lambda"
       , "lam x . x + x"
       , Right [ ("it", (ELam (PVar "x")
-                             (EBin Add (EVar "x")
-                                       (EVar "x"))))
+                             (EBinArith Add (EVar "x")
+                                            (EVar "x"))))
               ]
       )
     , ( "allocate channel then write"
@@ -46,16 +46,16 @@ parserExamples =
       , "let x = 100 in x * 1"
       , Right [ ("it", (ELet (PVar "x")
                              (ELit $ LInt 100)
-                             (EBin Mul (EVar "x")
-                                       (ELit $ LInt 1))))
+                             (EBinArith Mul (EVar "x")
+                                            (ELit $ LInt 1))))
               ]
       )
     , ( "let binding w/ tuple matching"
       , "let (x, y) = (1, 2) in x + y"
       , Right [ ("it", (ELet (PTuple [PVar "x", PVar "y"])
                              (ETuple [ELit $ LInt 1, ELit $ LInt 2])
-                             (EBin Add (EVar "x")
-                                       (EVar "y"))))
+                             (EBinArith Add (EVar "x")
+                                            (EVar "y"))))
               ]
       )
     , ( "let binding w/ unit and function application"
@@ -82,24 +82,24 @@ parserExamples =
                              (ELit $ LInt 1)
                              (ELet (PVar "y")
                                    (ELit $ LInt 2)
-                                   (EBin Add (EVar "x")
-                                             (EVar "y")))))
+                                   (EBinArith Add (EVar "x")
+                                                  (EVar "y")))))
               ]
       )
     , ( "let commands"
       , "let x = 1 let y = 2 let z = x + y"
       , Right [ ("x", ELit $ LInt 1)
               , ("y", ELit $ LInt 2)
-              , ("z", EBin Add (EVar "x")
-                               (EVar "y"))
+              , ("z", EBinArith Add (EVar "x")
+                                    (EVar "y"))
               ]
       )
     , ( "let command, let binding, expr command"
       , "let z = let x = 1 in 2 * x let y = 1;; \"foo\""
       , Right [ ("z", ELet (PVar "x")
                            (ELit $ LInt 1)
-                           (EBin Mul (ELit $ LInt 2)
-                                     (EVar "x")))
+                           (EBinArith Mul (ELit $ LInt 2)
+                                          (EVar "x")))
               , ("y", ELit $ LInt 1)
               , ("it", (ELit $ LString "foo"))
               ]
@@ -130,8 +130,8 @@ parserExamples =
                              (ESeq (ELit $ LInt 1)
                                    (EAssign "y"
                                             (ELit $ LInt 1)))
-                             (EBin Add (EVar "x")
-                                       (EVar "y"))))
+                             (EBinArith Add (EVar "x")
+                                            (EVar "y"))))
               ]
       )
     , ( "ref and deref"
@@ -167,8 +167,8 @@ parserExamples =
       , "match b with | 0 when 0 < 1 => 0 | 1 when true => 1"
       , Right [ ("it", (EMatch (EVar "b")
                                ([ ( PInt 0
-                                  , EBin Lt (ELit $ LInt 0)
-                                            (ELit $ LInt 1)
+                                  , EBinRel Lt (ELit $ LInt 0)
+                                               (ELit $ LInt 1)
                                   , ELit $ LInt 0)
                                 , ( PInt 1
                                   , ELit $ LBool True
@@ -202,11 +202,11 @@ parserExamples =
                                                 , ( PCons (PVar "x")
                                                           (PVar "xs")
                                                   , ELit $ LBool True
-                                                  , ECons (EApp (EVar "f")
-                                                                (EVar "x"))
-                                                          (EApp (EApp (EVar "map")
-                                                                      (EVar "f"))
-                                                                (EVar "xs")))
+                                                  , EBin Cons (EApp (EVar "f")
+                                                                    (EVar "x"))
+                                                              (EApp (EApp (EVar "map")
+                                                                          (EVar "f"))
+                                                                    (EVar "xs")))
                                                 ])))))
               ])
     ]

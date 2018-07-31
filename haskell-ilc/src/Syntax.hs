@@ -1,11 +1,8 @@
 module Syntax where
 
-import Control.Concurrent.Chan
-import Data.IORef
-import qualified Data.Map.Strict as Map
-
 type Name = String
 
+-- | Expressions
 data Expr
     = EVar Name
     | EImpVar Name
@@ -13,44 +10,30 @@ data Expr
     | ETuple [Expr]
     | EList [Expr]
     | ESet [Expr]
-    | EBin Binop Expr Expr
-    | EUn Unop Expr
+    | ELam Pattern Expr
+    | EApp Expr Expr
+    | EFix Expr
+    | ELet Pattern Expr Expr
     | EIf Expr Expr Expr
     | EMatch Expr [(Pattern, Expr, Expr)]
-    | ELet Pattern Expr Expr
-    | ELam Pattern Expr
-    | EFix Expr
-    | EApp Expr Expr
+    | ENu Name Expr
     | ERd Expr
     | EWr Expr Expr
-    | ENu Name Expr
-    | ERepl Expr
     | EFork Expr
-    | ESeq Expr Expr
+    | ERepl Expr
     | ERef Expr
     | EDeref Expr
     | EAssign Name Expr
-    | EThunk Expr
-    | EForce Expr
-    | EPrint Expr
-    | ECons Expr Expr
-    | EError Expr
+    | ESeq Expr Expr
+    | EBin Binop Expr Expr
+    | EBinArith ABinop Expr Expr
+    | EBinBool BBinop Expr Expr
+    | EBinRel RBinop Expr Expr
+    | EUn Unop Expr
+    | EUnBool BUnop Expr
     deriving (Eq, Show)
 
-data Pattern
-    = PVar Name
-    | PInt Integer
-    | PBool Bool
-    | PString String
-    | PTag String
-    | PTuple [Pattern]
-    | PList [Pattern]
-    | PCons Pattern Pattern
-    | PSet [Pattern]
-    | PUnit
-    | PWildcard
-    deriving (Eq, Show)
-
+-- | Literals
 data Lit
     = LInt Integer
     | LBool Bool
@@ -59,15 +42,26 @@ data Lit
     | LUnit
     deriving (Eq, Show)
 
+-- | Binary operators
 data Binop
+    = Cons
+    deriving (Eq, Show)
+
+data ABinop
     = Add
     | Sub
     | Mul
     | Div
     | Mod
-    | And
+    deriving (Eq, Show)
+
+data BBinop
+    = And
     | Or
-    | Lt
+    deriving (Eq, Show)
+
+data RBinop
+    = Lt
     | Gt
     | Leq
     | Geq
@@ -75,11 +69,36 @@ data Binop
     | Neq
     deriving (Eq, Show)
 
+-- | Unary operators
 data Unop
+    = Thunk
+    | Force
+    | Print
+    | Error
+    deriving (Eq, Show)
+
+data BUnop
     = Not
     deriving (Eq, Show)
 
+-- | Patterns
+data Pattern
+    = PVar Name
+    | PInt Integer
+    | PBool Bool
+    | PString String
+    | PTag String
+    | PUnit
+    | PWildcard
+    | PTuple [Pattern]
+    | PList [Pattern]
+    | PCons Pattern Pattern
+    | PSet [Pattern]
+    deriving (Eq, Show)
+
+-- | Toplevel declarations
 type Decl = (Name, Expr)
 
+-- | Program with main expression
 data Program = Program [Decl] Expr  -- TODO: Main
     deriving (Eq, Show)

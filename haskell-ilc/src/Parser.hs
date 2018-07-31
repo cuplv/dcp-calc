@@ -11,10 +11,6 @@ import Text.Parsec.String (Parser)
 import Lexer
 import Syntax
 
---------------------------------------------------------------------------------
--- Parse types
---------------------------------------------------------------------------------
-
 {-tInt = reserved "Int" >> return TInt
 
 tBool = reserved "Bool" >> return TBool
@@ -33,7 +29,7 @@ tArrow = do
     t1 <- ty'
     reserved "->"
     t2 <- ty
-    return $ TArrow t1 t2
+    TArrow t1 <$> t2
 
 tList = mklexer TList $ brackets $ ty    
 
@@ -47,61 +43,13 @@ ty' = tInt
   <|> tRd
   <|> tWr-}
 
---------------------------------------------------------------------------------
--- Parse patterns
---------------------------------------------------------------------------------
-
-pVar = mklexer PVar identifier
-
-pInt = mklexer PInt integer
-
-pBool = pTrue <|> pFalse
-  where
-    pTrue = reserved "true" >> return (PBool True)
-    pFalse = reserved "false" >> return (PBool False)
-
-pString = mklexer PString stringLit
-
-pTag = mklexer PTag $ char '\'' >> identifier
-  
-pList = mklexer PList $ brackets $ commaSep pat
-
-pCons = do
-    hd <- pat'
-    colon
-    tl <- pat
-    return $ PCons hd tl
-
-pSet = mklexer PSet $ braces $ commaSep pat
-
-pTuple = mklexer PTuple $ parens $ commaSep2 pat
-
-pUnit = reserved "()" >> return PUnit
-
-pWildcard = reserved "_" >> return PWildcard
-
--- TODO: Try using chainl1?
-
-pat = try pCons <|> pat'
-
-pat' = pVar
-  <|> pInt
-  <|> pBool
-  <|> pString
-  <|> pTag
-  <|> pList
-  <|> pSet
-  <|> try pUnit
-  <|> pTuple
-  <|> pWildcard
-
---------------------------------------------------------------------------------
--- Parse expressions
---------------------------------------------------------------------------------
+-- | Parse expressions
 
 eVar = mklexer EVar identifier
 
 eImpVar = mklexer EImpVar $ char '?' >> identifier
+
+-- | Literals
 
 eInt = mklexer (ELit . LInt) integer
 
@@ -114,39 +62,54 @@ eString = mklexer (ELit . LString) stringLit
 
 eTag = mklexer (ELit . LTag) $ char '\'' >> identifier
 
+eUnit = reserved "()" >> return (ELit LUnit)
+
+eTuple = mklexer ETuple $ parens $ commaSep2 expr
+
 eList = mklexer EList $ brackets $ commaSep expr
 
 eSet = mklexer ESet $ braces $ commaSep expr
 
-eTuple = mklexer ETuple $ parens $ commaSep2 expr
+eLam = do
+    reserved "lam"
+    x <- pat
+    reserved "."
+    ELam x <$> expr
 
-eUnit = reserved "()" >> return (ELit LUnit)
-  
-table :: [[Ex.Operator String () Identity Expr]]
-table = [ [binaryOp "*" (EBin Mul) Ex.AssocLeft, binaryOp "/" (EBin Div) Ex.AssocLeft]
-        , [binaryOp "%" (EBin Mod) Ex.AssocLeft]
-        , [binaryOp "+" (EBin Add) Ex.AssocLeft, binaryOp "-" (EBin Sub) Ex.AssocLeft]
-        , [prefixOp "not" (EUn Not)]
-        , [binaryOp ":" (ECons) Ex.AssocRight]
-        , [binaryOp "<" (EBin Lt) Ex.AssocNone
-          , binaryOp ">" (EBin Gt) Ex.AssocNone
-          , binaryOp "<=" (EBin Leq) Ex.AssocNone
-          , binaryOp ">=" (EBin Geq) Ex.AssocNone
-          , binaryOp "==" (EBin Eql) Ex.AssocNone
-          , binaryOp "<>" (EBin Neq) Ex.AssocNone
-          ]
-        , [binaryOp "&&" (EBin And) Ex.AssocLeft]
-        , [binaryOp "||" (EBin Or) Ex.AssocLeft]
-        ]
+eApp = do
+    f <- atomExpr
+    args <- many1 atomExpr
+    return $ foldl EApp f args
+
+-- TODO: EFix
+
+normalLet = do
+    reserved "let"
+    ps <- commaSep1 pat
+    reservedOp "="
+    e1 <- expr
+    reserved "in"
+    e2 <- expr
+    return $ foldr (`ELet` e1) e2 ps
+
+recursiveLet = do
+    reserved "letrec"
+    p <- pat
+    args <- many1 pat
+    reservedOp "="
+    e <- expr
+    reserved "in"
+    ELet p (EFix $ foldr ELam e (p:args)) <$> expr
+    
+eLet = try recursiveLet <|> normalLet
 
 eIf = do
     reserved "if"
     b <- expr
     reserved "then"
-    e1 <- expr
+    e <- expr
     reserved "else"
-    e2 <- expr
-    return $ EIf b e1 e2
+    EIf b e <$> expr
 
 branch = do
     reservedOp "|"
@@ -158,9 +121,8 @@ branch = do
 
 guard = do
     reserved "when"
-    e <- expr
-    return e
-  
+    expr
+      
 eMatch = do
     reserved "match"
     e <- expr
@@ -168,47 +130,11 @@ eMatch = do
     bs <- many1 branch
     return $ EMatch e bs
 
-eLet = do
-    reserved "let"
-    ps <- commaSep1 pat
-    reservedOp "="
-    e1 <- expr
-    reserved "in"
-    e2 <- expr
-    return $ foldr (\p -> ELet p e1) e2 ps
-
-eLetRec = do
-    reserved "letrec"
-    p <- pat
-    args <- many1 pat
-    reservedOp "="
-    e1 <- expr
-    reserved "in"
-    e2 <- expr
-    return $ ELet p (EFix $ foldr ELam e1 (p:args)) e2
-
-eAssign = do
-    reserved "let"
-    x <- identifier
-    reservedOp ":="
-    e <- expr
-    return $ EAssign x e
-
-eRef = mklexer ERef $ reserved "ref" >> atomExpr
-
-eDeref = mklexer EDeref $ reservedOp "@" >> atomExpr
-
-eLam = do
-    reserved "lam"
-    x <- pat
+eNu = do
+    reserved "nu"
+    c <- identifier
     reserved "."
-    e <- expr
-    return $ ELam x e
-
-eApp = do
-    f <- atomExpr
-    args <- many1 atomExpr
-    return $ foldl EApp f args
+    ENu c <$> expr
 
 eRd = mklexer ERd $ reserved "rd" >> expr
 
@@ -216,33 +142,58 @@ eWr = do
     reserved "wr"
     e <- expr
     reserved "->"
-    c <- expr
-    return $ EWr e c
-
-eNu = do
-    reserved "nu"
-    c <- identifier
-    reserved "."
-    e <- expr
-    return $ ENu c e
-
-eRepl = mklexer ERepl $ reservedOp "!" >> atomExpr  
+    EWr e <$> expr
 
 eFork = mklexer EFork $ reservedOp "|>" >> atomExpr
 
-eThunk = mklexer EThunk $ reserved "thunk" >> atomExpr
+eRepl = mklexer ERepl $ reservedOp "!" >> atomExpr  
 
-eForce = mklexer EForce $ reserved "force" >> atomExpr
+eRef = mklexer ERef $ reserved "ref" >> atomExpr
+
+eDeref = mklexer EDeref $ reservedOp "@" >> atomExpr
+
+eAssign = do
+    reserved "let"
+    x <- identifier
+    reservedOp ":="
+    EAssign x <$> expr
 
 eSeq = do
-    e1 <- expr'
+    e <- expr'
     reserved ";"
-    e2 <- expr
-    return $ ESeq e1 e2
+    ESeq e <$> expr
+  
+table :: [[Ex.Operator String () Identity Expr]]
+table = [ [ binaryOp "*" (EBinArith Mul) Ex.AssocLeft
+          , binaryOp "/" (EBinArith Div) Ex.AssocLeft ]
+        , [ binaryOp "%" (EBinArith Mod) Ex.AssocLeft ]
+        , [ binaryOp "+" (EBinArith Add) Ex.AssocLeft
+          , binaryOp "-" (EBinArith Sub) Ex.AssocLeft ]
+        , [ prefixOp "not" (EUnBool Not) ]
+        , [ binaryOp ":" (EBin Cons) Ex.AssocRight ]
+        , [ binaryOp "<" (EBinRel Lt) Ex.AssocNone
+          , binaryOp ">" (EBinRel Gt) Ex.AssocNone
+          , binaryOp "<=" (EBinRel Leq) Ex.AssocNone
+          , binaryOp ">=" (EBinRel Geq) Ex.AssocNone
+          , binaryOp "==" (EBinRel Eql) Ex.AssocNone
+          , binaryOp "<>" (EBinRel Neq) Ex.AssocNone
+          ]
+        , [ binaryOp "&&" (EBinBool And) Ex.AssocLeft ]
+        , [ binaryOp "||" (EBinBool Or) Ex.AssocLeft ]
+        ]
 
-ePrint = mklexer EPrint $ reserved "print" >> atomExpr
+eThunk = mklexer (EUn Thunk) $ reserved "thunk" >> atomExpr
 
-eError = mklexer EError $ reserved "error" >> atomExpr
+eForce = mklexer (EUn Force) $ reserved "force" >> atomExpr
+
+ePrint = mklexer (EUn Print) $ reserved "print" >> atomExpr
+
+eError = mklexer (EUn Syntax.Error) $ reserved "error" >> atomExpr
+
+eUn = eThunk
+   <|> eForce
+   <|> ePrint
+   <|> eError
 
 expr = try eSeq <|> expr'
 
@@ -262,57 +213,87 @@ atomExpr = eVar
 
 term = try eApp
    <|> atomExpr
+   <|> eLam
    <|> try eAssign
+   <|> eLet
    <|> eIf
    <|> eMatch
-   <|> try eLetRec
-   <|> eLet
+   <|> eNu
    <|> eRd
    <|> eWr
-   <|> eNu
-   <|> eRepl
    <|> eFork
+   <|> eRepl
    <|> eRef
    <|> eDeref
-   <|> eLam
-   <|> eThunk
-   <|> eForce
-   <|> ePrint
-   <|> eError
+   <|> eUn
 
---------------------------------------------------------------------------------
--- Parse declarations
---------------------------------------------------------------------------------
+-- | Patterns
+
+pVar = mklexer PVar identifier
+
+pInt = mklexer PInt integer
+
+pBool = pTrue <|> pFalse
+  where
+    pTrue = reserved "true" >> return (PBool True)
+    pFalse = reserved "false" >> return (PBool False)
+
+pString = mklexer PString stringLit
+
+pTag = mklexer PTag $ char '\'' >> identifier
+
+pUnit = reserved "()" >> return PUnit
+
+pWildcard = reserved "_" >> return PWildcard
+
+pTuple = mklexer PTuple $ parens $ commaSep2 pat
+  
+pList = mklexer PList $ brackets $ commaSep pat
+
+pCons = do
+    hd <- pat'
+    colon
+    PCons hd <$> pat'
+
+pSet = mklexer PSet $ braces $ commaSep pat
+
+-- TODO: Use chainl1?
+pat = try pCons <|> pat'
+
+pat' = pVar
+  <|> pInt
+  <|> pBool
+  <|> pString
+  <|> pTag
+  <|> try pUnit
+  <|> pWildcard
+  <|> pTuple
+  <|> pList
+  <|> pSet
+
+-- | Parse toplevel declarations
 
 dExpr = do
     e <- expr
     optional $ reserved ";;"
-    return $ ("it", e)
+    return ("it", e)
 
-dDeclLet = do
-    reserved "let"
+parseLet = do
     x <- identifier
+    ps <- many pat
     reserved "="
     e <- expr
     optional $ reserved ";;"
-    return (x, e)
+    return (x, ps, e)
 
 dDeclLetRec = do
     reserved "letrec"
-    x <- identifier
-    ps <- many1 pat
-    reserved "="
-    e <- expr
-    optional $ reserved ";;"
-    return (x, EFix $ foldr ELam e ((PVar x):ps))
+    (x, ps, e) <- parseLet
+    return (x, EFix $ foldr ELam e (PVar x : ps))
 
 dDeclFun = do
     reserved "let"
-    x <- identifier
-    ps <- many1 pat
-    reserved "="
-    e <- expr
-    optional $ reserved ";;"
+    (x, ps, e) <- parseLet
     return (x, foldr ELam e ps)
 
 {-tySig = do
@@ -321,11 +302,9 @@ dDeclFun = do
   t <- ty
   return $ TySig x t-}
 
-decl = try dExpr <|> try dDeclLetRec <|> try dDeclLet <|> dDeclFun
+decl = try dExpr <|> try dDeclLetRec <|> dDeclFun
 
---------------------------------------------------------------------------------
--- Parser
---------------------------------------------------------------------------------
+-- | Toplevel parser
 
 contents :: Parser a -> Parser a
 contents p = mklexer id $ whitespace *> p <* eof
@@ -334,4 +313,4 @@ toplevel :: Parser [Decl]
 toplevel = many1 decl
 
 parser :: String -> Either ParseError [Decl]
-parser s = parse (contents toplevel) "<stdin>" s
+parser = parse (contents toplevel) "<stdin>"

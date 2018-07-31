@@ -127,6 +127,7 @@ table = [ [binaryOp "*" (EBin Mul) Ex.AssocLeft, binaryOp "/" (EBin Div) Ex.Asso
         , [binaryOp "%" (EBin Mod) Ex.AssocLeft]
         , [binaryOp "+" (EBin Add) Ex.AssocLeft, binaryOp "-" (EBin Sub) Ex.AssocLeft]
         , [prefixOp "not" (EUn Not)]
+        , [binaryOp ":" (ECons) Ex.AssocRight]
         , [binaryOp "<" (EBin Lt) Ex.AssocNone
           , binaryOp ">" (EBin Gt) Ex.AssocNone
           , binaryOp "<=" (EBin Leq) Ex.AssocNone
@@ -241,12 +242,6 @@ eSeq = do
 
 ePrint = mklexer EPrint $ reserved "print" >> atomExpr
 
-eCons = do
-    x <- atomExpr
-    colon
-    xs <- atomExpr
-    return $ ECons x xs
-
 expr = try eSeq <|> expr'
 
 expr' = Ex.buildExpressionParser table term
@@ -264,7 +259,6 @@ atomExpr = eVar
        <|> parens expr
 
 term = try eApp
-   <|> try eCons
    <|> atomExpr
    <|> try eAssign
    <|> eIf

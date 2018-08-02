@@ -633,7 +633,3 @@ bind a t | t == TVar a     = return emptySubst
 
 occursCheck :: Substitutable a => TVar -> a -> Bool
 occursCheck a t = a `Set.member` ftv t
-
-f :: [a] -> a
-f x = _f_body
-

@@ -4,14 +4,15 @@
 {-# LANGUAGE TypeSynonymInstances #-}
 module Infer where
 
+
 import Control.Monad.Except
 import Control.Monad.Identity
 import Control.Monad.Reader
 import Control.Monad.State
-import Data.Maybe
-import Data.Monoid
 import Data.List (nub)
 import qualified Data.Map as Map
+import Data.Maybe
+import Data.Monoid
 import qualified Data.Set as Set
 
 import Syntax
@@ -632,3 +633,7 @@ bind a t | t == TVar a     = return emptySubst
 
 occursCheck :: Substitutable a => TVar -> a -> Bool
 occursCheck a t = a `Set.member` ftv t
+
+f :: [a] -> a
+f x = _f_body
+

@@ -5,8 +5,8 @@
 
 module Main where
 
-import Control.Monad.Trans
 import Control.Monad.State.Strict
+import Control.Monad.Trans
 import Data.List (isPrefixOf)
 import qualified Data.Map as Map
 import Data.Monoid
